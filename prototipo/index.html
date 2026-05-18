@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>spark — busca inteligente da produção científica</title>
+  <link rel="stylesheet" href="assets/tokens.css" />
+  <link rel="stylesheet" href="assets/landing.css" />
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="landing">
+
+  <!-- Re-usable SVG sprite -->
+  <svg width="0" height="0" style="position:absolute;" aria-hidden="true">
+    <defs>
+      <symbol id="spark-glyph" viewBox="0 0 32 32">
+        <path d="M16 0 L17.5 13 C 17.6 13.9 18.3 14.6 19.2 14.7 L32 16 L19.2 17.3 C 18.3 17.4 17.6 18.1 17.5 19 L16 32 L14.5 19 C 14.4 18.1 13.7 17.4 12.8 17.3 L0 16 L12.8 14.7 C 13.7 14.6 14.4 13.9 14.5 13 Z"
+              fill="currentColor"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- Animated shader background -->
+  <div id="shader-stage" class="landing-shader" aria-hidden="true"></div>
+  <div class="landing-vignette" aria-hidden="true"></div>
+  <div class="landing-grain"     aria-hidden="true"></div>
+
+  <!-- Topbar -->
+  <header class="l-topbar">
+    <a href="index.html" class="brand dark">
+      <span class="brand-mark"><svg><use href="#spark-glyph"/></svg></span>
+      <span class="brand-word">spark<span class="brand-dot">.</span></span>
+    </a>
+    <nav class="l-nav">
+      <a href="#arquitetura">arquitetura</a>
+      <a href="#recursos">recursos</a>
+      <a href="#fluxo">fluxo</a>
+      <a href="#equipe">equipe</a>
+    </nav>
+    <div class="l-topbar-right">
+      <a class="btn btn-dark" href="app.html">
+        <i data-lucide="log-in" class="i-sm"></i>
+        entrar
+      </a>
+      <a class="btn btn-bright" href="app.html">
+        abrir spark
+        <i data-lucide="arrow-right" class="i-sm"></i>
+      </a>
+    </div>
+  </header>
+
+  <main class="l-content">
+
+    <!-- ═══════════ HERO ═══════════ -->
+    <section class="l-hero">
+      <div>
+        <span class="l-eyebrow">SEARCH PLATAFORM AND RESEARCH KNOWLEDGE</span>
+        <h1 class="l-title">
+          a faísca que <span class="ser">acende</span> a produção científica.
+        </h1>
+        <p class="l-sub">
+          Spark orquestra a extração de currículos Lattes em XML, popula um banco relacional e
+          uma base vetorial — habilitando busca por palavras-chave <em class="serif-it">e</em>
+          por linguagem natural sobre os títulos das produções da UNEB.
+        </p>
+        <div class="l-cta-row">
+          <a class="btn btn-bright btn-lg" href="app.html">
+            <i data-lucide="search" class="i-sm"></i>
+            começar a buscar
+          </a>
+          <a class="btn btn-dark btn-lg" href="#arquitetura">
+            ver arquitetura
+            <i data-lucide="arrow-down" class="i-sm"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Side panel: live search preview -->
+      <aside class="l-hero-aside">
+        <div class="l-hero-aside-head">
+          <span>POST /api/search/semantic</span>
+          <span class="live"><span class="ldot"></span>live</span>
+        </div>
+        <div class="l-hero-aside-query">
+          &gt; vigilância genômica de arboviroses<span class="cursor">▍</span>
+        </div>
+        <div class="l-hero-aside-results">
+          <div class="l-hero-result">
+            <div class="l-hero-result-sim">0.92</div>
+            <div class="l-hero-result-body">
+              <div class="l-hero-result-title">A new lineage nomenclature to aid genomic surveillance of dengue virus</div>
+              <div class="l-hero-result-meta">PLOS BIOLOGY · 2024 · Qualis A1</div>
+            </div>
+          </div>
+          <div class="l-hero-result">
+            <div class="l-hero-result-sim">0.89</div>
+            <div class="l-hero-result-body">
+              <div class="l-hero-result-title">Shifting patterns of dengue three years after Zika emergence in Brazil</div>
+              <div class="l-hero-result-meta">NATURE COMMS · 2024 · Qualis A1</div>
+            </div>
+          </div>
+          <div class="l-hero-result">
+            <div class="l-hero-result-sim">0.86</div>
+            <div class="l-hero-result-body">
+              <div class="l-hero-result-title">Vector competence of Aedes aegypti for dengue serotype 3 in NE Brazil</div>
+              <div class="l-hero-result-meta">MEM. INST. OSWALDO CRUZ · 2023 · Qualis A2</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Stat strip -->
+    <div class="l-stats-wrap">
+      <div class="l-stats-row">
+        <div class="l-stat">
+          <div class="l-stat-n">4821</div>
+          <div class="l-stat-l">produções indexadas</div>
+        </div>
+        <div class="l-stat">
+          <div class="l-stat-n">34</div>
+          <div class="l-stat-l">pesquisadores</div>
+        </div>
+        <div class="l-stat">
+          <div class="l-stat-n">4612</div>
+          <div class="l-stat-l">embeddings gerados</div>
+        </div>
+        <div class="l-stat">
+          <div class="l-stat-n">&lt;5s</div>
+          <div class="l-stat-l">busca semântica</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ ARQUITETURA — flow ═══════════ -->
+    <section class="l-section" id="arquitetura">
+      <div class="l-section-head">
+        <div>
+          <div class="l-section-eyebrow">arquitetura</div>
+          <h2 class="l-section-title">do <span class="ser">xml</span> ao dashboard, em cinco saltos.</h2>
+        </div>
+        <p class="l-section-sub right" style="max-width:36ch;">
+          Pipeline ETL orquestrado no Apache Hop. Textos vetorizados via Sentence-Transformers
+          e armazenados no pgvector. API REST expõe filtros e busca semântica; CSVs alimentam o
+          dashboard OLAP.
+        </p>
+      </div>
+
+      <div class="arch-flow">
+        <div class="arch-step">
+          <div class="arch-bubble">
+            <span class="arch-num">1</span>
+            <i data-lucide="file-code-2" class="i-lg"></i>
+          </div>
+          <div class="arch-step-tag">EXTRAÇÃO</div>
+          <div class="arch-step-name">Lattes XML</div>
+          <div class="arch-step-desc">Leitura dos currículos exportados do CNPq.</div>
+          <span class="arch-step-tech">cnpq · xml</span>
+        </div>
+        <div class="arch-step">
+          <div class="arch-bubble">
+            <span class="arch-num">2</span>
+            <i data-lucide="git-merge" class="i-lg"></i>
+          </div>
+          <div class="arch-step-tag">ETL</div>
+          <div class="arch-step-name">Pipeline</div>
+          <div class="arch-step-desc">Mapeamento, UPSERT e enriquecimento externo.</div>
+          <span class="arch-step-tech">apache hop</span>
+        </div>
+        <div class="arch-step">
+          <div class="arch-bubble">
+            <span class="arch-num">3</span>
+            <i data-lucide="database" class="i-lg"></i>
+          </div>
+          <div class="arch-step-tag">CARGA</div>
+          <div class="arch-step-name">PG + Vetorial</div>
+          <div class="arch-step-desc">tsvector para textual, pgvector para semântica.</div>
+          <span class="arch-step-tech">supabase · hnsw</span>
+        </div>
+        <div class="arch-step">
+          <div class="arch-bubble">
+            <span class="arch-num">4</span>
+            <i data-lucide="webhook" class="i-lg"></i>
+          </div>
+          <div class="arch-step-tag">API</div>
+          <div class="arch-step-name">REST</div>
+          <div class="arch-step-desc">Endpoints documentados, fallback OpenAI.</div>
+          <span class="arch-step-tech">fastapi · sentence-t.</span>
+        </div>
+        <div class="arch-step">
+          <div class="arch-bubble">
+            <span class="arch-num">5</span>
+            <i data-lucide="bar-chart-3" class="i-lg"></i>
+          </div>
+          <div class="arch-step-tag">OLAP</div>
+          <div class="arch-step-name">Dashboards</div>
+          <div class="arch-step-desc">CSVs tipados consumidos diretamente.</div>
+          <span class="arch-step-tech">power bi</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ RECURSOS — bento ═══════════ -->
+    <section class="l-section" id="recursos">
+      <div class="l-section-head">
+        <div>
+          <div class="l-section-eyebrow">recursos</div>
+          <h2 class="l-section-title">três caminhos<br/>para <span class="ser">descobrir</span> produções.</h2>
+        </div>
+      </div>
+
+      <div class="feat-bento">
+        <!-- Big hero cell with chart mockup -->
+        <article class="feat-cell feat-hero span-3">
+          <div class="feat-icon"><i data-lucide="sparkles" class="i-lg"></i></div>
+          <div class="feat-title">busca <span class="ser">semântica</span> em linguagem natural</div>
+          <p class="feat-desc">
+            Consultas convertidas em vetores via Sentence-Transformers; similaridade de cosseno
+            via pgvector. Top-10 retornados em menos de 5 segundos.
+          </p>
+          <div class="feat-mockup">
+            <div class="feat-mockup-bar"><span>vigilância genômica de dengue<small>0.92</small></span></div>
+            <div class="feat-mockup-bar"><span>shifting patterns of dengue<small>0.89</small></span></div>
+            <div class="feat-mockup-bar"><span>vector competence Aedes aegypti<small>0.86</small></span></div>
+            <div class="feat-mockup-bar"><span>spatial-temporal dengue analyses<small>0.74</small></span></div>
+          </div>
+        </article>
+
+        <article class="feat-cell span-3">
+          <div class="feat-icon"><i data-lucide="text-search" class="i-lg"></i></div>
+          <div class="feat-title">busca textual com <span class="ser">FTS</span></div>
+          <p class="feat-desc">
+            Full-Text Search via tsvector do PostgreSQL. Operadores AND, OR e NOT.
+            Resultados paginados em até 30 segundos.
+          </p>
+        </article>
+
+        <article class="feat-cell span-2">
+          <div class="feat-icon"><i data-lucide="award" class="i-lg"></i></div>
+          <div class="feat-title">métricas bibliométricas</div>
+          <p class="feat-desc">
+            Filtre por Qualis CAPES, fator de impacto JCR, ano, área e tipo.
+          </p>
+        </article>
+
+        <article class="feat-cell span-2">
+          <div class="feat-icon"><i data-lucide="workflow" class="i-lg"></i></div>
+          <div class="feat-title">orquestração <span class="ser">ETL</span></div>
+          <p class="feat-desc">
+            Painel admin monitora execuções, registra logs e sinaliza falhas no enriquecimento externo.
+          </p>
+        </article>
+
+        <article class="feat-cell span-2">
+          <div class="feat-icon"><i data-lucide="file-spreadsheet" class="i-lg"></i></div>
+          <div class="feat-title">export para OLAP</div>
+          <p class="feat-desc">
+            Dimensões e fato exportados em CSV tipado, lidos diretamente pelo Power BI.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ═══════════ CTA STRIP ═══════════ -->
+    <section class="l-cta-strip">
+      <h2>pronto para <span class="ser">acender</span> sua próxima descoberta?</h2>
+      <p>Acesse o protótipo agora — sem cadastro, com dados sintéticos da base UNEB.</p>
+      <div class="l-cta-row" style="justify-content:center;">
+        <a class="btn btn-bright btn-lg" href="app.html">
+          abrir spark
+          <i data-lucide="arrow-right" class="i-sm"></i>
+        </a>
+        <a class="btn btn-dark btn-lg" href="app.html#admin">
+          <i data-lucide="settings-2" class="i-sm"></i>
+          painel admin
+        </a>
+      </div>
+    </section>
+
+    <!-- ═══════════ FOOTER ═══════════ -->
+    <footer class="l-footer" id="equipe">
+      <div class="l-footer-grid">
+        <div class="l-footer-brand">
+          <a href="index.html" class="brand dark">
+            <span class="brand-mark"><svg><use href="#spark-glyph"/></svg></span>
+            <span class="brand-word">spark<span class="brand-dot">.</span></span>
+          </a>
+          <p class="l-footer-tag">
+            Busca inteligente da produção científica da UNEB — ETL Lattes, busca textual e
+            semântica, e análises OLAP.
+          </p>
+        </div>
+        <div class="l-footer-col">
+          <div class="l-footer-col-title">projeto</div>
+          <a href="#arquitetura">arquitetura</a>
+          <a href="#recursos">recursos</a>
+          <a href="app.html">aplicação</a>
+        </div>
+        <div class="l-footer-col">
+          <div class="l-footer-col-title">docs</div>
+          <a href="#">api swagger</a>
+          <a href="#">pipeline hop</a>
+          <a href="#">modelo de dados</a>
+        </div>
+        <div class="l-footer-col">
+          <div class="l-footer-col-title">uneb</div>
+          <a href="#">pós-graduação</a>
+          <a href="#">lattes/cnpq</a>
+          <a href="#">capes / qualis</a>
+        </div>
+      </div>
+      <div class="l-footer-bottom">
+        <span>© 2026 · projeto spark</span>
+        <span>v1.0.0 — protótipo</span>
+      </div>
+    </footer>
+
+  </main>
+
+  <script src="assets/shader.js"></script>
+  <script>if (window.lucide) lucide.createIcons();</script>
+</body>
+</html>

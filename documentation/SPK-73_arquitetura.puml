@@ -1,0 +1,93 @@
+@startuml SPK-73_Arquitetura
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+
+skinparam rectangle {
+  RoundCorner 10
+  BorderThickness 2
+}
+
+skinparam component {
+  BackgroundColor #FFFCDC
+  BorderColor #555555
+  FontSize 11
+}
+
+skinparam database {
+  BackgroundColor #DCF0FF
+  BorderColor #0066CC
+  FontSize 11
+}
+
+skinparam cloud {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  FontSize 11
+}
+
+skinparam arrow {
+  Color #444444
+  FontSize 10
+}
+
+' ════════════════════════════════════════════════════════
+' CAMADA OPERACIONAL
+' ════════════════════════════════════════════════════════
+rectangle "Camada Operacional" #F0FFF4 {
+
+  component "Base de XML\n(Currículos Lattes)" as XML #FFFCDC
+  component "Apache Hop\n(Pipeline ETL)" as HOP #FFFCDC
+
+  component "Qualis CAPES\n(Planilha CSV)" as QUALIS #F5F5F5
+  cloud "CrossRef / OpenAlex\n(API DOI)" as CROSSREF
+  cloud "Web of Science\n(JCR)" as JCR
+
+  XML --> HOP : lê XMLs
+  QUALIS --> HOP : lookup ISSN
+  CROSSREF --> HOP : lookup DOI
+  JCR --> HOP : lookup\nFator de Impacto
+}
+
+' ════════════════════════════════════════════════════════
+' CAMADA BACK-END
+' ════════════════════════════════════════════════════════
+rectangle "Camada Back-End  |  Railway" #FFF8F0 {
+
+  database "Supabase\n(PostgreSQL + pgvector)" as DB
+
+  component "FastAPI\n(Python)" as API #FFFCDC
+  component "Worker ETL\n(Geração de Embeddings)" as WORKER #FFFCDC
+  component "Base Multidimensional\n(Gerador CSV)" as CSV #FFFCDC
+
+  cloud "Sentence-Transformers\n(Modelo Local)" as ST
+  cloud "OpenAI / Langchain\n(Fallback)" as OPENAI
+
+  API --> DB : consulta /\natualiza
+  WORKER --> DB : persiste\nembeddings
+  WORKER --> ST : gera embedding
+  ST --> OPENAI : fallback
+  CSV --> DB : lê dados\nanalíticos
+}
+
+' ════════════════════════════════════════════════════════
+' CAMADA FRONT-END
+' ════════════════════════════════════════════════════════
+rectangle "Camada Front-End" #F0F4FF {
+
+  component "Next.js\n(Vercel)" as NEXT #FFFCDC
+  component "Power BI\n(Dashboards)" as PBI #FFFCDC
+
+}
+
+' ════════════════════════════════════════════════════════
+' CONEXÕES ENTRE CAMADAS
+' ════════════════════════════════════════════════════════
+HOP --> DB       : INSERT /\nUPSERT
+HOP --> WORKER   : aciona após\ncarga
+
+API --> NEXT     : REST JSON
+CSV --> PBI      : arquivos CSV
+
+@enduml

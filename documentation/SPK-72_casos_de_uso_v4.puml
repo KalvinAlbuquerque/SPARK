@@ -1,0 +1,69 @@
+@startuml SPK-72_CasosDeUso_v4
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ranksep 40
+skinparam nodesep 30
+
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontStyle bold
+  FontSize 13
+}
+
+skinparam usecase {
+  BackgroundColor #FFFCDC
+  BorderColor #006633
+  FontColor #222222
+  FontSize 12
+}
+
+skinparam rectangle {
+  BackgroundColor #F0FFF4
+  BorderColor #006633
+  BorderThickness 2
+  FontStyle bold
+  FontColor #006633
+  FontSize 14
+}
+
+skinparam ArrowColor #444444
+
+' ── Atores ──────────────────────────────────────────────────
+actor "Usuário" as usuario
+actor "Admin"   as admin
+
+admin -|> usuario
+
+' ── Fronteira do sistema ────────────────────────────────────
+rectangle "Sistema SPARK" {
+
+  ' Linha 1: ação principal do usuário
+  usecase "UC-01\nBuscar Produções" as UC01
+
+  ' Linha 2: extensões diretas de UC-01
+  usecase "UC-02\nFiltrar Resultados"           as UC02
+  usecase "UC-03\nVisualizar Detalhes\nda Produção" as UC03
+
+  ' Linha 3: extensão de UC-03
+  usecase "UC-04\nVisualizar Perfil\ndo Pesquisador" as UC04
+
+  ' Ações exclusivas do Admin
+  usecase "UC-05\nGerenciar\nPesquisadores"     as UC05
+  usecase "UC-06\nExportar Dados\npara Power BI" as UC06
+
+}
+
+' ── Associações ─────────────────────────────────────────────
+usuario --> UC01
+admin   --> UC05
+admin   --> UC06
+
+' ── Relações entre UCs (fluxo top-down limpo) ───────────────
+UC01 .> UC02 : <<extend>>
+UC01 .> UC03 : <<extend>>
+UC03 .> UC04 : <<extend>>
+
+@enduml

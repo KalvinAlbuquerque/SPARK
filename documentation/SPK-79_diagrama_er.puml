@@ -1,0 +1,137 @@
+@startuml SPK-79_DiagramaER
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+
+skinparam class {
+  BackgroundColor #FFFCDC
+  BorderColor #006633
+  HeaderBackgroundColor #006633
+  HeaderFontColor #FFFFFF
+  HeaderFontStyle bold
+  FontSize 11
+}
+
+skinparam arrow {
+  Color #444444
+  FontSize 10
+}
+
+hide circle
+hide methods
+
+' ════════════════════════════════════════════════════════
+' SUPABASE AUTH (gerenciada externamente)
+' ════════════════════════════════════════════════════════
+class "auth.users" as AUTH #DCF0FF {
+  + id : uuid <<PK>>
+  --
+  email : varchar
+  created_at : timestamp
+}
+
+' ════════════════════════════════════════════════════════
+' PERFIS
+' ════════════════════════════════════════════════════════
+class "perfis" as PERFIS {
+  + id : uuid <<PK, FK auth.users>>
+  --
+  role : varchar
+  nome_exibicao : varchar
+  created_at : timestamp
+}
+
+' ════════════════════════════════════════════════════════
+' PESQUISADORES
+' ════════════════════════════════════════════════════════
+class "pesquisadores" as PESQ {
+  + id : serial <<PK>>
+  --
+  lattes_id : varchar <<UNIQUE>>
+  nome_completo : varchar
+  resumo : text
+  data_atualizacao : timestamp
+}
+
+' ════════════════════════════════════════════════════════
+' PRODUCOES
+' ════════════════════════════════════════════════════════
+class "producoes" as PROD {
+  + id : serial <<PK>>
+  --
+  pesquisador_id : integer <<FK pesquisadores>>
+  titulo : varchar
+  tipo_producao : varchar
+  ano_publicacao : integer
+  nome_veiculo : varchar
+  issn : varchar
+  doi : varchar
+  qualis : varchar
+  jcr : numeric
+  texto_busca : tsvector
+  created_at : timestamp
+}
+
+' ════════════════════════════════════════════════════════
+' VETORES
+' ════════════════════════════════════════════════════════
+class "vetores" as VET {
+  + id : serial <<PK>>
+  --
+  producao_id : integer <<FK producoes>>
+  embedding : vector(1536)
+  modelo_llm : varchar
+  created_at : timestamp
+}
+
+' ════════════════════════════════════════════════════════
+' FAVORITOS
+' ════════════════════════════════════════════════════════
+class "favoritos" as FAV {
+  + id : serial <<PK>>
+  --
+  usuario_id : uuid <<FK auth.users>>
+  producao_id : integer <<FK producoes>>
+  created_at : timestamp
+}
+
+' ════════════════════════════════════════════════════════
+' BUSCAS SALVAS
+' ════════════════════════════════════════════════════════
+class "buscas_salvas" as BUSC {
+  + id : serial <<PK>>
+  --
+  usuario_id : uuid <<FK auth.users>>
+  termo : varchar
+  filtros : jsonb
+  modo_busca : varchar
+  created_at : timestamp
+}
+
+' ════════════════════════════════════════════════════════
+' ETL LOGS
+' ════════════════════════════════════════════════════════
+class "etl_logs" as LOG {
+  + id : serial <<PK>>
+  --
+  iniciado_em : timestamp
+  finalizado_em : timestamp
+  status : varchar
+  total_inseridos : integer
+  total_atualizados : integer
+  total_sem_match : integer
+  detalhes : jsonb
+}
+
+' ════════════════════════════════════════════════════════
+' RELACIONAMENTOS
+' ════════════════════════════════════════════════════════
+AUTH       ||--||  PERFIS   : "1:1\nextende"
+AUTH       ||--o{  FAV      : "1:N\nfavorita"
+AUTH       ||--o{  BUSC     : "1:N\nsalva"
+PESQ       ||--o{  PROD     : "1:N\npublica"
+PROD       ||--o|  VET      : "1:1\npossui embedding"
+PROD       ||--o{  FAV      : "1:N\néfavoritada"
+
+@enduml

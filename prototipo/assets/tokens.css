@@ -1,0 +1,255 @@
+/* ============================================================
+   SPARK — Design Tokens (índigo + âmbar + papel quente)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* ---- Brand: electric indigo ---- */
+  --primary-50:  #F1EFFF;
+  --primary-100: #DAD4FF;
+  --primary-200: #B5ABFF;
+  --primary-300: #8C7EFF;
+  --primary-400: #6D5BF0;        /* primary */
+  --primary-500: #5240D6;
+  --primary-600: #3C2BB5;
+  --primary-700: #2A1D8C;
+  --primary-900: #14093F;
+
+  /* ---- Accent: warm amber (Qualis A1, highlights) ---- */
+  --accent-50:  #FFF4E5;
+  --accent-100: #FFDEB1;
+  --accent-300: #FFB766;
+  --accent-400: #F2912C;
+  --accent-600: #B96512;
+  --accent-800: #5C2E03;
+
+  /* ---- Qualis strata ---- */
+  --q-a1-bg:  #FFF4E5;  --q-a1-fg:  #B96512;   /* amber  */
+  --q-a2-bg:  #F1EFFF;  --q-a2-fg:  #3C2BB5;   /* indigo */
+  --q-a3-bg:  #E1F4F1;  --q-a3-fg:  #0E6C5E;   /* teal   */
+  --q-a4-bg:  #FCEAF3;  --q-a4-fg:  #B12869;   /* pink   */
+  --q-b1-bg:  #EEF1F5;  --q-b1-fg:  #455570;   /* slate  */
+  --q-b2-bg:  #F4F2EC;  --q-b2-fg:  #6A5F49;   /* khaki  */
+
+  /* ---- Functional ---- */
+  --ok-50:   #E6F5EB;  --ok-fg:   #16734A;
+  --warn-50: #FFF4DA;  --warn-fg: #8A5A0F;
+  --err-50:  #FBE9E9;  --err-fg:  #A02828;
+  --info-50: #E6EEFA;  --info-fg: #2A4FAA;
+
+  /* ---- Neutrals: warm paper ---- */
+  --paper:     #F6F3EC;          /* page bg */
+  --paper-2:   #EFEBE0;
+  --surface:   #FFFFFF;
+  --surface-2: #FAF7EF;
+  --ink-50:    #F2EFE7;
+  --ink-100:   #E6E1D4;
+  --ink-200:   #C9C3B2;
+  --ink-300:   #A39C88;
+  --ink-400:   #7C7665;
+  --ink-600:   #4A463B;
+  --ink-800:   #1F1D17;
+  --ink-900:   #0E0D08;
+
+  --border:    rgba(31,29,23,0.08);
+  --border-md: rgba(31,29,23,0.14);
+  --border-lg: rgba(31,29,23,0.22);
+
+  --text-1:    #1F1D17;
+  --text-2:    #4A463B;
+  --text-3:    #7C7665;
+
+  /* ---- Radius ---- */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-2xl: 28px;
+
+  /* ---- Shadows ---- */
+  --shadow-xs: 0 1px 2px rgba(20,9,63,0.04);
+  --shadow-sm: 0 2px 6px rgba(20,9,63,0.06);
+  --shadow-md: 0 8px 24px rgba(20,9,63,0.08);
+  --shadow-lg: 0 22px 50px rgba(20,9,63,0.14);
+  --shadow-glow: 0 8px 30px -10px rgba(109,91,240,0.45);
+
+  /* ---- Type ---- */
+  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-mono: 'DM Mono', 'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-sans);
+  background: var(--paper);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ============================================================
+   LOGO / WORDMARK
+   ============================================================ */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+  user-select: none;
+}
+.brand-mark {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--primary-400);
+  position: relative;
+}
+.brand-mark svg { width: 100%; height: 100%; display: block; }
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(109,91,240,0.18), transparent 65%);
+  z-index: -1;
+}
+.brand-word {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.4px;
+  color: var(--text-1);
+}
+.brand-dot { color: var(--accent-400); }
+
+/* Variants */
+.brand.dark .brand-word { color: #FAF7EF; }
+.brand.dark .brand-mark { color: var(--primary-200); }
+.brand.lg .brand-mark { width: 32px; height: 32px; }
+.brand.lg .brand-word { font-size: 24px; letter-spacing: -0.8px; }
+.brand.xl .brand-mark { width: 56px; height: 56px; }
+.brand.xl .brand-word { font-size: 44px; letter-spacing: -1.6px; font-weight: 600; }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.btn:focus-visible { outline: 2px solid var(--primary-400); outline-offset: 2px; }
+.btn-primary {
+  background: var(--ink-900);
+  color: var(--paper);
+  border-color: var(--ink-900);
+}
+.btn-primary:hover { background: var(--primary-700); border-color: var(--primary-700); transform: translateY(-1px); box-shadow: var(--shadow-glow); }
+
+.btn-accent { background: var(--primary-400); color: #fff; border-color: var(--primary-400); }
+.btn-accent:hover { background: var(--primary-500); border-color: var(--primary-500); box-shadow: var(--shadow-glow); transform: translateY(-1px); }
+
+.btn-ghost { background: transparent; color: var(--text-2); border-color: var(--border-md); }
+.btn-ghost:hover { background: var(--ink-50); color: var(--text-1); border-color: var(--border-lg); }
+
+.btn-danger { background: transparent; color: var(--err-fg); border-color: var(--border); }
+.btn-danger:hover { background: var(--err-50); border-color: var(--err-50); }
+
+.btn-icon { padding: 7px 9px; }
+.btn-lg { padding: 12px 22px; font-size: 14px; }
+
+/* Dark variants */
+.btn-dark { background: rgba(255,255,255,0.06); color: #fff; border-color: rgba(255,255,255,0.16); backdrop-filter: blur(10px); }
+.btn-dark:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); }
+.btn-bright { background: #FAF7EF; color: var(--ink-900); border-color: #FAF7EF; }
+.btn-bright:hover { background: #fff; border-color: #fff; transform: translateY(-1px); box-shadow: 0 12px 40px -10px rgba(255,222,177,0.4); }
+
+/* ============================================================
+   BADGES
+   ============================================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+}
+.badge-a1 { background: var(--q-a1-bg); color: var(--q-a1-fg); }
+.badge-a2 { background: var(--q-a2-bg); color: var(--q-a2-fg); }
+.badge-a3 { background: var(--q-a3-bg); color: var(--q-a3-fg); }
+.badge-a4 { background: var(--q-a4-bg); color: var(--q-a4-fg); }
+.badge-b1 { background: var(--q-b1-bg); color: var(--q-b1-fg); }
+.badge-b2 { background: var(--q-b2-bg); color: var(--q-b2-fg); }
+.badge-jcr { background: var(--ink-50); color: var(--text-2); }
+.badge-ok  { background: var(--ok-50); color: var(--ok-fg); }
+.badge-err { background: var(--err-50); color: var(--err-fg); }
+.badge-run { background: var(--warn-50); color: var(--warn-fg); }
+.badge-info { background: var(--info-50); color: var(--info-fg); }
+.badge-outline { background: transparent; color: var(--text-2); border: 1px solid var(--border-md); }
+.badge-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; }
+
+/* ---- Icon sizing (lucide) ---- */
+[data-lucide] { display: inline-block; vertical-align: middle; flex-shrink: 0; }
+.i-xs { width: 12px; height: 12px; }
+.i-sm { width: 14px; height: 14px; }
+.i-md { width: 16px; height: 16px; }
+.i-lg { width: 20px; height: 20px; }
+.i-xl { width: 28px; height: 28px; }
+
+/* ---- Utility ---- */
+.mono { font-family: var(--font-mono); }
+.serif { font-family: var(--font-serif); }
+.serif-it { font-family: var(--font-serif); font-style: italic; }
+.muted { color: var(--text-3); }
+.dim   { color: var(--text-2); }
+
+.section-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--primary-400);
+}
+.section-eyebrow::before {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 1px;
+  background: currentColor;
+}
+
+/* ============================================================
+   SHARED — Spark mark SVG (embedded via class)
+   ============================================================ */
+.spark-glyph {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+}

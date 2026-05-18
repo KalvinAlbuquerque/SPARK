@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>spark — busca de produções científicas</title>
+  <link rel="stylesheet" href="assets/tokens.css" />
+  <link rel="stylesheet" href="assets/app.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="app">
+
+<!-- SVG sprite -->
+<svg width="0" height="0" style="position:absolute;" aria-hidden="true">
+  <defs>
+    <symbol id="spark-glyph" viewBox="0 0 32 32">
+      <path d="M16 0 L17.5 13 C 17.6 13.9 18.3 14.6 19.2 14.7 L32 16 L19.2 17.3 C 18.3 17.4 17.6 18.1 17.5 19 L16 32 L14.5 19 C 14.4 18.1 13.7 17.4 12.8 17.3 L0 16 L12.8 14.7 C 13.7 14.6 14.4 13.9 14.5 13 Z"
+            fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="app-shell">
+
+  <!-- ════════════════════ LEFT RAIL ════════════════════ -->
+  <nav class="rail">
+    <a class="rail-brand" href="index.html" title="spark.">
+      <svg><use href="#spark-glyph"/></svg>
+    </a>
+
+    <div class="rail-nav">
+      <button class="rail-item active" data-screen="busca">
+        <i data-lucide="search" class="i-lg"></i>
+        <span class="rail-item-tip">busca</span>
+      </button>
+      <button class="rail-item" data-screen="resultados">
+        <i data-lucide="list-filter" class="i-lg"></i>
+        <span class="rail-item-tip">resultados</span>
+      </button>
+      <button class="rail-item" data-screen="detalhes">
+        <i data-lucide="file-text" class="i-lg"></i>
+        <span class="rail-item-tip">produção</span>
+      </button>
+      <button class="rail-item" data-screen="perfil">
+        <i data-lucide="user-round" class="i-lg"></i>
+        <span class="rail-item-tip">pesquisador</span>
+      </button>
+      <button class="rail-item" data-screen="admin">
+        <i data-lucide="settings-2" class="i-lg"></i>
+        <span class="rail-item-tip">admin</span>
+      </button>
+    </div>
+
+    <div class="rail-foot">
+      <button class="rail-item" title="notificações">
+        <i data-lucide="bell" class="i-md"></i>
+        <span class="rail-item-tip">notificações</span>
+      </button>
+      <div class="rail-avatar" title="Eduardo Jorge">EJ</div>
+    </div>
+  </nav>
+
+  <!-- ════════════════════ MAIN ════════════════════ -->
+  <main class="app-main">
+
+    <!-- Contextual top bar -->
+    <header class="topbar">
+      <div class="topbar-page-title" id="topbar-title">
+        <i data-lucide="search" class="i-md"></i>
+        busca
+      </div>
+      <div class="topbar-crumbs" id="topbar-crumbs">spark / busca</div>
+
+      <div class="topbar-search" id="topbar-search">
+        <i data-lucide="search" class="i-sm"></i>
+        <input id="topbar-input" type="text" placeholder="buscar produções, autores, periódicos..." />
+        <kbd>⌘ K</kbd>
+      </div>
+
+      <div class="topbar-right">
+        <button class="icon-btn" title="filtros"><i data-lucide="sliders-horizontal" class="i-sm"></i></button>
+        <button class="icon-btn" title="ajuda"><i data-lucide="circle-help" class="i-sm"></i></button>
+      </div>
+    </header>
+
+    <!-- ════════════════════ TELA 1 · BUSCA ════════════════════ -->
+    <section id="screen-busca" class="screen active">
+      <div class="home-page">
+
+        <div class="home-hero">
+          <div>
+            <span class="home-hero-eyebrow">
+              <span class="dot"></span>
+              base atualizada · 12/05/2026
+            </span>
+            <h1 class="home-headline">o que você quer <span class="ser">descobrir</span> hoje?</h1>
+            <p class="home-sub-text">
+              Combine palavras-chave e linguagem natural sobre 4.821 produções de 34
+              pesquisadores da UNEB — com filtros por Qualis, JCR, área e ano.
+            </p>
+          </div>
+
+          <aside class="home-side-card">
+            <div class="home-side-head">
+              <span>buscas nas últimas 24h</span>
+              <span class="live"><span class="ldot"></span>ao vivo</span>
+            </div>
+            <div class="home-side-stat">287</div>
+            <div class="home-side-stat-sub">+18% vs. ontem</div>
+
+            <!-- inline mini sparkline (svg) -->
+            <div class="home-side-spark">
+              <svg viewBox="0 0 200 50" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="spk" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#6D5BF0" stop-opacity="0.4"/>
+                    <stop offset="100%" stop-color="#6D5BF0" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0,40 L20,32 L40,36 L60,22 L80,28 L100,18 L120,24 L140,12 L160,20 L180,8 L200,14 L200,50 L0,50 Z" fill="url(#spk)"/>
+                <path d="M0,40 L20,32 L40,36 L60,22 L80,28 L100,18 L120,24 L140,12 L160,20 L180,8 L200,14" fill="none" stroke="#6D5BF0" stroke-width="1.6"/>
+                <circle cx="180" cy="8" r="3" fill="#F2912C"/>
+              </svg>
+            </div>
+
+            <div class="home-side-feed">
+              <div class="home-side-feed-item">
+                <div class="av">JC</div>
+                <span>"machine learning saúde"</span>
+                <time>2m</time>
+              </div>
+              <div class="home-side-feed-item">
+                <div class="av">AP</div>
+                <span>"dengue serotipos"</span>
+                <time>8m</time>
+              </div>
+              <div class="home-side-feed-item">
+                <div class="av">MS</div>
+                <span>"gestão pública"</span>
+                <time>14m</time>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="search-mega">
+          <i data-lucide="search" class="i-lg lead-icon"></i>
+          <input type="text" id="home-input" placeholder="tente: aprendizado de máquina aplicado em saúde pública..." />
+          <button class="btn btn-primary" id="home-search-btn">
+            buscar
+            <i data-lucide="arrow-right" class="i-sm"></i>
+          </button>
+        </div>
+
+        <div class="search-meta-row">
+          <div class="mode-toggle" id="home-mode-toggle">
+            <button class="mode-btn active" data-mode="text">
+              <i data-lucide="type" class="i-xs"></i>
+              textual · FTS
+            </button>
+            <button class="mode-btn" data-mode="sem">
+              <i data-lucide="sparkles" class="i-xs"></i>
+              semântica · embeddings
+            </button>
+          </div>
+          <div class="search-shortcut-tip">
+            atalho: pressione <kbd>⌘</kbd> + <kbd>K</kbd> para focar
+          </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="section-head">
+          <div>
+            <h3>explorar por <span class="ser">área</span></h3>
+            <div class="muted" style="font-size: 12px; font-family: var(--font-mono);">12 áreas CAPES indexadas</div>
+          </div>
+          <a class="more" href="#">ver todas <i data-lucide="arrow-right" class="i-xs"></i></a>
+        </div>
+
+        <div class="cat-grid">
+          <div class="cat-card" data-go="resultados" style="--cat-bg: var(--q-a1-bg); --cat-fg: var(--q-a1-fg); --cat-tint: var(--q-a1-bg);">
+            <div class="cat-card-icon"><i data-lucide="heart-pulse" class="i-lg"></i></div>
+            <div class="cat-card-name">saúde</div>
+            <div class="cat-card-meta">1.124 produções</div>
+          </div>
+          <div class="cat-card" data-go="resultados" style="--cat-bg: var(--q-a2-bg); --cat-fg: var(--q-a2-fg); --cat-tint: var(--q-a2-bg);">
+            <div class="cat-card-icon"><i data-lucide="cpu" class="i-lg"></i></div>
+            <div class="cat-card-name">computação</div>
+            <div class="cat-card-meta">734 produções</div>
+          </div>
+          <div class="cat-card" data-go="resultados" style="--cat-bg: var(--q-a3-bg); --cat-fg: var(--q-a3-fg); --cat-tint: var(--q-a3-bg);">
+            <div class="cat-card-icon"><i data-lucide="leaf" class="i-lg"></i></div>
+            <div class="cat-card-name">biologia</div>
+            <div class="cat-card-meta">658 produções</div>
+          </div>
+          <div class="cat-card" data-go="resultados" style="--cat-bg: var(--q-a4-bg); --cat-fg: var(--q-a4-fg); --cat-tint: var(--q-a4-bg);">
+            <div class="cat-card-icon"><i data-lucide="briefcase" class="i-lg"></i></div>
+            <div class="cat-card-name">gestão</div>
+            <div class="cat-card-meta">443 produções</div>
+          </div>
+        </div>
+
+        <!-- Recently added -->
+        <div class="section-head">
+          <div>
+            <h3>adicionadas <span class="ser">recentemente</span></h3>
+            <div class="muted" style="font-size: 12px; font-family: var(--font-mono);">última carga ETL · 12/05/2026 14:32</div>
+          </div>
+          <a class="more" href="#" data-go="resultados">ver todas <i data-lucide="arrow-right" class="i-xs"></i></a>
+        </div>
+
+        <div class="recent-list">
+          <div class="recent-row" data-go="detalhes">
+            <div class="recent-row-idx">01</div>
+            <div class="recent-row-title">A new lineage nomenclature to aid genomic surveillance of dengue virus</div>
+            <div class="recent-row-author"><span class="avatar-mini">EJ</span>E. Jorge</div>
+            <div class="recent-row-venue">PLOS BIOLOGY</div>
+            <span class="badge badge-a1">A1</span>
+            <div class="recent-row-year">2024</div>
+          </div>
+          <div class="recent-row" data-go="detalhes">
+            <div class="recent-row-idx">02</div>
+            <div class="recent-row-title">Shifting patterns of dengue three years after Zika emergence in Brazil</div>
+            <div class="recent-row-author"><span class="avatar-mini">MS</span>M. Silva</div>
+            <div class="recent-row-venue">NATURE COMMS</div>
+            <span class="badge badge-a1">A1</span>
+            <div class="recent-row-year">2024</div>
+          </div>
+          <div class="recent-row" data-go="detalhes">
+            <div class="recent-row-idx">03</div>
+            <div class="recent-row-title">Is dengue epidemic related to socioeconomic factors? Insights from Bahia</div>
+            <div class="recent-row-author"><span class="avatar-mini">AP</span>A. Ferreira</div>
+            <div class="recent-row-venue">J. INFECT. DIS.</div>
+            <span class="badge badge-a2">A2</span>
+            <div class="recent-row-year">2025</div>
+          </div>
+          <div class="recent-row" data-go="detalhes">
+            <div class="recent-row-idx">04</div>
+            <div class="recent-row-title">Aplicativo digital para aprendizagem gamificada no combate ao dengue</div>
+            <div class="recent-row-author"><span class="avatar-mini">JC</span>J. Oliveira</div>
+            <div class="recent-row-venue">REV. GESTÃO &amp; SECR.</div>
+            <span class="badge badge-a4">A4</span>
+            <div class="recent-row-year">2024</div>
+          </div>
+          <div class="recent-row" data-go="detalhes">
+            <div class="recent-row-idx">05</div>
+            <div class="recent-row-title">Vector competence of Aedes aegypti for dengue serotype 3 in NE Brazil</div>
+            <div class="recent-row-author"><span class="avatar-mini">EJ</span>E. Jorge</div>
+            <div class="recent-row-venue">MEM. INST. OSWALDO CRUZ</div>
+            <span class="badge badge-a2">A2</span>
+            <div class="recent-row-year">2023</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ TELA 2 · RESULTADOS ════════════════════ -->
+    <section id="screen-resultados" class="screen">
+      <div class="results-page">
+
+        <div class="results-head">
+          <div class="results-head-row">
+            <div>
+              <h1 class="results-title">resultados para <em>"dengue"</em></h1>
+              <div class="results-title-sub">247 produções · ordenadas por relevância · ~38ms</div>
+            </div>
+            <div class="results-controls">
+              <div class="mode-toggle">
+                <button class="mode-btn active"><i data-lucide="type" class="i-xs"></i>textual</button>
+                <button class="mode-btn"><i data-lucide="sparkles" class="i-xs"></i>semântica</button>
+              </div>
+              <select class="results-sort">
+                <option>relevância</option>
+                <option>ano (recente)</option>
+                <option>Qualis</option>
+                <option>JCR (maior)</option>
+                <option>citações</option>
+              </select>
+              <button class="icon-btn" title="salvar busca"><i data-lucide="bookmark" class="i-sm"></i></button>
+            </div>
+          </div>
+
+          <div class="chips-bar">
+            <span class="chips-label">filtros ativos</span>
+            <span class="chip active">2024 — 2026 <i data-lucide="x" class="i-xs"></i></span>
+            <span class="chip active">A1 + A2 <i data-lucide="x" class="i-xs"></i></span>
+            <span class="chip active">JCR 5 — 10 <i data-lucide="x" class="i-xs"></i></span>
+            <span class="chip active">área: saúde <i data-lucide="x" class="i-xs"></i></span>
+            <span class="chip"><i data-lucide="plus" class="i-xs"></i> adicionar</span>
+          </div>
+        </div>
+
+        <div class="results-layout">
+          <div>
+            <div class="result-list">
+
+              <article class="result-row featured" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.92</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">PLOS BIOLOGY</div>
+                  <div class="result-row-title">A new lineage nomenclature to aid genomic surveillance of dengue virus</div>
+                  <div class="result-row-abstract">
+                    Propõe nomenclatura unificada para linhagens de DENV, baseada em filogenia
+                    genômica de larga escala. Validada com 16 mil sequências e adoção pela rede
+                    PAHO em 2024.
+                  </div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a1">A1</span>
+                    <span class="badge badge-jcr">JCR 7.8</span>
+                    <span class="badge badge-outline">artigo</span>
+                    <span class="muted mono" style="font-size:11px;">38 citações</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">EJ</span>Eduardo Jorge</span>
+                  <span class="meta-dim">DOI: 10.1371/...</span>
+                  <span class="meta-dim">2024 · ISSN 1545-7885</span>
+                </div>
+              </article>
+
+              <article class="result-row featured" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.89</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">NATURE COMMUNICATIONS</div>
+                  <div class="result-row-title">Shifting patterns of dengue three years after Zika virus emergence in Brazil</div>
+                  <div class="result-row-abstract">
+                    Análise espaço-temporal indica reorganização de sorotipos circulantes na
+                    região nordeste após o surto de 2016 — com implicações epidemiológicas.
+                  </div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a1">A1</span>
+                    <span class="badge badge-jcr">JCR 14.7</span>
+                    <span class="badge badge-outline">artigo</span>
+                    <span class="muted mono" style="font-size:11px;">22 citações</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">MS</span>Maria Silva</span>
+                  <span class="meta-dim">DOI: 10.1038/...</span>
+                  <span class="meta-dim">2024 · ISSN 2041-1723</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.86</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">PATHOGENS</div>
+                  <div class="result-row-title">Resurgence of dengue virus serotype 5 in Minas Gerais, Brazil: a case report</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a3">A3</span>
+                    <span class="badge badge-jcr">JCR 5.5</span>
+                    <span class="badge badge-outline">relato</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">JC</span>J. Oliveira</span>
+                  <span class="meta-dim">2024 · 12 citações</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.83</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">JOURNAL OF INFECTIOUS DISEASES</div>
+                  <div class="result-row-title">Is dengue epidemic related to socioeconomic factors? Insights from urban centers in Bahia</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a2">A2</span>
+                    <span class="badge badge-jcr">JCR 5.0</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">AP</span>A. Ferreira</span>
+                  <span class="meta-dim">2025 · 4 citações</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.81</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">BMC INFECTIOUS DISEASES</div>
+                  <div class="result-row-title">North-south pathways, emerging variants and climate suitability for dengue serotypes</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a3">A3</span>
+                    <span class="badge badge-jcr">JCR 3.4</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">EJ</span>E. Jorge</span>
+                  <span class="meta-dim">2024 · 9 citações</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.75</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">REVISTA DE GESTÃO E SECRETARIADO</div>
+                  <div class="result-row-title">Aplicativo digital para aprendizagem gamificada no combate ao dengue: AedesPlay</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a4">A4</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">JC</span>J. Oliveira</span>
+                  <span class="meta-dim">2024 · 2 citações</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.71</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">MEMÓRIAS DO INSTITUTO OSWALDO CRUZ</div>
+                  <div class="result-row-title">Vector competence of Aedes aegypti for dengue serotype 3 in the Northeast of Brazil</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a2">A2</span>
+                    <span class="badge badge-jcr">JCR 3.6</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">EJ</span>E. Jorge</span>
+                  <span class="meta-dim">2023 · 15 citações</span>
+                </div>
+              </article>
+
+            </div>
+
+            <div class="pagination-row">
+              <div class="pagination">
+                <button><i data-lucide="chevron-left" class="i-sm"></i></button>
+                <button class="active">1</button>
+                <button>2</button>
+                <button>3</button>
+                <button>…</button>
+                <button>13</button>
+                <button><i data-lucide="chevron-right" class="i-sm"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right filter panel -->
+          <aside class="filter-panel">
+            <div class="filter-panel-head">
+              <span>refinar</span>
+              <button>limpar</button>
+            </div>
+
+            <div class="filter-group">
+              <div class="filter-label">ano</div>
+              <label class="filter-option"><input type="checkbox" checked /> 2026 <span class="filter-count">42</span></label>
+              <label class="filter-option"><input type="checkbox" checked /> 2025 <span class="filter-count">89</span></label>
+              <label class="filter-option"><input type="checkbox" checked /> 2024 <span class="filter-count">74</span></label>
+              <label class="filter-option"><input type="checkbox" /> 2023 <span class="filter-count">51</span></label>
+            </div>
+
+            <div class="filter-group">
+              <div class="filter-label">Qualis</div>
+              <label class="filter-option"><input type="checkbox" checked /> A1 <span class="filter-count">12</span></label>
+              <label class="filter-option"><input type="checkbox" checked /> A2 <span class="filter-count">38</span></label>
+              <label class="filter-option"><input type="checkbox" /> A3 <span class="filter-count">27</span></label>
+              <label class="filter-option"><input type="checkbox" /> A4 <span class="filter-count">21</span></label>
+              <label class="filter-option"><input type="checkbox" /> B1+ <span class="filter-count">149</span></label>
+            </div>
+
+            <div class="filter-group">
+              <div class="filter-label">JCR</div>
+              <label class="filter-option"><input type="checkbox" /> &gt; 10 <span class="filter-count">8</span></label>
+              <label class="filter-option"><input type="checkbox" checked /> 5 — 10 <span class="filter-count">23</span></label>
+              <label class="filter-option"><input type="checkbox" /> 2 — 5 <span class="filter-count">61</span></label>
+              <label class="filter-option"><input type="checkbox" /> &lt; 2 <span class="filter-count">47</span></label>
+            </div>
+
+            <div class="filter-group">
+              <div class="filter-label">área CAPES</div>
+              <label class="filter-option"><input type="checkbox" checked /> saúde <span class="filter-count">112</span></label>
+              <label class="filter-option"><input type="checkbox" /> biologia <span class="filter-count">58</span></label>
+              <label class="filter-option"><input type="checkbox" /> computação <span class="filter-count">34</span></label>
+              <label class="filter-option"><input type="checkbox" /> gestão <span class="filter-count">43</span></label>
+            </div>
+
+            <div class="filter-group">
+              <div class="filter-label">tipo</div>
+              <label class="filter-option"><input type="checkbox" checked /> artigo <span class="filter-count">187</span></label>
+              <label class="filter-option"><input type="checkbox" /> capítulo <span class="filter-count">28</span></label>
+              <label class="filter-option"><input type="checkbox" /> livro <span class="filter-count">12</span></label>
+              <label class="filter-option"><input type="checkbox" /> anais <span class="filter-count">20</span></label>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ TELA 3 · DETALHES ════════════════════ -->
+    <section id="screen-detalhes" class="screen">
+      <div class="detail-page">
+        <button class="back-link" data-screen="resultados">
+          <i data-lucide="arrow-left" class="i-sm"></i>
+          voltar aos resultados
+        </button>
+
+        <div class="detail-hero">
+          <div class="detail-venue">PLOS BIOLOGY · 2024 · vol. 22 (8)</div>
+          <h1 class="detail-title">A new lineage nomenclature to aid <em>genomic surveillance</em> of dengue virus</h1>
+          <div class="detail-badges">
+            <span class="badge badge-a1">Qualis A1</span>
+            <span class="badge badge-jcr">JCR 7.8</span>
+            <span class="badge badge-outline">artigo científico</span>
+            <span class="badge badge-info">peer-reviewed</span>
+          </div>
+        </div>
+
+        <div class="metric-strip">
+          <div class="metric-cell accent">
+            <div class="metric-cell-n">0.92</div>
+            <div class="metric-cell-l">similaridade</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-cell-n">7.8</div>
+            <div class="metric-cell-l">JCR 2024</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-cell-n">38</div>
+            <div class="metric-cell-l">citações</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-cell-n">142</div>
+            <div class="metric-cell-l">altmetric</div>
+          </div>
+          <div class="metric-cell">
+            <div class="metric-cell-n">8</div>
+            <div class="metric-cell-l">coautores</div>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div>
+            <div class="detail-section">
+              <div class="detail-section-title">resumo</div>
+              <div class="detail-abstract">
+                <span class="lead-letter">U</span>m sistema unificado de nomenclatura para linhagens do
+                vírus da dengue (DENV) é proposto a partir de filogenia genômica em larga escala. O
+                método foi validado contra 16 mil sequências completas, demonstrando consistência
+                inter-laboratorial. Adotado em 2024 pela rede de vigilância PAHO, oferece nova
+                referência para epidemiologia molecular do DENV.
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <div class="detail-section-title">metadados bibliográficos</div>
+              <div class="meta-table">
+                <div class="meta-row">
+                  <span class="meta-lbl">periódico</span>
+                  <span class="meta-val">Plos Biology</span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-lbl">ISSN</span>
+                  <span class="meta-val mono">1545-7885</span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-lbl">DOI</span>
+                  <span class="meta-val"><a href="#"><span class="mono">10.1371/journal.pbio.3002834</span><i data-lucide="external-link" class="i-xs"></i></a></span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-lbl">volume / pp.</span>
+                  <span class="meta-val mono">22(8) · 1—22</span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-lbl">tipo de produção</span>
+                  <span class="meta-val">Artigo científico</span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-lbl">Qualis CAPES</span>
+                  <span class="meta-val"><span class="badge badge-a1">A1</span></span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-lbl">fator de impacto</span>
+                  <span class="meta-val mono">7.8</span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-lbl">data de publicação</span>
+                  <span class="meta-val">15 ago 2024</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <div class="detail-section-title">palavras-chave</div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <span class="chip">dengue</span>
+                <span class="chip">DENV</span>
+                <span class="chip">filogenia</span>
+                <span class="chip">vigilância genômica</span>
+                <span class="chip">arboviroses</span>
+                <span class="chip">epidemiologia molecular</span>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="btn btn-primary"><i data-lucide="external-link" class="i-sm"></i>abrir no editor</button>
+              <button class="btn btn-ghost"><i data-lucide="bookmark" class="i-sm"></i>favoritar</button>
+              <button class="btn btn-ghost"><i data-lucide="copy" class="i-sm"></i>copiar citação</button>
+              <button class="btn btn-ghost"><i data-lucide="share-2" class="i-sm"></i>compartilhar</button>
+            </div>
+          </div>
+
+          <aside>
+            <div class="aside-card">
+              <div class="aside-card-title">pesquisador principal</div>
+              <div class="aside-author" data-go="perfil">
+                <div class="avatar">EJ</div>
+                <div>
+                  <div class="aside-author-name">Eduardo M. F. Jorge</div>
+                  <div class="aside-author-sub">UNEB · Dep. de Ciências Exatas e da Terra · Campus I</div>
+                  <span class="aside-author-link">ver perfil <i data-lucide="arrow-right" class="i-xs"></i></span>
+                </div>
+              </div>
+              <div class="aside-kv"><span class="aside-kv-lbl">produções totais</span><span class="aside-kv-val">142</span></div>
+              <div class="aside-kv"><span class="aside-kv-lbl">índice H</span><span class="aside-kv-val">12</span></div>
+              <div class="aside-kv"><span class="aside-kv-lbl">A1 + A2</span><span class="aside-kv-val">38</span></div>
+            </div>
+
+            <div class="aside-card">
+              <div class="aside-card-title">produções similares</div>
+              <div class="similar-item" data-go="detalhes">
+                <div class="similar-item-title">Shifting patterns of dengue three years after Zika emergence in Brazil</div>
+                <div class="similar-item-meta">2024 · A1 · <span class="sim">0.89</span></div>
+              </div>
+              <div class="similar-item" data-go="detalhes">
+                <div class="similar-item-title">Vector competence of Aedes aegypti for dengue serotype 3 in NE Brazil</div>
+                <div class="similar-item-meta">2023 · A2 · <span class="sim">0.86</span></div>
+              </div>
+              <div class="similar-item" data-go="detalhes">
+                <div class="similar-item-title">Mapping dynamics of dengue serotypes in the 2023 epidemic</div>
+                <div class="similar-item-meta">2024 · A2 · <span class="sim">0.74</span></div>
+              </div>
+              <div class="similar-item" data-go="detalhes">
+                <div class="similar-item-title">North-south pathways and climate suitability for dengue serotypes</div>
+                <div class="similar-item-meta">2024 · A3 · <span class="sim">0.71</span></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ TELA 4 · PERFIL ════════════════════ -->
+    <section id="screen-perfil" class="screen">
+      <div class="profile-page">
+
+        <div class="profile-cover">
+          <button class="profile-cover-back" data-screen="detalhes">
+            <i data-lucide="arrow-left" class="i-sm"></i>
+            voltar
+          </button>
+
+          <div class="profile-head">
+            <div class="avatar lg">EJ</div>
+            <div>
+              <h1 class="profile-name">Eduardo M. F. <em>Jorge</em></h1>
+              <div class="profile-role">Professor · UNEB · Dep. de Ciências Exatas e da Terra · Campus I — Salvador</div>
+              <div class="profile-links">
+                <a href="#" class="profile-link"><i data-lucide="external-link" class="i-xs"></i>lattes/cnpq</a>
+                <a href="#" class="profile-link"><i data-lucide="external-link" class="i-xs"></i>orcid · 0000-0002-8597-5805</a>
+                <a href="#" class="profile-link"><i data-lucide="mail" class="i-xs"></i><span class="__cf_email__" data-cfemail="197c7473766b7e7c596c777c7b377b6b">[email&#160;protected]</span></a>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-cover-stats">
+            <div class="profile-cover-stat"><div class="n">142</div><div class="l">produções</div></div>
+            <div class="profile-cover-stat"><div class="n">38</div><div class="l">A1 + A2</div></div>
+            <div class="profile-cover-stat"><div class="n">7.2</div><div class="l">JCR médio</div></div>
+            <div class="profile-cover-stat"><div class="n">h12</div><div class="l">índice H</div></div>
+            <div class="profile-cover-stat"><div class="n">1.204</div><div class="l">citações</div></div>
+          </div>
+        </div>
+
+        <div class="profile-tabs">
+          <button class="profile-tab active" data-pane="pane-prod">
+            <i data-lucide="file-text" class="i-sm"></i>
+            produções
+          </button>
+          <button class="profile-tab" data-pane="pane-ind">
+            <i data-lucide="bar-chart-3" class="i-sm"></i>
+            indicadores
+          </button>
+          <button class="profile-tab" data-pane="pane-sobre">
+            <i data-lucide="user-round" class="i-sm"></i>
+            sobre
+          </button>
+        </div>
+
+        <div class="profile-content">
+          <div id="pane-prod" class="profile-pane active">
+            <div class="section-head">
+              <h3>produções <span class="ser">recentes</span></h3>
+              <a class="more" href="#" data-go="resultados">ver todas <i data-lucide="arrow-right" class="i-xs"></i></a>
+            </div>
+            <div class="mini-list">
+              <div class="mini-row" data-go="detalhes">
+                <div class="mini-row-body">
+                  <div class="mini-row-title">A new lineage nomenclature to aid genomic surveillance of dengue virus</div>
+                  <div class="mini-row-meta">
+                    <span>PLOS BIOLOGY</span><span>·</span><span>2024</span>
+                    <span class="badge badge-a1">A1</span>
+                    <span class="badge badge-jcr">JCR 7.8</span>
+                  </div>
+                </div>
+                <i data-lucide="chevron-right" class="i-sm muted"></i>
+              </div>
+              <div class="mini-row" data-go="detalhes">
+                <div class="mini-row-body">
+                  <div class="mini-row-title">North-south pathways, emerging variants and climate suitability for dengue serotypes</div>
+                  <div class="mini-row-meta">
+                    <span>BMC INFECT. DIS.</span><span>·</span><span>2024</span>
+                    <span class="badge badge-a3">A3</span>
+                    <span class="badge badge-jcr">JCR 3.4</span>
+                  </div>
+                </div>
+                <i data-lucide="chevron-right" class="i-sm muted"></i>
+              </div>
+              <div class="mini-row" data-go="detalhes">
+                <div class="mini-row-body">
+                  <div class="mini-row-title">Vector competence of Aedes aegypti for dengue serotype 3 in the Northeast of Brazil</div>
+                  <div class="mini-row-meta">
+                    <span>MEM. INST. OSWALDO CRUZ</span><span>·</span><span>2023</span>
+                    <span class="badge badge-a2">A2</span>
+                    <span class="badge badge-jcr">JCR 3.6</span>
+                  </div>
+                </div>
+                <i data-lucide="chevron-right" class="i-sm muted"></i>
+              </div>
+              <div class="mini-row" data-go="detalhes">
+                <div class="mini-row-body">
+                  <div class="mini-row-title">Exploring the Chikungunya virus landscape in a dengue-endemic Brazilian area</div>
+                  <div class="mini-row-meta">
+                    <span>VIRUSES</span><span>·</span><span>2023</span>
+                    <span class="badge badge-a3">A3</span>
+                    <span class="badge badge-jcr">JCR 4.7</span>
+                  </div>
+                </div>
+                <i data-lucide="chevron-right" class="i-sm muted"></i>
+              </div>
+              <div class="mini-row" data-go="detalhes">
+                <div class="mini-row-body">
+                  <div class="mini-row-title">Spatial-temporal dynamics of arbovirus co-circulation in Bahia, Brazil</div>
+                  <div class="mini-row-meta">
+                    <span>PLOS NEGLECTED TROP. DIS.</span><span>·</span><span>2022</span>
+                    <span class="badge badge-a1">A1</span>
+                    <span class="badge badge-jcr">JCR 4.4</span>
+                  </div>
+                </div>
+                <i data-lucide="chevron-right" class="i-sm muted"></i>
+              </div>
+            </div>
+          </div>
+
+          <div id="pane-ind" class="profile-pane">
+            <div class="chart-card">
+              <div class="chart-head">
+                <div>
+                  <div class="chart-title">publicações por <span class="ser">ano</span></div>
+                  <div class="chart-title-sub">10 anos · 142 produções</div>
+                </div>
+              </div>
+              <div class="year-bars" id="year-bars"></div>
+            </div>
+
+            <div class="qualis-dist">
+              <div class="chart-head">
+                <div>
+                  <div class="chart-title">distribuição por <span class="ser">Qualis CAPES</span></div>
+                  <div class="chart-title-sub">142 produções</div>
+                </div>
+              </div>
+              <div class="qualis-bars">
+                <div class="qualis-bar-row">
+                  <span class="qualis-bar-label a1">A1</span>
+                  <div class="qualis-bar-track"><div class="qualis-bar-fill" style="width:8%; background:var(--q-a1-fg);"></div></div>
+                  <span class="qualis-bar-count">12</span>
+                </div>
+                <div class="qualis-bar-row">
+                  <span class="qualis-bar-label a2">A2</span>
+                  <div class="qualis-bar-track"><div class="qualis-bar-fill" style="width:18%; background:var(--q-a2-fg);"></div></div>
+                  <span class="qualis-bar-count">26</span>
+                </div>
+                <div class="qualis-bar-row">
+                  <span class="qualis-bar-label a3">A3</span>
+                  <div class="qualis-bar-track"><div class="qualis-bar-fill" style="width:13%; background:var(--q-a3-fg);"></div></div>
+                  <span class="qualis-bar-count">18</span>
+                </div>
+                <div class="qualis-bar-row">
+                  <span class="qualis-bar-label a4">A4</span>
+                  <div class="qualis-bar-track"><div class="qualis-bar-fill" style="width:22%; background:var(--q-a4-fg);"></div></div>
+                  <span class="qualis-bar-count">31</span>
+                </div>
+                <div class="qualis-bar-row">
+                  <span class="qualis-bar-label bx">+</span>
+                  <div class="qualis-bar-track"><div class="qualis-bar-fill" style="width:39%; background:var(--ink-200);"></div></div>
+                  <span class="qualis-bar-count">55</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="pane-sobre" class="profile-pane">
+            <div class="panel">
+              <div class="panel-title">resumo do currículo</div>
+              <div class="panel-sub">extraído do lattes em 12/05/2026</div>
+              <p style="font-size:14px; line-height:1.7; color:var(--text-2); max-width:62ch;">
+                Doutor em Difusão do Conhecimento no programa multi-institucional pela UFBA, mestre em
+                Ciência da Computação pela UFCG. Professor Pleno na UNEB e gestor de pesquisa
+                na PPG. Pesquisador no programa de Iniciação Científica com CNPq/FAPESB.
+                Linhas de pesquisa: epidemiologia molecular, vigilância genômica e
+                aprendizado de máquina aplicado a saúde pública.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════ TELA 5 · ADMIN ════════════════════ -->
+    <section id="screen-admin" class="screen">
+      <div class="admin-page">
+
+        <div class="admin-header">
+          <div class="admin-title-block">
+            <h1 class="admin-title">painel <em>admin</em></h1>
+            <div class="admin-sub">orquestre a base, monitore o pipeline e exporte para o Power BI</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-ghost"><i data-lucide="download" class="i-sm"></i>baixar tudo</button>
+            <button class="btn btn-primary"><i data-lucide="play" class="i-sm"></i>executar ETL agora</button>
+          </div>
+        </div>
+
+        <!-- Top tabs (não sidebar) -->
+        <div class="admin-tabs">
+          <button class="admin-tab active" data-sec="sec-pesq">
+            <i data-lucide="users-round" class="i-sm"></i>
+            pesquisadores
+          </button>
+          <button class="admin-tab" data-sec="sec-prods">
+            <i data-lucide="file-text" class="i-sm"></i>
+            produções
+          </button>
+          <button class="admin-tab" data-sec="sec-etl">
+            <i data-lucide="git-merge" class="i-sm"></i>
+            pipeline ETL
+          </button>
+          <button class="admin-tab" data-sec="sec-vec">
+            <i data-lucide="sparkles" class="i-sm"></i>
+            vetorização
+          </button>
+          <button class="admin-tab" data-sec="sec-export">
+            <i data-lucide="download" class="i-sm"></i>
+            exportar CSV
+          </button>
+          <button class="admin-tab" data-sec="sec-arch">
+            <i data-lucide="layers" class="i-sm"></i>
+            arquitetura
+          </button>
+        </div>
+
+        <!-- ─── Pesquisadores ─── -->
+        <div id="sec-pesq" class="admin-section active">
+          <div class="stat-grid-4">
+            <div class="stat-tile">
+              <i data-lucide="users-round" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n">34</div>
+              <div class="stat-tile-l">pesquisadores</div>
+              <div class="stat-tile-trend">+3 desde abril</div>
+            </div>
+            <div class="stat-tile">
+              <i data-lucide="award" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n">12</div>
+              <div class="stat-tile-l">prog. ppg vinculados</div>
+              <div class="stat-tile-trend">5 áreas CAPES</div>
+            </div>
+            <div class="stat-tile">
+              <i data-lucide="refresh-cw" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n">26</div>
+              <div class="stat-tile-l">sincronizados hoje</div>
+              <div class="stat-tile-trend">·</div>
+            </div>
+            <div class="stat-tile">
+              <i data-lucide="circle-alert" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n warn">3</div>
+              <div class="stat-tile-l">orcid faltando</div>
+              <div class="stat-tile-trend warn">verificar</div>
+            </div>
+          </div>
+
+          <div class="table-toolbar">
+            <div class="table-search">
+              <i data-lucide="search" class="i-sm"></i>
+              <input type="text" placeholder="buscar por nome, Lattes ID, ORCID..." />
+            </div>
+            <button class="btn btn-ghost"><i data-lucide="filter" class="i-sm"></i>filtros</button>
+            <button class="btn btn-ghost"><i data-lucide="upload" class="i-sm"></i>importar XML</button>
+            <button class="btn btn-primary"><i data-lucide="plus" class="i-sm"></i>novo</button>
+          </div>
+
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>nome</th>
+                  <th>Lattes ID</th>
+                  <th>ORCID</th>
+                  <th>produções</th>
+                  <th>última carga</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Eduardo M. F. Jorge</td>
+                  <td class="mono">1234567890123456</td>
+                  <td class="mono">0000-0002-8597-5805</td>
+                  <td>142</td>
+                  <td class="mono">12/05/2026</td>
+                  <td class="row-actions">
+                    <button class="icon-btn"><i data-lucide="pencil" class="i-sm"></i></button>
+                    <button class="icon-btn"><i data-lucide="refresh-cw" class="i-sm"></i></button>
+                    <button class="icon-btn" style="color:var(--err-fg);"><i data-lucide="trash-2" class="i-sm"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Maria Silva Santos</td>
+                  <td class="mono">9876543210987654</td>
+                  <td class="mono">0000-0001-3344-5566</td>
+                  <td>87</td>
+                  <td class="mono">12/05/2026</td>
+                  <td class="row-actions">
+                    <button class="icon-btn"><i data-lucide="pencil" class="i-sm"></i></button>
+                    <button class="icon-btn"><i data-lucide="refresh-cw" class="i-sm"></i></button>
+                    <button class="icon-btn" style="color:var(--err-fg);"><i data-lucide="trash-2" class="i-sm"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>João Carlos Oliveira</td>
+                  <td class="mono">1122334455667788</td>
+                  <td class="mono">0000-0003-7788-9900</td>
+                  <td>64</td>
+                  <td class="mono">10/05/2026</td>
+                  <td class="row-actions">
+                    <button class="icon-btn"><i data-lucide="pencil" class="i-sm"></i></button>
+                    <button class="icon-btn"><i data-lucide="refresh-cw" class="i-sm"></i></button>
+                    <button class="icon-btn" style="color:var(--err-fg);"><i data-lucide="trash-2" class="i-sm"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Ana Paula Ferreira</td>
+                  <td class="mono">5544332211009988</td>
+                  <td class="mono">0000-0004-1122-3344</td>
+                  <td>53</td>
+                  <td class="mono">08/05/2026</td>
+                  <td class="row-actions">
+                    <button class="icon-btn"><i data-lucide="pencil" class="i-sm"></i></button>
+                    <button class="icon-btn"><i data-lucide="refresh-cw" class="i-sm"></i></button>
+                    <button class="icon-btn" style="color:var(--err-fg);"><i data-lucide="trash-2" class="i-sm"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Roberto Lima Costa</td>
+                  <td class="mono">6677889900112233</td>
+                  <td class="mono" style="color:var(--warn-fg);">não cadastrado</td>
+                  <td>48</td>
+                  <td class="mono">08/05/2026</td>
+                  <td class="row-actions">
+                    <button class="icon-btn"><i data-lucide="pencil" class="i-sm"></i></button>
+                    <button class="icon-btn"><i data-lucide="refresh-cw" class="i-sm"></i></button>
+                    <button class="icon-btn" style="color:var(--err-fg);"><i data-lucide="trash-2" class="i-sm"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Carla Mendes Souza</td>
+                  <td class="mono">4433221100998877</td>
+                  <td class="mono">0000-0006-2233-4455</td>
+                  <td>41</td>
+                  <td class="mono">05/05/2026</td>
+                  <td class="row-actions">
+                    <button class="icon-btn"><i data-lucide="pencil" class="i-sm"></i></button>
+                    <button class="icon-btn"><i data-lucide="refresh-cw" class="i-sm"></i></button>
+                    <button class="icon-btn" style="color:var(--err-fg);"><i data-lucide="trash-2" class="i-sm"></i></button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ─── Produções ─── -->
+        <div id="sec-prods" class="admin-section">
+          <div class="stat-grid-4">
+            <div class="stat-tile">
+              <i data-lucide="file-text" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n">3.124</div>
+              <div class="stat-tile-l">artigos</div>
+            </div>
+            <div class="stat-tile">
+              <i data-lucide="book" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n">412</div>
+              <div class="stat-tile-l">capítulos</div>
+            </div>
+            <div class="stat-tile">
+              <i data-lucide="book-open" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n">89</div>
+              <div class="stat-tile-l">livros</div>
+            </div>
+            <div class="stat-tile">
+              <i data-lucide="presentation" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n">1.196</div>
+              <div class="stat-tile-l">anais / outros</div>
+            </div>
+          </div>
+
+          <div class="table-toolbar">
+            <div class="table-search">
+              <i data-lucide="search" class="i-sm"></i>
+              <input type="text" placeholder="filtrar por título, ISSN, ano..." />
+            </div>
+            <button class="btn btn-ghost"><i data-lucide="filter" class="i-sm"></i>filtros</button>
+            <button class="btn btn-ghost"><i data-lucide="refresh-cw" class="i-sm"></i>recalcular</button>
+          </div>
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>título</th>
+                  <th>autor</th>
+                  <th>ano</th>
+                  <th>Qualis</th>
+                  <th>JCR</th>
+                  <th>embedding</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>A new lineage nomenclature to aid genomic surveillance of dengue virus</td>
+                  <td>E. Jorge</td>
+                  <td class="mono">2024</td>
+                  <td><span class="badge badge-a1">A1</span></td>
+                  <td class="mono">7.8</td>
+                  <td><span class="badge badge-ok">ok</span></td>
+                </tr>
+                <tr>
+                  <td>Shifting patterns of dengue three years after Zika virus emergence</td>
+                  <td>M. Silva</td>
+                  <td class="mono">2024</td>
+                  <td><span class="badge badge-a1">A1</span></td>
+                  <td class="mono">14.7</td>
+                  <td><span class="badge badge-ok">ok</span></td>
+                </tr>
+                <tr>
+                  <td>Aplicativo digital para aprendizagem gamificada no combate ao dengue</td>
+                  <td>J. Oliveira</td>
+                  <td class="mono">2024</td>
+                  <td><span class="badge badge-a4">A4</span></td>
+                  <td class="mono">—</td>
+                  <td><span class="badge badge-ok">ok</span></td>
+                </tr>
+                <tr>
+                  <td>Artrite reacional após infecção por vírus da dengue: relato de caso</td>
+                  <td>A. Ferreira</td>
+                  <td class="mono">2025</td>
+                  <td><span class="badge badge-b1">B1</span></td>
+                  <td class="mono">—</td>
+                  <td><span class="badge badge-run">pendente</span></td>
+                </tr>
+                <tr>
+                  <td>Vector competence of Aedes aegypti for dengue serotype 3 in NE Brazil</td>
+                  <td>E. Jorge</td>
+                  <td class="mono">2023</td>
+                  <td><span class="badge badge-a2">A2</span></td>
+                  <td class="mono">3.6</td>
+                  <td><span class="badge badge-ok">ok</span></td>
+                </tr>
+                <tr>
+                  <td>Resurgence of dengue virus serotype 5 in Minas Gerais</td>
+                  <td>R. Costa</td>
+                  <td class="mono">2024</td>
+                  <td><span class="badge badge-a3">A3</span></td>
+                  <td class="mono">5.5</td>
+                  <td><span class="badge badge-err">falha</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ─── ETL ─── -->
+        <div id="sec-etl" class="admin-section">
+          <div class="stat-grid-4">
+            <div class="stat-tile">
+              <i data-lucide="users-round" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n">34</div>
+              <div class="stat-tile-l">currículos</div>
+              <div class="stat-tile-trend">+3 desde abril</div>
+            </div>
+            <div class="stat-tile">
+              <i data-lucide="file-text" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n">4.821</div>
+              <div class="stat-tile-l">produções</div>
+              <div class="stat-tile-trend">+120 nesta carga</div>
+            </div>
+            <div class="stat-tile">
+              <i data-lucide="link-2" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n">4.498</div>
+              <div class="stat-tile-l">com Qualis</div>
+              <div class="stat-tile-trend">93,3% match</div>
+            </div>
+            <div class="stat-tile">
+              <i data-lucide="circle-alert" class="i-md stat-tile-icon"></i>
+              <div class="stat-tile-n warn">323</div>
+              <div class="stat-tile-l">sem match externo</div>
+              <div class="stat-tile-trend warn">ver relatório</div>
+            </div>
+          </div>
+
+          <div class="pipeline-card">
+            <div class="pipeline-card-head">
+              <div>
+                <div class="pipeline-card-title">execução em andamento · run #128</div>
+                <div class="pipeline-card-title-sub">apache-hop · pipeline lattes-etl.hpl · iniciado 14:32:01</div>
+              </div>
+              <span class="pipeline-status"><span class="dot"></span>processando</span>
+            </div>
+            <div class="pipeline-stages">
+              <div class="p-stage done">
+                <div class="p-stage-icon"><i data-lucide="file-code-2" class="i-md"></i></div>
+                <div class="p-stage-step">01 · EXTRAÇÃO</div>
+                <div class="p-stage-name">Lattes XML</div>
+                <div class="p-stage-meta">34 arquivos · 12s</div>
+              </div>
+              <div class="p-stage done">
+                <div class="p-stage-icon"><i data-lucide="filter" class="i-md"></i></div>
+                <div class="p-stage-step">02 · PARSE</div>
+                <div class="p-stage-name">Mapeamento</div>
+                <div class="p-stage-meta">4.821 prod. · 38s</div>
+              </div>
+              <div class="p-stage active">
+                <div class="p-stage-icon"><i data-lucide="link-2" class="i-md"></i></div>
+                <div class="p-stage-step">03 · ENRIQUECER</div>
+                <div class="p-stage-name">Qualis · DOI · JCR</div>
+                <div class="p-stage-meta">2.341/4.821 · 1m12s</div>
+              </div>
+              <div class="p-stage">
+                <div class="p-stage-icon"><i data-lucide="database" class="i-md"></i></div>
+                <div class="p-stage-step">04 · UPSERT</div>
+                <div class="p-stage-name">PostgreSQL</div>
+                <div class="p-stage-meta">aguardando…</div>
+              </div>
+              <div class="p-stage">
+                <div class="p-stage-icon"><i data-lucide="check-circle-2" class="i-md"></i></div>
+                <div class="p-stage-step">05 · VALIDAÇÃO</div>
+                <div class="p-stage-name">Logs / DQ</div>
+                <div class="p-stage-meta">aguardando…</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div class="panel">
+              <div class="panel-title">histórico de execuções</div>
+              <div class="panel-sub">últimas 4 corridas</div>
+              <div class="data-table-wrap" style="border:none;">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>data/hora</th><th>status</th><th>ins.</th><th>atual.</th><th>sem match</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="mono">12/05/2026 14:32</td>
+                      <td><span class="badge badge-run">executando</span></td>
+                      <td class="mono">—</td><td class="mono">—</td><td class="mono">—</td>
+                      <td><button class="btn btn-ghost" style="padding:4px 10px; font-size:11px;">log</button></td>
+                    </tr>
+                    <tr>
+                      <td class="mono">05/05/2026 09:11</td>
+                      <td><span class="badge badge-ok">sucesso</span></td>
+                      <td class="mono">89</td><td class="mono">12</td><td class="mono">3</td>
+                      <td><button class="btn btn-ghost" style="padding:4px 10px; font-size:11px;">log</button></td>
+                    </tr>
+                    <tr>
+                      <td class="mono">28/04/2026 17:45</td>
+                      <td><span class="badge badge-err">erro</span></td>
+                      <td class="mono">0</td><td class="mono">0</td><td class="mono">0</td>
+                      <td><button class="btn btn-ghost" style="padding:4px 10px; font-size:11px;">log</button></td>
+                    </tr>
+                    <tr>
+                      <td class="mono">21/04/2026 10:00</td>
+                      <td><span class="badge badge-ok">sucesso</span></td>
+                      <td class="mono">201</td><td class="mono">67</td><td class="mono">14</td>
+                      <td><button class="btn btn-ghost" style="padding:4px 10px; font-size:11px;">log</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-title">log ao vivo · run #128</div>
+              <div class="panel-sub">stream do apache-hop</div>
+              <div class="log-viewer">
+<span class="log-time">14:32:01</span> <span class="log-ok">[OK]</span> step extract_xml: 34 files loaded<br/>
+<span class="log-time">14:32:13</span> <span class="log-ok">[OK]</span> step parse_curriculo: 4821 rows<br/>
+<span class="log-time">14:32:51</span> <span class="log-ok">[OK]</span> step normalize_issn: 4798 rows<br/>
+<span class="log-time">14:33:04</span> <span class="log-ok">[OK]</span> loading qualis_capes.csv...<br/>
+<span class="log-time">14:33:05</span> <span class="log-ok">[OK]</span> loading jcr_2024.csv...<br/>
+<span class="log-time">14:33:18</span> <span class="log-ok">[OK]</span> step lookup_qualis: 4498 matched<br/>
+<span class="log-time">14:33:18</span> <span class="log-warn">[WARN]</span> 323 rows without ISSN match → logged<br/>
+<span class="log-time">14:33:42</span> <span class="log-ok">[OK]</span> step enrich_doi via crossref...<br/>
+<span class="log-time">14:34:11</span> <span class="log-ok">[OK]</span> step enrich_jcr: 2341/4821 done<br/>
+<span class="log-time">14:34:12</span> <span class="log-ok">[OK]</span> processing batch 24/48<span style="color:var(--accent-300);">▍</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Vetorização ─── -->
+        <div id="sec-vec" class="admin-section">
+          <div class="two-col">
+            <div class="panel">
+              <div class="panel-title">progresso da vetorização</div>
+              <div class="panel-sub">4.612 de 4.821 títulos vetorizados</div>
+              <div class="progress"><div class="progress-fill" style="width:95.6%;"></div></div>
+              <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:11px; color:var(--text-3); margin-bottom:22px;">
+                <span>95,6%</span><span>209 pendentes</span>
+              </div>
+              <div class="kv-list">
+                <div class="kv-row"><span class="kv-key">modelo principal</span><span class="kv-val">sentence-t/all-MiniLM-L6-v2</span></div>
+                <div class="kv-row"><span class="kv-key">dimensão do vetor</span><span class="kv-val">384</span></div>
+                <div class="kv-row"><span class="kv-key">índice pgvector</span><span class="kv-val">HNSW (m=16, ef=64)</span></div>
+                <div class="kv-row"><span class="kv-key">métrica</span><span class="kv-val">cosseno</span></div>
+                <div class="kv-row"><span class="kv-key">fallback</span><span class="kv-val">OpenAI text-embed-3-small</span></div>
+                <div class="kv-row"><span class="kv-key">latência média (local)</span><span class="kv-val">38 ms</span></div>
+              </div>
+              <div style="margin-top:18px; display:flex; gap:8px;">
+                <button class="btn btn-primary" style="flex:1;"><i data-lucide="play" class="i-sm"></i>processar 209 pendentes</button>
+                <button class="btn btn-ghost"><i data-lucide="settings" class="i-sm"></i>configurar</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-title">qualidade & cobertura</div>
+              <div class="panel-sub">métricas da última execução</div>
+              <div class="kv-list">
+                <div class="kv-row"><span class="kv-key">vetores gerados</span><span class="kv-val">4.612</span></div>
+                <div class="kv-row"><span class="kv-key">falhas no local</span><span class="kv-val" style="color:var(--warn-fg);">14</span></div>
+                <div class="kv-row"><span class="kv-key">fallback acionado</span><span class="kv-val">14 / 14</span></div>
+                <div class="kv-row"><span class="kv-key">duplicatas detectadas</span><span class="kv-val">82</span></div>
+                <div class="kv-row"><span class="kv-key">similaridade média top-10</span><span class="kv-val">0.74</span></div>
+                <div class="kv-row"><span class="kv-key">tempo total</span><span class="kv-val">3m 28s</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">sandbox de similaridade</div>
+            <div class="panel-sub">teste uma consulta para inspecionar os vizinhos mais próximos</div>
+            <div class="search-mega" style="box-shadow:none; margin-bottom:18px;">
+              <i data-lucide="sparkles" class="i-lg lead-icon" style="color:var(--accent-400);"></i>
+              <input type="text" value="vigilância genômica de arboviroses no nordeste brasileiro" />
+              <button class="btn btn-primary">calcular</button>
+            </div>
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead><tr><th>#</th><th>título</th><th>cosseno</th><th>Qualis</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">1</td><td>A new lineage nomenclature to aid genomic surveillance of dengue virus</td><td class="mono" style="color:var(--accent-600); font-weight:600;">0.92</td><td><span class="badge badge-a1">A1</span></td></tr>
+                  <tr><td class="mono">2</td><td>Shifting patterns of dengue three years after Zika virus emergence in Brazil</td><td class="mono" style="color:var(--accent-600); font-weight:600;">0.89</td><td><span class="badge badge-a1">A1</span></td></tr>
+                  <tr><td class="mono">3</td><td>Vector competence of Aedes aegypti for dengue serotype 3 in NE Brazil</td><td class="mono" style="color:var(--accent-600); font-weight:600;">0.86</td><td><span class="badge badge-a2">A2</span></td></tr>
+                  <tr><td class="mono">4</td><td>Mapping the dynamics of dengue serotypes in the 2023 epidemic</td><td class="mono" style="color:var(--accent-600); font-weight:600;">0.74</td><td><span class="badge badge-a2">A2</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Exportar CSV ─── -->
+        <div id="sec-export" class="admin-section">
+          <div class="export-cards">
+            <div class="export-card">
+              <div class="export-card-head">
+                <div class="export-card-icon"><i data-lucide="user-round" class="i-md"></i></div>
+                <div class="export-card-body">
+                  <div class="export-card-name">
+                    dim_pesquisador
+                    <span class="export-card-tag">dimensão</span>
+                  </div>
+                  <div class="export-card-desc">Nome, Lattes ID, ORCID, departamento e área de atuação.</div>
+                </div>
+              </div>
+              <div class="export-card-meta">
+                <span>34 registros</span><span>·</span><span>8 KB</span>
+              </div>
+              <div class="export-card-actions">
+                <button class="btn btn-primary"><i data-lucide="download" class="i-sm"></i>baixar CSV</button>
+                <button class="icon-btn"><i data-lucide="eye" class="i-sm"></i></button>
+              </div>
+            </div>
+
+            <div class="export-card">
+              <div class="export-card-head">
+                <div class="export-card-icon"><i data-lucide="calendar-range" class="i-md"></i></div>
+                <div class="export-card-body">
+                  <div class="export-card-name">
+                    dim_quadrienal_ano
+                    <span class="export-card-tag">dimensão</span>
+                  </div>
+                  <div class="export-card-desc">Ano de referência, quadriênio CAPES e janela avaliativa.</div>
+                </div>
+              </div>
+              <div class="export-card-meta">
+                <span>10 anos</span><span>·</span><span>3 quadriênios</span>
+              </div>
+              <div class="export-card-actions">
+                <button class="btn btn-primary"><i data-lucide="download" class="i-sm"></i>baixar CSV</button>
+                <button class="icon-btn"><i data-lucide="eye" class="i-sm"></i></button>
+              </div>
+            </div>
+
+            <div class="export-card">
+              <div class="export-card-head">
+                <div class="export-card-icon"><i data-lucide="bar-chart-3" class="i-md"></i></div>
+                <div class="export-card-body">
+                  <div class="export-card-name">
+                    fato_producao
+                    <span class="export-card-tag">fato</span>
+                  </div>
+                  <div class="export-card-desc">Tabela fato com Qualis, JCR, citações e ano.</div>
+                </div>
+              </div>
+              <div class="export-card-meta">
+                <span>4.821 linhas</span><span>·</span><span>1,2 MB</span>
+              </div>
+              <div class="export-card-actions">
+                <button class="btn btn-primary"><i data-lucide="download" class="i-sm"></i>baixar CSV</button>
+                <button class="icon-btn"><i data-lucide="eye" class="i-sm"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div class="panel">
+              <div class="panel-title">endpoint REST · GET /api/export/csv</div>
+              <div class="panel-sub">automação direta a partir do Power BI</div>
+              <div class="code-block">
+<span class="kw">GET</span> <span class="url">https://spark.uneb.br/api/export/csv</span><br/>
+  <span class="arg">?table</span>=<span class="val">fato_producao</span><br/>
+  <span class="arg">&amp;since</span>=<span class="val">2017-01-01</span><br/>
+  <span class="arg">&amp;format</span>=<span class="val">csv</span>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">prévia · fato_producao.csv</div>
+              <div class="panel-sub">primeiras 5 linhas tipadas</div>
+              <div class="data-table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>id_prod</th>
+                      <th>id_pesq</th>
+                      <th>ano</th>
+                      <th>tipo</th>
+                      <th>qualis</th>
+                      <th>jcr</th>
+                      <th>cit.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td class="mono">P0001</td><td class="mono">R001</td><td class="mono">2024</td><td class="mono">artigo</td><td class="mono">A1</td><td class="mono">7.80</td><td class="mono">38</td></tr>
+                    <tr><td class="mono">P0002</td><td class="mono">R002</td><td class="mono">2024</td><td class="mono">artigo</td><td class="mono">A1</td><td class="mono">14.70</td><td class="mono">22</td></tr>
+                    <tr><td class="mono">P0003</td><td class="mono">R003</td><td class="mono">2024</td><td class="mono">artigo</td><td class="mono">A4</td><td class="mono">NULL</td><td class="mono">4</td></tr>
+                    <tr><td class="mono">P0004</td><td class="mono">R004</td><td class="mono">2025</td><td class="mono">artigo</td><td class="mono">B1</td><td class="mono">NULL</td><td class="mono">1</td></tr>
+                    <tr><td class="mono">P0005</td><td class="mono">R001</td><td class="mono">2023</td><td class="mono">artigo</td><td class="mono">A2</td><td class="mono">3.60</td><td class="mono">15</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Arquitetura ─── -->
+        <div id="sec-arch" class="admin-section">
+          <div class="arch-board">
+            <div class="arch-layer">
+              <div class="arch-layer-name">camada de dados</div>
+              <div class="arch-row cols-4">
+                <div class="arch-block">
+                  <div class="arch-block-tag">FONTE</div>
+                  <div class="arch-block-name">Currículos Lattes</div>
+                  <div class="arch-block-tech">xml · cnpq</div>
+                </div>
+                <div class="arch-block">
+                  <div class="arch-block-tag">ETL</div>
+                  <div class="arch-block-name">Pipeline</div>
+                  <div class="arch-block-tech">apache hop</div>
+                </div>
+                <div class="arch-block">
+                  <div class="arch-block-tag">RELACIONAL</div>
+                  <div class="arch-block-name">PostgreSQL</div>
+                  <div class="arch-block-tech">supabase · tsvector</div>
+                </div>
+                <div class="arch-block">
+                  <div class="arch-block-tag">VETORIAL</div>
+                  <div class="arch-block-name">pgvector</div>
+                  <div class="arch-block-tech">HNSW · cosseno</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="arch-layer">
+              <div class="arch-layer-name">camada de aplicação</div>
+              <div class="arch-row cols-3">
+                <div class="arch-block">
+                  <div class="arch-block-tag">API</div>
+                  <div class="arch-block-name">REST · Swagger</div>
+                  <div class="arch-block-tech">fastapi · python</div>
+                </div>
+                <div class="arch-block">
+                  <div class="arch-block-tag">MODELO</div>
+                  <div class="arch-block-name">Embeddings</div>
+                  <div class="arch-block-tech">sentence-transformers</div>
+                </div>
+                <div class="arch-block">
+                  <div class="arch-block-tag">FRONT-END</div>
+                  <div class="arch-block-name">spark · web</div>
+                  <div class="arch-block-tech">react · ts</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="arch-layer">
+              <div class="arch-layer-name">camada analítica</div>
+              <div class="arch-row cols-2">
+                <div class="arch-block">
+                  <div class="arch-block-tag">EXPORT</div>
+                  <div class="arch-block-name">CSVs tipados</div>
+                  <div class="arch-block-tech">dim_pesquisador · dim_ano · fato_producao</div>
+                </div>
+                <div class="arch-block">
+                  <div class="arch-block-tag">OLAP</div>
+                  <div class="arch-block-name">Dashboards</div>
+                  <div class="arch-block-tech">power bi · .pbix</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div class="panel">
+              <div class="panel-title">endpoints REST</div>
+              <div class="panel-sub">contratos da api spark</div>
+              <div class="kv-list">
+                <div class="kv-row"><span class="kv-key"><span class="badge badge-info">POST</span> /api/search/text</span><span class="kv-val">fts tsvector</span></div>
+                <div class="kv-row"><span class="kv-key"><span class="badge badge-info">POST</span> /api/search/semantic</span><span class="kv-val">pgvector</span></div>
+                <div class="kv-row"><span class="kv-key"><span class="badge badge-ok">GET</span> /api/researcher/{id}</span><span class="kv-val">perfil</span></div>
+                <div class="kv-row"><span class="kv-key"><span class="badge badge-ok">GET</span> /api/production/{id}</span><span class="kv-val">detalhes</span></div>
+                <div class="kv-row"><span class="kv-key"><span class="badge badge-ok">GET</span> /api/export/csv</span><span class="kv-val">olap</span></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">requisitos atendidos</div>
+              <div class="panel-sub">cobertura dos critérios de aceitação</div>
+              <div class="kv-list">
+                <div class="kv-row"><span class="kv-key">US-01 · busca textual</span><span class="kv-val"><span class="badge badge-ok">ok</span></span></div>
+                <div class="kv-row"><span class="kv-key">US-02 · busca semântica</span><span class="kv-val"><span class="badge badge-ok">ok</span></span></div>
+                <div class="kv-row"><span class="kv-key">US-03 · orquestração etl</span><span class="kv-val"><span class="badge badge-ok">ok</span></span></div>
+                <div class="kv-row"><span class="kv-key">US-04 · export power bi</span><span class="kv-val"><span class="badge badge-ok">ok</span></span></div>
+                <div class="kv-row"><span class="kv-key">latência busca semântica</span><span class="kv-val">&lt; 5s</span></div>
+                <div class="kv-row"><span class="kv-key">fallback openai</span><span class="kv-val">configurado</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="assets/app.js"></script>
+</body>
+</html>
