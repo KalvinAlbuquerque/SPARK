@@ -33,10 +33,8 @@
       <span class="brand-word">spark<span class="brand-dot">.</span></span>
     </a>
     <nav class="l-nav">
-      <a href="#arquitetura">arquitetura</a>
+      <a href="#como-funciona">como funciona</a>
       <a href="#recursos">recursos</a>
-      <a href="#fluxo">fluxo</a>
-      <a href="#equipe">equipe</a>
     </nav>
     <div class="l-topbar-right">
       <a class="btn btn-dark" href="app.html">
@@ -69,8 +67,8 @@
             <i data-lucide="search" class="i-sm"></i>
             começar a buscar
           </a>
-          <a class="btn btn-dark btn-lg" href="#arquitetura">
-            ver arquitetura
+          <a class="btn btn-dark btn-lg" href="#como-funciona">
+            como funciona
             <i data-lucide="arrow-down" class="i-sm"></i>
           </a>
         </div>
@@ -133,70 +131,55 @@
       </div>
     </div>
 
-    <!-- ═══════════ ARQUITETURA — flow ═══════════ -->
-    <section class="l-section" id="arquitetura">
+    <!-- ═══════════ COMO FUNCIONA — fluxo do usuário ═══════════ -->
+    <section class="l-section" id="como-funciona">
       <div class="l-section-head">
         <div>
-          <div class="l-section-eyebrow">arquitetura</div>
-          <h2 class="l-section-title">do <span class="ser">xml</span> ao dashboard, em cinco saltos.</h2>
+          <div class="l-section-eyebrow">como funciona</div>
+          <h2 class="l-section-title">da sua <span class="ser">pergunta</span> ao artigo, em segundos.</h2>
         </div>
-        <p class="l-section-sub right" style="max-width:36ch;">
-          Pipeline ETL orquestrado no Apache Hop. Textos vetorizados via Sentence-Transformers
-          e armazenados no pgvector. API REST expõe filtros e busca semântica; CSVs alimentam o
-          dashboard OLAP.
+        <p class="l-section-sub right" style="max-width:38ch;">
+          Você pesquisa, o SPARK entende e ranqueia os resultados mais relevantes na produção
+          científica da UNEB, com Qualis, JCR e tudo o que importa.
         </p>
       </div>
 
-      <div class="arch-flow">
+      <div class="arch-flow" style="grid-template-columns: repeat(4, 1fr);">
         <div class="arch-step">
           <div class="arch-bubble">
             <span class="arch-num">1</span>
-            <i data-lucide="file-code-2" class="i-lg"></i>
+            <i data-lucide="search" class="i-lg"></i>
           </div>
-          <div class="arch-step-tag">EXTRAÇÃO</div>
-          <div class="arch-step-name">Lattes XML</div>
-          <div class="arch-step-desc">Leitura dos currículos exportados do CNPq.</div>
-          <span class="arch-step-tech">cnpq · xml</span>
+          <div class="arch-step-tag">VOCÊ PESQUISA</div>
+          <div class="arch-step-name">Pergunte</div>
+          <div class="arch-step-desc">Use palavras-chave ou uma frase em linguagem natural — como falar com um colega.</div>
         </div>
         <div class="arch-step">
           <div class="arch-bubble">
             <span class="arch-num">2</span>
-            <i data-lucide="git-merge" class="i-lg"></i>
+            <i data-lucide="sparkles" class="i-lg"></i>
           </div>
-          <div class="arch-step-tag">ETL</div>
-          <div class="arch-step-name">Pipeline</div>
-          <div class="arch-step-desc">Mapeamento, UPSERT e enriquecimento externo.</div>
-          <span class="arch-step-tech">apache hop</span>
+          <div class="arch-step-tag">SPARK ENTENDE</div>
+          <div class="arch-step-name">Interpretamos</div>
+          <div class="arch-step-desc">Reconhecemos o sentido da sua busca, mesmo que você não use as palavras exatas dos títulos.</div>
         </div>
         <div class="arch-step">
           <div class="arch-bubble">
             <span class="arch-num">3</span>
-            <i data-lucide="database" class="i-lg"></i>
+            <i data-lucide="library-big" class="i-lg"></i>
           </div>
-          <div class="arch-step-tag">CARGA</div>
-          <div class="arch-step-name">PG + Vetorial</div>
-          <div class="arch-step-desc">tsvector para textual, pgvector para semântica.</div>
-          <span class="arch-step-tech">supabase · hnsw</span>
+          <div class="arch-step-tag">BUSCAMOS</div>
+          <div class="arch-step-name">Encontramos</div>
+          <div class="arch-step-desc">Procuramos em milhares de produções dos pesquisadores da UNEB, indexadas e enriquecidas.</div>
         </div>
         <div class="arch-step">
           <div class="arch-bubble">
             <span class="arch-num">4</span>
-            <i data-lucide="webhook" class="i-lg"></i>
+            <i data-lucide="award" class="i-lg"></i>
           </div>
-          <div class="arch-step-tag">API</div>
-          <div class="arch-step-name">REST</div>
-          <div class="arch-step-desc">Endpoints documentados, fallback OpenAI.</div>
-          <span class="arch-step-tech">fastapi · sentence-t.</span>
-        </div>
-        <div class="arch-step">
-          <div class="arch-bubble">
-            <span class="arch-num">5</span>
-            <i data-lucide="bar-chart-3" class="i-lg"></i>
-          </div>
-          <div class="arch-step-tag">OLAP</div>
-          <div class="arch-step-name">Dashboards</div>
-          <div class="arch-step-desc">CSVs tipados consumidos diretamente.</div>
-          <span class="arch-step-tech">power bi</span>
+          <div class="arch-step-tag">VOCÊ EXPLORA</div>
+          <div class="arch-step-name">Descubra</div>
+          <div class="arch-step-desc">Veja resultados rankeados com Qualis e JCR. Acesse detalhes da produção e o perfil completo do pesquisador.</div>
         </div>
       </div>
     </section>
@@ -206,7 +189,7 @@
       <div class="l-section-head">
         <div>
           <div class="l-section-eyebrow">recursos</div>
-          <h2 class="l-section-title">três caminhos<br/>para <span class="ser">descobrir</span> produções.</h2>
+          <h2 class="l-section-title">quatro recursos<br/>para <span class="ser">descobrir</span> produções.</h2>
         </div>
       </div>
 
@@ -245,41 +228,30 @@
         </article>
 
         <article class="feat-cell span-2">
-          <div class="feat-icon"><i data-lucide="workflow" class="i-lg"></i></div>
-          <div class="feat-title">orquestração <span class="ser">ETL</span></div>
+          <div class="feat-icon"><i data-lucide="user-round" class="i-lg"></i></div>
+          <div class="feat-title">perfil do <span class="ser">pesquisador</span></div>
           <p class="feat-desc">
-            Painel admin monitora execuções, registra logs e sinaliza falhas no enriquecimento externo.
+            Veja a trajetória completa: produções, distribuição por Qualis, índice H e linha do tempo de publicações.
           </p>
         </article>
 
-        <article class="feat-cell span-2">
-          <div class="feat-icon"><i data-lucide="file-spreadsheet" class="i-lg"></i></div>
-          <div class="feat-title">export para OLAP</div>
-          <p class="feat-desc">
-            Dimensões e fato exportados em CSV tipado, lidos diretamente pelo Power BI.
-          </p>
-        </article>
       </div>
     </section>
 
     <!-- ═══════════ CTA STRIP ═══════════ -->
     <section class="l-cta-strip">
       <h2>pronto para <span class="ser">acender</span> sua próxima descoberta?</h2>
-      <p>Acesse o protótipo agora — sem cadastro, com dados sintéticos da base UNEB.</p>
+      <p>Acesse o protótipo agora — dados sintéticos da base UNEB, acesso público.</p>
       <div class="l-cta-row" style="justify-content:center;">
         <a class="btn btn-bright btn-lg" href="app.html">
           abrir spark
           <i data-lucide="arrow-right" class="i-sm"></i>
         </a>
-        <a class="btn btn-dark btn-lg" href="app.html#admin">
-          <i data-lucide="settings-2" class="i-sm"></i>
-          painel admin
-        </a>
       </div>
     </section>
 
     <!-- ═══════════ FOOTER ═══════════ -->
-    <footer class="l-footer" id="equipe">
+    <footer class="l-footer" id="footer">
       <div class="l-footer-grid">
         <div class="l-footer-brand">
           <a href="index.html" class="brand dark">
@@ -288,12 +260,12 @@
           </a>
           <p class="l-footer-tag">
             Busca inteligente da produção científica da UNEB — ETL Lattes, busca textual e
-            semântica, e análises OLAP.
+            semântica.
           </p>
         </div>
         <div class="l-footer-col">
           <div class="l-footer-col-title">projeto</div>
-          <a href="#arquitetura">arquitetura</a>
+          <a href="#como-funciona">como funciona</a>
           <a href="#recursos">recursos</a>
           <a href="app.html">aplicação</a>
         </div>

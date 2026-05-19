@@ -1,4 +1,4 @@
-@startuml SPK-73_Arquitetura
+@startuml SPK-73_Arquitetura_v3
 
 skinparam backgroundColor #FFFFFF
 skinparam defaultFontName Arial
@@ -38,16 +38,16 @@ skinparam arrow {
 rectangle "Camada Operacional" #F0FFF4 {
 
   component "Base de XML\n(Currículos Lattes)" as XML #FFFCDC
-  component "Apache Hop\n(Pipeline ETL)" as HOP #FFFCDC
+  component "Apache Hop\n(Pipeline ETL)"       as HOP #FFFCDC
 
   component "Qualis CAPES\n(Planilha CSV)" as QUALIS #F5F5F5
-  cloud "CrossRef / OpenAlex\n(API DOI)" as CROSSREF
-  cloud "Web of Science\n(JCR)" as JCR
+  cloud "CrossRef\n(API DOI)"              as CROSSREF
+  cloud "OpenAlex\n(API Impact Factor)"    as OPENALEX
 
-  XML --> HOP : lê XMLs
-  QUALIS --> HOP : lookup ISSN
+  XML     --> HOP : lê XMLs
+  QUALIS  --> HOP : lookup ISSN
   CROSSREF --> HOP : lookup DOI
-  JCR --> HOP : lookup\nFator de Impacto
+  OPENALEX --> HOP : lookup\nFator de Impacto
 }
 
 ' ════════════════════════════════════════════════════════
@@ -57,18 +57,18 @@ rectangle "Camada Back-End  |  Railway" #FFF8F0 {
 
   database "Supabase\n(PostgreSQL + pgvector)" as DB
 
-  component "FastAPI\n(Python)" as API #FFFCDC
+  component "FastAPI\n(Python)"                  as API    #FFFCDC
   component "Worker ETL\n(Geração de Embeddings)" as WORKER #FFFCDC
-  component "Base Multidimensional\n(Gerador CSV)" as CSV #FFFCDC
+  component "Supabase Auth\n(somente Admin)"      as SBAUTH #FFE8E8
 
   cloud "Sentence-Transformers\n(Modelo Local)" as ST
-  cloud "OpenAI / Langchain\n(Fallback)" as OPENAI
+  cloud "OpenAI / Langchain\n(Fallback)"         as OPENAI
 
-  API --> DB : consulta /\natualiza
-  WORKER --> DB : persiste\nembeddings
-  WORKER --> ST : gera embedding
-  ST --> OPENAI : fallback
-  CSV --> DB : lê dados\nanalíticos
+  API    --> DB     : consulta /\natualiza
+  WORKER --> DB     : persiste\nembeddings
+  WORKER --> ST     : gera embedding
+  ST     --> OPENAI : fallback
+  SBAUTH --> DB     : valida role\n(admin)
 }
 
 ' ════════════════════════════════════════════════════════
@@ -77,17 +77,22 @@ rectangle "Camada Back-End  |  Railway" #FFF8F0 {
 rectangle "Camada Front-End" #F0F4FF {
 
   component "Next.js\n(Vercel)" as NEXT #FFFCDC
-  component "Power BI\n(Dashboards)" as PBI #FFFCDC
 
+  actor "Usuário\n(público)"   as USR
+  actor "Admin\n(autenticado)" as ADM
+
+  USR --> NEXT : UC-01 a UC-04\nsem login
+  ADM --> NEXT : UC-05\ncom login
 }
 
 ' ════════════════════════════════════════════════════════
 ' CONEXÕES ENTRE CAMADAS
 ' ════════════════════════════════════════════════════════
-HOP --> DB       : INSERT /\nUPSERT
-HOP --> WORKER   : aciona após\ncarga
+HOP --> DB     : INSERT /\nUPSERT
+HOP --> WORKER : aciona após\ncarga
 
-API --> NEXT     : REST JSON
-CSV --> PBI      : arquivos CSV
+API --> NEXT   : REST JSON
+
+ADM --> SBAUTH : autentica
 
 @enduml

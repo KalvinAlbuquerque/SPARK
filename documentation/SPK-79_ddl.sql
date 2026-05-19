@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS pesquisadores (
   data_atualizacao TIMESTAMP    DEFAULT NOW()
 );
 
-COMMENT ON TABLE  pesquisadores                IS 'Dados dos pesquisadores extraídos do currículo Lattes.';
-COMMENT ON COLUMN pesquisadores.lattes_id      IS 'Identificador único do currículo Lattes (16 dígitos).';
+COMMENT ON TABLE  pesquisadores                  IS 'Dados dos pesquisadores extraídos do currículo Lattes.';
+COMMENT ON COLUMN pesquisadores.lattes_id        IS 'Identificador único do currículo Lattes (16 dígitos).';
 COMMENT ON COLUMN pesquisadores.data_atualizacao IS 'Data da última carga ETL para este pesquisador.';
 
 
@@ -66,13 +66,17 @@ CREATE TABLE IF NOT EXISTS producoes (
   created_at       TIMESTAMP    DEFAULT NOW()
 );
 
-COMMENT ON TABLE  producoes              IS 'Produções científicas dos pesquisadores.';
+COMMENT ON TABLE  producoes               IS 'Produções científicas dos pesquisadores.';
 COMMENT ON COLUMN producoes.tipo_producao IS 'Tipo da produção: ARTIGO, EVENTO, LIVRO, CAPITULO ou TECNICO.';
-COMMENT ON COLUMN producoes.issn         IS 'ISSN do periódico, usado para lookup no Qualis e JCR.';
-COMMENT ON COLUMN producoes.doi          IS 'Digital Object Identifier obtido via CrossRef/OpenAlex.';
-COMMENT ON COLUMN producoes.qualis       IS 'Estrato Qualis CAPES do periódico (ex: A1, A2, B1).';
-COMMENT ON COLUMN producoes.jcr          IS 'Fator de Impacto JCR do periódico.';
-COMMENT ON COLUMN producoes.texto_busca  IS 'Índice Full-Text Search gerado a partir do título.';
+COMMENT ON COLUMN producoes.issn          IS 'ISSN do periódico, usado para lookup no Qualis e JCR.';
+COMMENT ON COLUMN producoes.doi           IS 'Digital Object Identifier obtido via XML Lattes ou CrossRef.';
+COMMENT ON COLUMN producoes.qualis        IS 'Estrato Qualis CAPES do periódico (ex: A1, A2, B1).';
+COMMENT ON COLUMN producoes.jcr           IS 'Fator de Impacto do periódico via OpenAlex (2yr_mean_citedness).';
+COMMENT ON COLUMN producoes.texto_busca   IS 'Índice Full-Text Search gerado a partir do título.';
+
+-- Constraint de deduplicação para UPSERT do pipeline ETL (SPK-73)
+ALTER TABLE producoes ADD CONSTRAINT uq_producao
+  UNIQUE (pesquisador_id, titulo, ano_publicacao);
 
 -- Índice para Full-Text Search
 CREATE INDEX IF NOT EXISTS idx_producoes_texto_busca
@@ -96,16 +100,16 @@ CREATE TRIGGER trg_texto_busca
 -- TABELA: vetores
 -- ============================================================
 CREATE TABLE IF NOT EXISTS vetores (
-  id           SERIAL      PRIMARY KEY,
-  producao_id  INTEGER     NOT NULL UNIQUE REFERENCES producoes(id) ON DELETE CASCADE,
-  embedding    VECTOR(1536) NOT NULL,
+  id           SERIAL       PRIMARY KEY,
+  producao_id  INTEGER      NOT NULL UNIQUE REFERENCES producoes(id) ON DELETE CASCADE,
+  embedding    VECTOR(384)  NOT NULL,
   modelo_llm   VARCHAR(100) NOT NULL,
-  created_at   TIMESTAMP   DEFAULT NOW()
+  created_at   TIMESTAMP    DEFAULT NOW()
 );
 
 COMMENT ON TABLE  vetores            IS 'Embeddings vetoriais das produções para busca semântica.';
-COMMENT ON COLUMN vetores.embedding  IS 'Vetor de 1536 dimensões gerado pelo modelo LLM.';
-COMMENT ON COLUMN vetores.modelo_llm IS 'Nome do modelo usado (ex: text-embedding-3-small, all-MiniLM-L6-v2).';
+COMMENT ON COLUMN vetores.embedding  IS 'Vetor de 384 dimensões gerado pelo modelo all-MiniLM-L6-v2 (Sentence-Transformers).';
+COMMENT ON COLUMN vetores.modelo_llm IS 'Nome do modelo usado (ex: all-MiniLM-L6-v2).';
 
 -- Índice vetorial para busca por similaridade de cosseno
 CREATE INDEX IF NOT EXISTS idx_vetores_embedding
@@ -114,62 +118,30 @@ CREATE INDEX IF NOT EXISTS idx_vetores_embedding
 
 
 -- ============================================================
--- TABELA: favoritos
--- ============================================================
-CREATE TABLE IF NOT EXISTS favoritos (
-  id           SERIAL    PRIMARY KEY,
-  usuario_id   UUID      NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  producao_id  INTEGER   NOT NULL REFERENCES producoes(id)  ON DELETE CASCADE,
-  created_at   TIMESTAMP DEFAULT NOW(),
-  UNIQUE (usuario_id, producao_id)
-);
-
-COMMENT ON TABLE favoritos IS 'Produções favoritadas pelos usuários autenticados.';
-
-
--- ============================================================
--- TABELA: buscas_salvas
--- ============================================================
-CREATE TABLE IF NOT EXISTS buscas_salvas (
-  id          SERIAL       PRIMARY KEY,
-  usuario_id  UUID         NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  termo       VARCHAR(500) NOT NULL,
-  filtros     JSONB        DEFAULT '{}',
-  modo_busca  VARCHAR(20)  NOT NULL DEFAULT 'textual'
-                           CHECK (modo_busca IN ('textual', 'semantico')),
-  created_at  TIMESTAMP    DEFAULT NOW()
-);
-
-COMMENT ON TABLE  buscas_salvas          IS 'Buscas salvas pelos usuários autenticados.';
-COMMENT ON COLUMN buscas_salvas.filtros  IS 'Filtros aplicados na busca em formato JSON (ano, qualis, jcr, area).';
-COMMENT ON COLUMN buscas_salvas.modo_busca IS 'Modo da busca: textual (Full-Text Search) ou semantico (pgvector).';
-
-
--- ============================================================
 -- TABELA: etl_logs
 -- ============================================================
 CREATE TABLE IF NOT EXISTS etl_logs (
-  id                  SERIAL    PRIMARY KEY,
-  iniciado_em         TIMESTAMP NOT NULL DEFAULT NOW(),
+  id                  SERIAL      PRIMARY KEY,
+  iniciado_em         TIMESTAMP   NOT NULL DEFAULT NOW(),
   finalizado_em       TIMESTAMP,
   status              VARCHAR(20) NOT NULL DEFAULT 'em_andamento'
                                   CHECK (status IN ('em_andamento', 'sucesso', 'erro')),
-  total_inseridos     INTEGER   DEFAULT 0,
-  total_atualizados   INTEGER   DEFAULT 0,
-  total_sem_match     INTEGER   DEFAULT 0,
-  detalhes            JSONB     DEFAULT '{}'
+  total_inseridos     INTEGER     DEFAULT 0,
+  total_atualizados   INTEGER     DEFAULT 0,
+  total_sem_match     INTEGER     DEFAULT 0,
+  detalhes            JSONB       DEFAULT '{}'
 );
 
-COMMENT ON TABLE  etl_logs             IS 'Histórico de execuções do pipeline ETL.';
-COMMENT ON COLUMN etl_logs.status      IS 'Status da execução: em_andamento, sucesso ou erro.';
-COMMENT ON COLUMN etl_logs.detalhes    IS 'Detalhes da execução em JSON (erros, arquivos processados, etc).';
+COMMENT ON TABLE  etl_logs          IS 'Histórico de execuções do pipeline ETL.';
+COMMENT ON COLUMN etl_logs.status   IS 'Status da execução: em_andamento, sucesso ou erro.';
+COMMENT ON COLUMN etl_logs.detalhes IS 'Detalhes da execução em JSON (erros, arquivos processados, etc).';
 
 
 -- ============================================================
 -- ROW LEVEL SECURITY (RLS) -- Supabase
 -- ============================================================
 
--- perfis: cada usuário vê apenas o próprio perfil
+-- perfis: cada usuário gerencia o próprio perfil
 ALTER TABLE perfis ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY perfis_select ON perfis
@@ -177,18 +149,6 @@ CREATE POLICY perfis_select ON perfis
 
 CREATE POLICY perfis_update ON perfis
   FOR UPDATE USING (auth.uid() = id);
-
--- favoritos: cada usuário gerencia apenas os próprios
-ALTER TABLE favoritos ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY favoritos_all ON favoritos
-  FOR ALL USING (auth.uid() = usuario_id);
-
--- buscas_salvas: cada usuário gerencia apenas as próprias
-ALTER TABLE buscas_salvas ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY buscas_salvas_all ON buscas_salvas
-  FOR ALL USING (auth.uid() = usuario_id);
 
 -- producoes e pesquisadores: leitura pública
 ALTER TABLE pesquisadores ENABLE ROW LEVEL SECURITY;

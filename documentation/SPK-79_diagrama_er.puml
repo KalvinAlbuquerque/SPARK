@@ -1,4 +1,4 @@
-@startuml SPK-79_DiagramaER
+@startuml SPK-79_DiagramaER_v3
 
 skinparam backgroundColor #FFFFFF
 skinparam defaultFontName Arial
@@ -22,7 +22,7 @@ hide circle
 hide methods
 
 ' ════════════════════════════════════════════════════════
-' SUPABASE AUTH (gerenciada externamente)
+' SUPABASE AUTH (gerenciada externamente pelo Supabase)
 ' ════════════════════════════════════════════════════════
 class "auth.users" as AUTH #DCF0FF {
   + id : uuid <<PK>>
@@ -79,33 +79,9 @@ class "producoes" as PROD {
 class "vetores" as VET {
   + id : serial <<PK>>
   --
-  producao_id : integer <<FK producoes>>
+  producao_id : integer <<FK producoes, UNIQUE>>
   embedding : vector(1536)
   modelo_llm : varchar
-  created_at : timestamp
-}
-
-' ════════════════════════════════════════════════════════
-' FAVORITOS
-' ════════════════════════════════════════════════════════
-class "favoritos" as FAV {
-  + id : serial <<PK>>
-  --
-  usuario_id : uuid <<FK auth.users>>
-  producao_id : integer <<FK producoes>>
-  created_at : timestamp
-}
-
-' ════════════════════════════════════════════════════════
-' BUSCAS SALVAS
-' ════════════════════════════════════════════════════════
-class "buscas_salvas" as BUSC {
-  + id : serial <<PK>>
-  --
-  usuario_id : uuid <<FK auth.users>>
-  termo : varchar
-  filtros : jsonb
-  modo_busca : varchar
   created_at : timestamp
 }
 
@@ -127,11 +103,8 @@ class "etl_logs" as LOG {
 ' ════════════════════════════════════════════════════════
 ' RELACIONAMENTOS
 ' ════════════════════════════════════════════════════════
-AUTH       ||--||  PERFIS   : "1:1\nextende"
-AUTH       ||--o{  FAV      : "1:N\nfavorita"
-AUTH       ||--o{  BUSC     : "1:N\nsalva"
-PESQ       ||--o{  PROD     : "1:N\npublica"
-PROD       ||--o|  VET      : "1:1\npossui embedding"
-PROD       ||--o{  FAV      : "1:N\néfavoritada"
+AUTH ||--|| PERFIS : "1:1\nextende"
+PESQ ||--o{ PROD   : "1:N\npublica"
+PROD ||--o| VET    : "1:1\npossui embedding"
 
 @enduml

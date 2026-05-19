@@ -7,8 +7,185 @@
   <link rel="stylesheet" href="assets/tokens.css" />
   <link rel="stylesheet" href="assets/app.css" />
   <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* ── Login overlay ── */
+    .login-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: var(--paper);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-overlay.hidden { display: none; }
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: 48px 40px;
+      width: 100%; max-width: 400px;
+      box-shadow: var(--shadow-lg);
+    }
+    .login-brand {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 32px;
+    }
+    .login-brand-mark {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(140deg, var(--primary-400), var(--primary-700));
+      display: flex; align-items: center; justify-content: center;
+      color: var(--paper);
+      box-shadow: 0 8px 24px -8px rgba(109,91,240,0.6);
+    }
+    .login-brand-mark svg { width: 22px; height: 22px; }
+    .login-brand-word {
+      font-size: 22px; font-weight: 600; letter-spacing: -0.5px; color: var(--text-1);
+    }
+    .login-brand-word span { color: var(--accent-400); }
+    .login-title { font-size: 20px; font-weight: 500; letter-spacing: -0.4px; color: var(--text-1); margin-bottom: 6px; }
+    .login-sub { font-size: 13px; color: var(--text-3); margin-bottom: 28px; }
+    .login-field { margin-bottom: 14px; }
+    .login-field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.4px; }
+    .login-field input {
+      width: 100%; padding: 10px 14px;
+      border: 1px solid var(--border-md);
+      border-radius: var(--r-md);
+      font-size: 14px; font-family: var(--font-sans); color: var(--text-1);
+      background: var(--surface); outline: none;
+      transition: all 0.15s;
+    }
+    .login-field input:focus { border-color: var(--primary-400); box-shadow: 0 0 0 3px rgba(109,91,240,0.12); }
+    .login-error {
+      background: var(--err-50); color: var(--err-fg);
+      border: 1px solid rgba(160,40,40,0.15);
+      border-radius: var(--r-md);
+      padding: 10px 14px; font-size: 13px;
+      margin-bottom: 14px; display: none;
+    }
+    .login-error.visible { display: block; }
+    .login-role-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--primary-600); background: var(--primary-50);
+      border: 1px solid var(--primary-100);
+      padding: 3px 10px; border-radius: 999px;
+      margin-bottom: 24px;
+    }
+    .login-hint {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px dashed var(--border);
+      font-size: 12px; color: var(--text-3);
+      font-family: var(--font-mono);
+      line-height: 1.6;
+    }
+
+    /* ── Empty states ── */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center;
+      padding: 80px 24px;
+      color: var(--text-3);
+    }
+    .empty-state-icon {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--ink-50);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-3);
+      margin-bottom: 20px;
+    }
+    .empty-state-title { font-size: 17px; font-weight: 500; color: var(--text-2); margin-bottom: 8px; letter-spacing: -0.2px; }
+    .empty-state-sub { font-size: 13px; color: var(--text-3); max-width: 38ch; line-height: 1.6; margin-bottom: 22px; }
+    .empty-state-suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+    /* ── Filter export panel ── */
+    .export-filter-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 22px 24px;
+      margin-bottom: 22px;
+    }
+    .export-filter-panel-title {
+      font-size: 14px; font-weight: 500; color: var(--text-1); margin-bottom: 4px;
+    }
+    .export-filter-panel-sub {
+      font-family: var(--font-mono); font-size: 11.5px; color: var(--text-3); margin-bottom: 18px;
+    }
+    .export-filter-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;
+    }
+    @media (max-width: 900px) { .export-filter-row { grid-template-columns: 1fr; } }
+    .export-filter-group label {
+      display: block; font-size: 11px; font-weight: 500; color: var(--text-3);
+      font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.4px;
+      margin-bottom: 6px;
+    }
+    .export-filter-group select,
+    .export-filter-group input[type=text] {
+      width: 100%; padding: 8px 12px;
+      border: 1px solid var(--border-md);
+      border-radius: var(--r-md);
+      font-size: 13px; font-family: var(--font-sans); color: var(--text-1);
+      background: var(--surface); outline: none;
+      transition: border-color 0.15s;
+    }
+    .export-filter-group select:focus,
+    .export-filter-group input[type=text]:focus { border-color: var(--primary-400); }
+    .export-filter-actions { margin-top: 16px; display: flex; gap: 10px; }
+  </style>
 </head>
 <body class="app">
+
+<!-- ════════════════════ LOGIN OVERLAY ════════════════════ -->
+<!--
+  Protege o painel admin conforme UC-05 (pré-condição: Admin autenticado).
+  Credenciais de protótipo: admin@spark.uneb.br / spark2026
+-->
+<div class="login-overlay hidden" id="login-overlay">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-brand-mark">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 0 L17.5 13 C 17.6 13.9 18.3 14.6 19.2 14.7 L32 16 L19.2 17.3 C 18.3 17.4 17.6 18.1 17.5 19 L16 32 L14.5 19 C 14.4 18.1 13.7 17.4 12.8 17.3 L0 16 L12.8 14.7 C 13.7 14.6 14.4 13.9 14.5 13 Z" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="login-brand-word">spark<span>.</span></div>
+    </div>
+
+    <div class="login-role-tag">
+      <i data-lucide="shield" class="i-xs"></i>
+      acesso restrito · admin
+    </div>
+
+    <div class="login-title">entrar no painel</div>
+    <div class="login-sub">Acesse com as credenciais de administrador para gerenciar pesquisadores e orquestrar o ETL.</div>
+
+    <div class="login-error" id="login-error">
+      <i data-lucide="alert-circle" class="i-sm"></i>
+      E-mail ou senha incorretos. Tente novamente.
+    </div>
+
+    <div class="login-field">
+      <label>e-mail</label>
+      <input type="email" id="login-email" placeholder="admin@spark.uneb.br" value="admin@spark.uneb.br" />
+    </div>
+    <div class="login-field">
+      <label>senha</label>
+      <input type="password" id="login-password" placeholder="••••••••" value="spark2026" />
+    </div>
+
+    <button class="btn btn-primary" style="width:100%; margin-top:8px;" id="login-btn">
+      <i data-lucide="log-in" class="i-sm"></i>
+      entrar
+    </button>
+
+    <div class="login-hint">
+      protótipo · credenciais de demonstração<br/>
+      admin@spark.uneb.br · spark2026
+    </div>
+  </div>
+</div>
 
 <!-- SVG sprite -->
 <svg width="0" height="0" style="position:absolute;" aria-hidden="true">
@@ -45,19 +222,20 @@
         <i data-lucide="user-round" class="i-lg"></i>
         <span class="rail-item-tip">pesquisador</span>
       </button>
-      <button class="rail-item" data-screen="admin">
+      <!-- Admin requer autenticação (UC-05 / UC-06) -->
+      <button class="rail-item" id="rail-admin-btn">
         <i data-lucide="settings-2" class="i-lg"></i>
         <span class="rail-item-tip">admin</span>
       </button>
     </div>
 
-    <div class="rail-foot">
+    <!-- <div class="rail-foot">
       <button class="rail-item" title="notificações">
         <i data-lucide="bell" class="i-md"></i>
         <span class="rail-item-tip">notificações</span>
       </button>
-      <div class="rail-avatar" title="Eduardo Jorge">EJ</div>
-    </div>
+      <div class="rail-avatar" title="usuário" id="rail-avatar">?</div>
+    </div> -->
   </nav>
 
   <!-- ════════════════════ MAIN ════════════════════ -->
@@ -77,10 +255,7 @@
         <kbd>⌘ K</kbd>
       </div>
 
-      <div class="topbar-right">
-        <button class="icon-btn" title="filtros"><i data-lucide="sliders-horizontal" class="i-sm"></i></button>
-        <button class="icon-btn" title="ajuda"><i data-lucide="circle-help" class="i-sm"></i></button>
-      </div>
+
     </header>
 
     <!-- ════════════════════ TELA 1 · BUSCA ════════════════════ -->
@@ -100,44 +275,30 @@
             </p>
           </div>
 
+          <!-- Estatísticas da base — derivadas diretamente dos dados do sistema -->
           <aside class="home-side-card">
             <div class="home-side-head">
-              <span>buscas nas últimas 24h</span>
-              <span class="live"><span class="ldot"></span>ao vivo</span>
+              <span>base de dados · UNEB</span>
+              <span class="live"><span class="ldot"></span>indexada</span>
             </div>
-            <div class="home-side-stat">287</div>
-            <div class="home-side-stat-sub">+18% vs. ontem</div>
-
-            <!-- inline mini sparkline (svg) -->
-            <div class="home-side-spark">
-              <svg viewBox="0 0 200 50" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="spk" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#6D5BF0" stop-opacity="0.4"/>
-                    <stop offset="100%" stop-color="#6D5BF0" stop-opacity="0"/>
-                  </linearGradient>
-                </defs>
-                <path d="M0,40 L20,32 L40,36 L60,22 L80,28 L100,18 L120,24 L140,12 L160,20 L180,8 L200,14 L200,50 L0,50 Z" fill="url(#spk)"/>
-                <path d="M0,40 L20,32 L40,36 L60,22 L80,28 L100,18 L120,24 L140,12 L160,20 L180,8 L200,14" fill="none" stroke="#6D5BF0" stroke-width="1.6"/>
-                <circle cx="180" cy="8" r="3" fill="#F2912C"/>
-              </svg>
-            </div>
-
-            <div class="home-side-feed">
+            <div class="home-side-stat">4.821</div>
+            <div class="home-side-stat-sub">produções científicas indexadas</div>
+            <div class="home-side-feed" style="margin-top:16px;">
               <div class="home-side-feed-item">
-                <div class="av">JC</div>
-                <span>"machine learning saúde"</span>
-                <time>2m</time>
+                <div class="av" style="background:var(--primary-50);color:var(--primary-600);"><i data-lucide="users-round" style="width:10px;height:10px;"></i></div>
+                <span>34 pesquisadores cadastrados</span>
               </div>
               <div class="home-side-feed-item">
-                <div class="av">AP</div>
-                <span>"dengue serotipos"</span>
-                <time>8m</time>
+                <div class="av" style="background:var(--primary-50);color:var(--primary-600);"><i data-lucide="sparkles" style="width:10px;height:10px;"></i></div>
+                <span>4.612 embeddings vetoriais gerados</span>
               </div>
               <div class="home-side-feed-item">
-                <div class="av">MS</div>
-                <span>"gestão pública"</span>
-                <time>14m</time>
+                <div class="av" style="background:var(--ok-50);color:var(--ok-fg);"><i data-lucide="zap" style="width:10px;height:10px;"></i></div>
+                <span>busca semântica em menos de 5s</span>
+              </div>
+              <div class="home-side-feed-item">
+                <div class="av" style="background:var(--ok-50);color:var(--ok-fg);"><i data-lucide="clock" style="width:10px;height:10px;"></i></div>
+                <span>busca textual FTS em até 30s</span>
               </div>
             </div>
           </aside>
@@ -163,94 +324,19 @@
               semântica · embeddings
             </button>
           </div>
-          <div class="search-shortcut-tip">
-            atalho: pressione <kbd>⌘</kbd> + <kbd>K</kbd> para focar
-          </div>
+
         </div>
 
-        <!-- Categories -->
-        <div class="section-head">
-          <div>
-            <h3>explorar por <span class="ser">área</span></h3>
-            <div class="muted" style="font-size: 12px; font-family: var(--font-mono);">12 áreas CAPES indexadas</div>
-          </div>
-          <a class="more" href="#">ver todas <i data-lucide="arrow-right" class="i-xs"></i></a>
+        <!-- Dica de operadores FTS — CA-01.2: suporte a AND, OR, NOT via tsvector -->
+        <div style="margin-top:-38px; margin-bottom:48px; font-size:12px; color:var(--text-3); font-family:var(--font-mono);">
+          <i data-lucide="info" style="width:12px;height:12px;vertical-align:middle;margin-right:5px;"></i>
+          no modo textual, use operadores:
+          <span style="background:var(--ink-50);padding:2px 7px;border-radius:4px;margin:0 3px;">AND</span>
+          <span style="background:var(--ink-50);padding:2px 7px;border-radius:4px;margin:0 3px;">OR</span>
+          <span style="background:var(--ink-50);padding:2px 7px;border-radius:4px;margin:0 3px;">NOT</span>
+          para refinar a busca por palavras-chave.
         </div>
 
-        <div class="cat-grid">
-          <div class="cat-card" data-go="resultados" style="--cat-bg: var(--q-a1-bg); --cat-fg: var(--q-a1-fg); --cat-tint: var(--q-a1-bg);">
-            <div class="cat-card-icon"><i data-lucide="heart-pulse" class="i-lg"></i></div>
-            <div class="cat-card-name">saúde</div>
-            <div class="cat-card-meta">1.124 produções</div>
-          </div>
-          <div class="cat-card" data-go="resultados" style="--cat-bg: var(--q-a2-bg); --cat-fg: var(--q-a2-fg); --cat-tint: var(--q-a2-bg);">
-            <div class="cat-card-icon"><i data-lucide="cpu" class="i-lg"></i></div>
-            <div class="cat-card-name">computação</div>
-            <div class="cat-card-meta">734 produções</div>
-          </div>
-          <div class="cat-card" data-go="resultados" style="--cat-bg: var(--q-a3-bg); --cat-fg: var(--q-a3-fg); --cat-tint: var(--q-a3-bg);">
-            <div class="cat-card-icon"><i data-lucide="leaf" class="i-lg"></i></div>
-            <div class="cat-card-name">biologia</div>
-            <div class="cat-card-meta">658 produções</div>
-          </div>
-          <div class="cat-card" data-go="resultados" style="--cat-bg: var(--q-a4-bg); --cat-fg: var(--q-a4-fg); --cat-tint: var(--q-a4-bg);">
-            <div class="cat-card-icon"><i data-lucide="briefcase" class="i-lg"></i></div>
-            <div class="cat-card-name">gestão</div>
-            <div class="cat-card-meta">443 produções</div>
-          </div>
-        </div>
-
-        <!-- Recently added -->
-        <div class="section-head">
-          <div>
-            <h3>adicionadas <span class="ser">recentemente</span></h3>
-            <div class="muted" style="font-size: 12px; font-family: var(--font-mono);">última carga ETL · 12/05/2026 14:32</div>
-          </div>
-          <a class="more" href="#" data-go="resultados">ver todas <i data-lucide="arrow-right" class="i-xs"></i></a>
-        </div>
-
-        <div class="recent-list">
-          <div class="recent-row" data-go="detalhes">
-            <div class="recent-row-idx">01</div>
-            <div class="recent-row-title">A new lineage nomenclature to aid genomic surveillance of dengue virus</div>
-            <div class="recent-row-author"><span class="avatar-mini">EJ</span>E. Jorge</div>
-            <div class="recent-row-venue">PLOS BIOLOGY</div>
-            <span class="badge badge-a1">A1</span>
-            <div class="recent-row-year">2024</div>
-          </div>
-          <div class="recent-row" data-go="detalhes">
-            <div class="recent-row-idx">02</div>
-            <div class="recent-row-title">Shifting patterns of dengue three years after Zika emergence in Brazil</div>
-            <div class="recent-row-author"><span class="avatar-mini">MS</span>M. Silva</div>
-            <div class="recent-row-venue">NATURE COMMS</div>
-            <span class="badge badge-a1">A1</span>
-            <div class="recent-row-year">2024</div>
-          </div>
-          <div class="recent-row" data-go="detalhes">
-            <div class="recent-row-idx">03</div>
-            <div class="recent-row-title">Is dengue epidemic related to socioeconomic factors? Insights from Bahia</div>
-            <div class="recent-row-author"><span class="avatar-mini">AP</span>A. Ferreira</div>
-            <div class="recent-row-venue">J. INFECT. DIS.</div>
-            <span class="badge badge-a2">A2</span>
-            <div class="recent-row-year">2025</div>
-          </div>
-          <div class="recent-row" data-go="detalhes">
-            <div class="recent-row-idx">04</div>
-            <div class="recent-row-title">Aplicativo digital para aprendizagem gamificada no combate ao dengue</div>
-            <div class="recent-row-author"><span class="avatar-mini">JC</span>J. Oliveira</div>
-            <div class="recent-row-venue">REV. GESTÃO &amp; SECR.</div>
-            <span class="badge badge-a4">A4</span>
-            <div class="recent-row-year">2024</div>
-          </div>
-          <div class="recent-row" data-go="detalhes">
-            <div class="recent-row-idx">05</div>
-            <div class="recent-row-title">Vector competence of Aedes aegypti for dengue serotype 3 in NE Brazil</div>
-            <div class="recent-row-author"><span class="avatar-mini">EJ</span>E. Jorge</div>
-            <div class="recent-row-venue">MEM. INST. OSWALDO CRUZ</div>
-            <span class="badge badge-a2">A2</span>
-            <div class="recent-row-year">2023</div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -262,7 +348,8 @@
           <div class="results-head-row">
             <div>
               <h1 class="results-title">resultados para <em>"dengue"</em></h1>
-              <div class="results-title-sub">247 produções · ordenadas por relevância · ~38ms</div>
+              <!-- CA-01.3: 20 itens/página (textual) | CA-02.2: top-10 (semântico) -->
+              <div class="results-title-sub" id="results-sub">247 produções · 20 por página · ordenadas por relevância · ~38ms</div>
             </div>
             <div class="results-controls">
               <div class="mode-toggle">
@@ -274,9 +361,9 @@
                 <option>ano (recente)</option>
                 <option>Qualis</option>
                 <option>JCR (maior)</option>
-                <option>citações</option>
+                
               </select>
-              <button class="icon-btn" title="salvar busca"><i data-lucide="bookmark" class="i-sm"></i></button>
+
             </div>
           </div>
 
@@ -285,14 +372,15 @@
             <span class="chip active">2024 — 2026 <i data-lucide="x" class="i-xs"></i></span>
             <span class="chip active">A1 + A2 <i data-lucide="x" class="i-xs"></i></span>
             <span class="chip active">JCR 5 — 10 <i data-lucide="x" class="i-xs"></i></span>
-            <span class="chip active">área: saúde <i data-lucide="x" class="i-xs"></i></span>
             <span class="chip"><i data-lucide="plus" class="i-xs"></i> adicionar</span>
           </div>
         </div>
 
         <div class="results-layout">
           <div>
-            <div class="result-list">
+
+            <!-- Lista de resultados -->
+            <div class="result-list" id="result-list-normal">
 
               <article class="result-row featured" data-go="detalhes">
                 <div>
@@ -302,16 +390,10 @@
                 <div class="result-row-body">
                   <div class="result-row-venue">PLOS BIOLOGY</div>
                   <div class="result-row-title">A new lineage nomenclature to aid genomic surveillance of dengue virus</div>
-                  <div class="result-row-abstract">
-                    Propõe nomenclatura unificada para linhagens de DENV, baseada em filogenia
-                    genômica de larga escala. Validada com 16 mil sequências e adoção pela rede
-                    PAHO em 2024.
-                  </div>
                   <div class="result-row-meta">
                     <span class="badge badge-a1">A1</span>
                     <span class="badge badge-jcr">JCR 7.8</span>
                     <span class="badge badge-outline">artigo</span>
-                    <span class="muted mono" style="font-size:11px;">38 citações</span>
                   </div>
                 </div>
                 <div class="result-row-aside">
@@ -329,15 +411,10 @@
                 <div class="result-row-body">
                   <div class="result-row-venue">NATURE COMMUNICATIONS</div>
                   <div class="result-row-title">Shifting patterns of dengue three years after Zika virus emergence in Brazil</div>
-                  <div class="result-row-abstract">
-                    Análise espaço-temporal indica reorganização de sorotipos circulantes na
-                    região nordeste após o surto de 2016 — com implicações epidemiológicas.
-                  </div>
                   <div class="result-row-meta">
                     <span class="badge badge-a1">A1</span>
                     <span class="badge badge-jcr">JCR 14.7</span>
                     <span class="badge badge-outline">artigo</span>
-                    <span class="muted mono" style="font-size:11px;">22 citações</span>
                   </div>
                 </div>
                 <div class="result-row-aside">
@@ -363,7 +440,7 @@
                 </div>
                 <div class="result-row-aside">
                   <span class="author"><span class="avatar-mini">JC</span>J. Oliveira</span>
-                  <span class="meta-dim">2024 · 12 citações</span>
+                  <span class="meta-dim">2024</span>
                 </div>
               </article>
 
@@ -383,7 +460,7 @@
                 </div>
                 <div class="result-row-aside">
                   <span class="author"><span class="avatar-mini">AP</span>A. Ferreira</span>
-                  <span class="meta-dim">2025 · 4 citações</span>
+                  <span class="meta-dim">2025</span>
                 </div>
               </article>
 
@@ -403,7 +480,7 @@
                 </div>
                 <div class="result-row-aside">
                   <span class="author"><span class="avatar-mini">EJ</span>E. Jorge</span>
-                  <span class="meta-dim">2024 · 9 citações</span>
+                  <span class="meta-dim">2024</span>
                 </div>
               </article>
 
@@ -422,7 +499,7 @@
                 </div>
                 <div class="result-row-aside">
                   <span class="author"><span class="avatar-mini">JC</span>J. Oliveira</span>
-                  <span class="meta-dim">2024 · 2 citações</span>
+                  <span class="meta-dim">2024</span>
                 </div>
               </article>
 
@@ -442,30 +519,311 @@
                 </div>
                 <div class="result-row-aside">
                   <span class="author"><span class="avatar-mini">EJ</span>E. Jorge</span>
-                  <span class="meta-dim">2023 · 15 citações</span>
+                  <span class="meta-dim">2023</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.69</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">PLOS NEGLECTED TROPICAL DISEASES</div>
+                  <div class="result-row-title">Spatial-temporal dynamics of arbovirus co-circulation in Bahia, Brazil</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a1">A1</span>
+                    <span class="badge badge-jcr">JCR 4.4</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">EJ</span>E. Jorge</span>
+                  <span class="meta-dim">2022</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.66</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">VIRUSES</div>
+                  <div class="result-row-title">Exploring the Chikungunya virus landscape in a dengue-endemic Brazilian area</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a3">A3</span>
+                    <span class="badge badge-jcr">JCR 4.7</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">EJ</span>E. Jorge</span>
+                  <span class="meta-dim">2023</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.63</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">TROPICAL MEDICINE AND INFECTIOUS DISEASE</div>
+                  <div class="result-row-title">Dengue serotype 3 reemergence and clinical outcomes in northeastern Brazil</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a2">A2</span>
+                    <span class="badge badge-jcr">JCR 3.1</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">AP</span>A. Ferreira</span>
+                  <span class="meta-dim">2023</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.61</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">ACTA TROPICA</div>
+                  <div class="result-row-title">Entomological surveillance of Aedes aegypti in urban settings during dengue epidemic</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a2">A2</span>
+                    <span class="badge badge-jcr">JCR 2.8</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">MS</span>M. Silva</span>
+                  <span class="meta-dim">2022</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.59</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">REVISTA DA SOCIEDADE BRASILEIRA DE MEDICINA TROPICAL</div>
+                  <div class="result-row-title">Clinical and epidemiological profile of dengue hemorrhagic fever in Bahia</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a3">A3</span>
+                    <span class="badge badge-jcr">JCR 2.4</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">RC</span>R. Costa</span>
+                  <span class="meta-dim">2024</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.57</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">INTERNATIONAL JOURNAL OF INFECTIOUS DISEASES</div>
+                  <div class="result-row-title">Dengue vaccine coverage and herd immunity thresholds in Brazilian municipalities</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a2">A2</span>
+                    <span class="badge badge-jcr">JCR 4.1</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">CM</span>C. Souza</span>
+                  <span class="meta-dim">2025</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.54</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">EPIDEMIOLOGY AND INFECTION</div>
+                  <div class="result-row-title">Cross-reactive immunity between dengue and Zika virus in co-circulation regions</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a3">A3</span>
+                    <span class="badge badge-jcr">JCR 3.6</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">JC</span>J. Oliveira</span>
+                  <span class="meta-dim">2023</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.52</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">CADERNOS DE SAÚDE PÚBLICA</div>
+                  <div class="result-row-title">Fatores socioeconômicos associados à incidência de dengue em municípios baianos</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a2">A2</span>
+                    <span class="badge badge-jcr">JCR 2.6</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">AP</span>A. Ferreira</span>
+                  <span class="meta-dim">2022</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.50</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">INFECTION GENETICS AND EVOLUTION</div>
+                  <div class="result-row-title">Phylogeographic spread of dengue virus type 1 along the Brazilian coast</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a2">A2</span>
+                    <span class="badge badge-jcr">JCR 3.0</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">EJ</span>E. Jorge</span>
+                  <span class="meta-dim">2021</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.48</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">PARASITES AND VECTORS</div>
+                  <div class="result-row-title">Larval indices and dengue transmission risk in high-density urban areas of Salvador</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a2">A2</span>
+                    <span class="badge badge-jcr">JCR 3.3</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">MS</span>M. Silva</span>
+                  <span class="meta-dim">2021</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.45</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">CIÊNCIA E SAÚDE COLETIVA</div>
+                  <div class="result-row-title">Análise espaço-temporal da dengue no estado da Bahia entre 2015 e 2022</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a3">A3</span>
+                    <span class="badge badge-jcr">JCR 1.9</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">RC</span>R. Costa</span>
+                  <span class="meta-dim">2023</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.43</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">FRONTIERS IN PUBLIC HEALTH</div>
+                  <div class="result-row-title">Machine learning approaches for dengue outbreak prediction in Northeastern Brazil</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a3">A3</span>
+                    <span class="badge badge-jcr">JCR 5.2</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">CM</span>C. Souza</span>
+                  <span class="meta-dim">2024</span>
+                </div>
+              </article>
+
+              <article class="result-row" data-go="detalhes">
+                <div>
+                  <div class="result-row-sim">0.41</div>
+                  <div class="result-row-sim-lbl">match</div>
+                </div>
+                <div class="result-row-body">
+                  <div class="result-row-venue">JOURNAL OF MEDICAL VIROLOGY</div>
+                  <div class="result-row-title">Dengue and COVID-19 co-infection: clinical characterization and outcomes in Brazil</div>
+                  <div class="result-row-meta">
+                    <span class="badge badge-a2">A2</span>
+                    <span class="badge badge-jcr">JCR 6.4</span>
+                    <span class="badge badge-outline">artigo</span>
+                  </div>
+                </div>
+                <div class="result-row-aside">
+                  <span class="author"><span class="avatar-mini">JC</span>J. Oliveira</span>
+                  <span class="meta-dim">2022</span>
                 </div>
               </article>
 
             </div>
 
-            <div class="pagination-row">
+            <!--
+              Estado vazio — busca sem resultado (UC-01 fluxo exceção E1 / UC-02 E1).
+              Oculto por padrão; ativado via JS quando não há resultados.
+            -->
+            <div class="result-list empty-state" id="result-empty-state" style="display:none;">
+              <div class="empty-state-icon">
+                <i data-lucide="search-x" class="i-lg"></i>
+              </div>
+              <div class="empty-state-title">Nenhuma produção encontrada para a sua busca.</div>
+              <div class="empty-state-sub" id="empty-state-msg">
+                Tente termos mais gerais, verifique a ortografia ou use o modo semântico para busca por contexto.
+              </div>
+              <div class="empty-state-suggestions">
+                <span class="chip" id="sug-1" style="cursor:pointer;">dengue</span>
+                <span class="chip" id="sug-2" style="cursor:pointer;">epidemiologia</span>
+                <span class="chip" id="sug-3" style="cursor:pointer;">aprendizado de máquina</span>
+                <span class="chip" id="sug-4" style="cursor:pointer;">saúde pública</span>
+              </div>
+            </div>
+
+            <!-- Paginação — CA-01.3: 20 itens/página (textual) | CA-02.2: top-10 fixo (semântico, sem paginação) -->
+            <div class="pagination-row" id="pagination-row">
               <div class="pagination">
-                <button><i data-lucide="chevron-left" class="i-sm"></i></button>
+                <button title="página anterior"><i data-lucide="chevron-left" class="i-sm"></i></button>
                 <button class="active">1</button>
                 <button>2</button>
                 <button>3</button>
                 <button>…</button>
                 <button>13</button>
-                <button><i data-lucide="chevron-right" class="i-sm"></i></button>
+                <button title="próxima página"><i data-lucide="chevron-right" class="i-sm"></i></button>
               </div>
             </div>
           </div>
 
-          <!-- Right filter panel -->
+          <!-- Painel de filtros lateral -->
           <aside class="filter-panel">
             <div class="filter-panel-head">
               <span>refinar</span>
-              <button>limpar</button>
+              <button id="clear-filters-btn">limpar</button>
             </div>
 
             <div class="filter-group">
@@ -494,11 +852,12 @@
             </div>
 
             <div class="filter-group">
-              <div class="filter-label">área CAPES</div>
-              <label class="filter-option"><input type="checkbox" checked /> saúde <span class="filter-count">112</span></label>
-              <label class="filter-option"><input type="checkbox" /> biologia <span class="filter-count">58</span></label>
-              <label class="filter-option"><input type="checkbox" /> computação <span class="filter-count">34</span></label>
-              <label class="filter-option"><input type="checkbox" /> gestão <span class="filter-count">43</span></label>
+              <div class="filter-label">área do conhecimento</div>
+              <label class="filter-option"><input type="checkbox" checked /> saúde <span class="filter-count">124</span></label>
+              <label class="filter-option"><input type="checkbox" /> computação <span class="filter-count">48</span></label>
+              <label class="filter-option"><input type="checkbox" /> biologia <span class="filter-count">39</span></label>
+              <label class="filter-option"><input type="checkbox" /> gestão <span class="filter-count">22</span></label>
+              <label class="filter-option"><input type="checkbox" /> educação <span class="filter-count">14</span></label>
             </div>
 
             <div class="filter-group">
@@ -528,7 +887,6 @@
             <span class="badge badge-a1">Qualis A1</span>
             <span class="badge badge-jcr">JCR 7.8</span>
             <span class="badge badge-outline">artigo científico</span>
-            <span class="badge badge-info">peer-reviewed</span>
           </div>
         </div>
 
@@ -541,18 +899,7 @@
             <div class="metric-cell-n">7.8</div>
             <div class="metric-cell-l">JCR 2024</div>
           </div>
-          <div class="metric-cell">
-            <div class="metric-cell-n">38</div>
-            <div class="metric-cell-l">citações</div>
-          </div>
-          <div class="metric-cell">
-            <div class="metric-cell-n">142</div>
-            <div class="metric-cell-l">altmetric</div>
-          </div>
-          <div class="metric-cell">
-            <div class="metric-cell-n">8</div>
-            <div class="metric-cell-l">coautores</div>
-          </div>
+
         </div>
 
         <div class="detail-grid">
@@ -568,6 +915,7 @@
               </div>
             </div>
 
+            <!-- Metadados bibliográficos — UC-03: título, ano, veículo, DOI, Qualis, JCR, pesquisador -->
             <div class="detail-section">
               <div class="detail-section-title">metadados bibliográficos</div>
               <div class="meta-table">
@@ -582,10 +930,6 @@
                 <div class="meta-row">
                   <span class="meta-lbl">DOI</span>
                   <span class="meta-val"><a href="#"><span class="mono">10.1371/journal.pbio.3002834</span><i data-lucide="external-link" class="i-xs"></i></a></span>
-                </div>
-                <div class="meta-row">
-                  <span class="meta-lbl">volume / pp.</span>
-                  <span class="meta-val mono">22(8) · 1—22</span>
                 </div>
                 <div class="meta-row">
                   <span class="meta-lbl">tipo de produção</span>
@@ -606,27 +950,12 @@
               </div>
             </div>
 
-            <div class="detail-section">
-              <div class="detail-section-title">palavras-chave</div>
-              <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <span class="chip">dengue</span>
-                <span class="chip">DENV</span>
-                <span class="chip">filogenia</span>
-                <span class="chip">vigilância genômica</span>
-                <span class="chip">arboviroses</span>
-                <span class="chip">epidemiologia molecular</span>
-              </div>
-            </div>
 
-            <div class="action-row">
-              <button class="btn btn-primary"><i data-lucide="external-link" class="i-sm"></i>abrir no editor</button>
-              <button class="btn btn-ghost"><i data-lucide="bookmark" class="i-sm"></i>favoritar</button>
-              <button class="btn btn-ghost"><i data-lucide="copy" class="i-sm"></i>copiar citação</button>
-              <button class="btn btn-ghost"><i data-lucide="share-2" class="i-sm"></i>compartilhar</button>
-            </div>
+
           </div>
 
           <aside>
+            <!-- Pesquisador principal — UC-03 → UC-04 -->
             <div class="aside-card">
               <div class="aside-card-title">pesquisador principal</div>
               <div class="aside-author" data-go="perfil">
@@ -642,25 +971,6 @@
               <div class="aside-kv"><span class="aside-kv-lbl">A1 + A2</span><span class="aside-kv-val">38</span></div>
             </div>
 
-            <div class="aside-card">
-              <div class="aside-card-title">produções similares</div>
-              <div class="similar-item" data-go="detalhes">
-                <div class="similar-item-title">Shifting patterns of dengue three years after Zika emergence in Brazil</div>
-                <div class="similar-item-meta">2024 · A1 · <span class="sim">0.89</span></div>
-              </div>
-              <div class="similar-item" data-go="detalhes">
-                <div class="similar-item-title">Vector competence of Aedes aegypti for dengue serotype 3 in NE Brazil</div>
-                <div class="similar-item-meta">2023 · A2 · <span class="sim">0.86</span></div>
-              </div>
-              <div class="similar-item" data-go="detalhes">
-                <div class="similar-item-title">Mapping dynamics of dengue serotypes in the 2023 epidemic</div>
-                <div class="similar-item-meta">2024 · A2 · <span class="sim">0.74</span></div>
-              </div>
-              <div class="similar-item" data-go="detalhes">
-                <div class="similar-item-title">North-south pathways and climate suitability for dengue serotypes</div>
-                <div class="similar-item-meta">2024 · A3 · <span class="sim">0.71</span></div>
-              </div>
-            </div>
           </aside>
         </div>
       </div>
@@ -681,20 +991,18 @@
             <div>
               <h1 class="profile-name">Eduardo M. F. <em>Jorge</em></h1>
               <div class="profile-role">Professor · UNEB · Dep. de Ciências Exatas e da Terra · Campus I — Salvador</div>
+              <!-- UC-04: link para o currículo Lattes (dado extraído do sistema) -->
               <div class="profile-links">
                 <a href="#" class="profile-link"><i data-lucide="external-link" class="i-xs"></i>lattes/cnpq</a>
-                <a href="#" class="profile-link"><i data-lucide="external-link" class="i-xs"></i>orcid · 0000-0002-8597-5805</a>
-                <a href="#" class="profile-link"><i data-lucide="mail" class="i-xs"></i><span class="__cf_email__" data-cfemail="197c7473766b7e7c596c777c7b377b6b">[email&#160;protected]</span></a>
               </div>
             </div>
           </div>
 
+          <!-- UC-04: total produções, distribuição por Qualis, índice H -->
           <div class="profile-cover-stats">
             <div class="profile-cover-stat"><div class="n">142</div><div class="l">produções</div></div>
             <div class="profile-cover-stat"><div class="n">38</div><div class="l">A1 + A2</div></div>
-            <div class="profile-cover-stat"><div class="n">7.2</div><div class="l">JCR médio</div></div>
             <div class="profile-cover-stat"><div class="n">h12</div><div class="l">índice H</div></div>
-            <div class="profile-cover-stat"><div class="n">1.204</div><div class="l">citações</div></div>
           </div>
         </div>
 
@@ -714,6 +1022,7 @@
         </div>
 
         <div class="profile-content">
+          <!-- UC-04: lista paginada de produções do pesquisador -->
           <div id="pane-prod" class="profile-pane active">
             <div class="section-head">
               <h3>produções <span class="ser">recentes</span></h3>
@@ -776,8 +1085,21 @@
                 <i data-lucide="chevron-right" class="i-sm muted"></i>
               </div>
             </div>
+            <!-- UC-04: lista paginada de produções do pesquisador -->
+            <div class="pagination-row" style="margin-top:18px;">
+              <div class="pagination">
+                <button title="página anterior"><i data-lucide="chevron-left" class="i-sm"></i></button>
+                <button class="active">1</button>
+                <button>2</button>
+                <button>3</button>
+                <button>…</button>
+                <button>8</button>
+                <button title="próxima página"><i data-lucide="chevron-right" class="i-sm"></i></button>
+              </div>
+            </div>
           </div>
 
+          <!-- UC-04: distribuição por Qualis e linha do tempo -->
           <div id="pane-ind" class="profile-pane">
             <div class="chart-card">
               <div class="chart-head">
@@ -826,6 +1148,7 @@
             </div>
           </div>
 
+          <!-- UC-04: resumo do currículo Lattes -->
           <div id="pane-sobre" class="profile-pane">
             <div class="panel">
               <div class="panel-title">resumo do currículo</div>
@@ -844,50 +1167,37 @@
     </section>
 
     <!-- ════════════════════ TELA 5 · ADMIN ════════════════════ -->
+    <!--
+      Acesso restrito ao papel Admin (UC-05).
+      A tela só é exibida após autenticação bem-sucedida no login-overlay.
+    -->
     <section id="screen-admin" class="screen">
       <div class="admin-page">
 
         <div class="admin-header">
           <div class="admin-title-block">
             <h1 class="admin-title">painel <em>admin</em></h1>
-            <div class="admin-sub">orquestre a base, monitore o pipeline e exporte para o Power BI</div>
+            <div class="admin-sub">orquestre a base, monitore o pipeline e gerencie pesquisadores</div>
           </div>
-          <div style="display:flex; gap:8px;">
-            <button class="btn btn-ghost"><i data-lucide="download" class="i-sm"></i>baixar tudo</button>
-            <button class="btn btn-primary"><i data-lucide="play" class="i-sm"></i>executar ETL agora</button>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span class="badge badge-ok" style="padding:6px 12px; font-size:11px;">
+              <i data-lucide="shield-check" class="i-xs"></i>
+              admin autenticado
+            </span>
+            <button class="btn btn-ghost" id="logout-btn"><i data-lucide="log-out" class="i-sm"></i>sair</button>
           </div>
         </div>
 
-        <!-- Top tabs (não sidebar) -->
         <div class="admin-tabs">
           <button class="admin-tab active" data-sec="sec-pesq">
             <i data-lucide="users-round" class="i-sm"></i>
             pesquisadores
           </button>
-          <button class="admin-tab" data-sec="sec-prods">
-            <i data-lucide="file-text" class="i-sm"></i>
-            produções
-          </button>
-          <button class="admin-tab" data-sec="sec-etl">
-            <i data-lucide="git-merge" class="i-sm"></i>
-            pipeline ETL
-          </button>
-          <button class="admin-tab" data-sec="sec-vec">
-            <i data-lucide="sparkles" class="i-sm"></i>
-            vetorização
-          </button>
-          <button class="admin-tab" data-sec="sec-export">
-            <i data-lucide="download" class="i-sm"></i>
-            exportar CSV
-          </button>
-          <button class="admin-tab" data-sec="sec-arch">
-            <i data-lucide="layers" class="i-sm"></i>
-            arquitetura
-          </button>
         </div>
 
-        <!-- ─── Pesquisadores ─── -->
+        <!-- ─── Pesquisadores (UC-05) ─── -->
         <div id="sec-pesq" class="admin-section active">
+          <!-- UC-05: totais de pesquisadores cadastrados -->
           <div class="stat-grid-4">
             <div class="stat-tile">
               <i data-lucide="users-round" class="i-md stat-tile-icon"></i>
@@ -896,29 +1206,17 @@
               <div class="stat-tile-trend">+3 desde abril</div>
             </div>
             <div class="stat-tile">
-              <i data-lucide="award" class="i-md stat-tile-icon"></i>
-              <div class="stat-tile-n">12</div>
-              <div class="stat-tile-l">prog. ppg vinculados</div>
-              <div class="stat-tile-trend">5 áreas CAPES</div>
-            </div>
-            <div class="stat-tile">
               <i data-lucide="refresh-cw" class="i-md stat-tile-icon"></i>
               <div class="stat-tile-n">26</div>
               <div class="stat-tile-l">sincronizados hoje</div>
               <div class="stat-tile-trend">·</div>
-            </div>
-            <div class="stat-tile">
-              <i data-lucide="circle-alert" class="i-md stat-tile-icon"></i>
-              <div class="stat-tile-n warn">3</div>
-              <div class="stat-tile-l">orcid faltando</div>
-              <div class="stat-tile-trend warn">verificar</div>
             </div>
           </div>
 
           <div class="table-toolbar">
             <div class="table-search">
               <i data-lucide="search" class="i-sm"></i>
-              <input type="text" placeholder="buscar por nome, Lattes ID, ORCID..." />
+              <input type="text" placeholder="buscar por nome ou Lattes ID..." />
             </div>
             <button class="btn btn-ghost"><i data-lucide="filter" class="i-sm"></i>filtros</button>
             <button class="btn btn-ghost"><i data-lucide="upload" class="i-sm"></i>importar XML</button>
@@ -931,7 +1229,6 @@
                 <tr>
                   <th>nome</th>
                   <th>Lattes ID</th>
-                  <th>ORCID</th>
                   <th>produções</th>
                   <th>última carga</th>
                   <th></th>
@@ -941,7 +1238,6 @@
                 <tr>
                   <td>Eduardo M. F. Jorge</td>
                   <td class="mono">1234567890123456</td>
-                  <td class="mono">0000-0002-8597-5805</td>
                   <td>142</td>
                   <td class="mono">12/05/2026</td>
                   <td class="row-actions">
@@ -953,7 +1249,6 @@
                 <tr>
                   <td>Maria Silva Santos</td>
                   <td class="mono">9876543210987654</td>
-                  <td class="mono">0000-0001-3344-5566</td>
                   <td>87</td>
                   <td class="mono">12/05/2026</td>
                   <td class="row-actions">
@@ -965,7 +1260,6 @@
                 <tr>
                   <td>João Carlos Oliveira</td>
                   <td class="mono">1122334455667788</td>
-                  <td class="mono">0000-0003-7788-9900</td>
                   <td>64</td>
                   <td class="mono">10/05/2026</td>
                   <td class="row-actions">
@@ -977,7 +1271,6 @@
                 <tr>
                   <td>Ana Paula Ferreira</td>
                   <td class="mono">5544332211009988</td>
-                  <td class="mono">0000-0004-1122-3344</td>
                   <td>53</td>
                   <td class="mono">08/05/2026</td>
                   <td class="row-actions">
@@ -989,7 +1282,6 @@
                 <tr>
                   <td>Roberto Lima Costa</td>
                   <td class="mono">6677889900112233</td>
-                  <td class="mono" style="color:var(--warn-fg);">não cadastrado</td>
                   <td>48</td>
                   <td class="mono">08/05/2026</td>
                   <td class="row-actions">
@@ -1001,7 +1293,6 @@
                 <tr>
                   <td>Carla Mendes Souza</td>
                   <td class="mono">4433221100998877</td>
-                  <td class="mono">0000-0006-2233-4455</td>
                   <td>41</td>
                   <td class="mono">05/05/2026</td>
                   <td class="row-actions">
@@ -1015,491 +1306,6 @@
           </div>
         </div>
 
-        <!-- ─── Produções ─── -->
-        <div id="sec-prods" class="admin-section">
-          <div class="stat-grid-4">
-            <div class="stat-tile">
-              <i data-lucide="file-text" class="i-md stat-tile-icon"></i>
-              <div class="stat-tile-n">3.124</div>
-              <div class="stat-tile-l">artigos</div>
-            </div>
-            <div class="stat-tile">
-              <i data-lucide="book" class="i-md stat-tile-icon"></i>
-              <div class="stat-tile-n">412</div>
-              <div class="stat-tile-l">capítulos</div>
-            </div>
-            <div class="stat-tile">
-              <i data-lucide="book-open" class="i-md stat-tile-icon"></i>
-              <div class="stat-tile-n">89</div>
-              <div class="stat-tile-l">livros</div>
-            </div>
-            <div class="stat-tile">
-              <i data-lucide="presentation" class="i-md stat-tile-icon"></i>
-              <div class="stat-tile-n">1.196</div>
-              <div class="stat-tile-l">anais / outros</div>
-            </div>
-          </div>
-
-          <div class="table-toolbar">
-            <div class="table-search">
-              <i data-lucide="search" class="i-sm"></i>
-              <input type="text" placeholder="filtrar por título, ISSN, ano..." />
-            </div>
-            <button class="btn btn-ghost"><i data-lucide="filter" class="i-sm"></i>filtros</button>
-            <button class="btn btn-ghost"><i data-lucide="refresh-cw" class="i-sm"></i>recalcular</button>
-          </div>
-          <div class="data-table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>título</th>
-                  <th>autor</th>
-                  <th>ano</th>
-                  <th>Qualis</th>
-                  <th>JCR</th>
-                  <th>embedding</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>A new lineage nomenclature to aid genomic surveillance of dengue virus</td>
-                  <td>E. Jorge</td>
-                  <td class="mono">2024</td>
-                  <td><span class="badge badge-a1">A1</span></td>
-                  <td class="mono">7.8</td>
-                  <td><span class="badge badge-ok">ok</span></td>
-                </tr>
-                <tr>
-                  <td>Shifting patterns of dengue three years after Zika virus emergence</td>
-                  <td>M. Silva</td>
-                  <td class="mono">2024</td>
-                  <td><span class="badge badge-a1">A1</span></td>
-                  <td class="mono">14.7</td>
-                  <td><span class="badge badge-ok">ok</span></td>
-                </tr>
-                <tr>
-                  <td>Aplicativo digital para aprendizagem gamificada no combate ao dengue</td>
-                  <td>J. Oliveira</td>
-                  <td class="mono">2024</td>
-                  <td><span class="badge badge-a4">A4</span></td>
-                  <td class="mono">—</td>
-                  <td><span class="badge badge-ok">ok</span></td>
-                </tr>
-                <tr>
-                  <td>Artrite reacional após infecção por vírus da dengue: relato de caso</td>
-                  <td>A. Ferreira</td>
-                  <td class="mono">2025</td>
-                  <td><span class="badge badge-b1">B1</span></td>
-                  <td class="mono">—</td>
-                  <td><span class="badge badge-run">pendente</span></td>
-                </tr>
-                <tr>
-                  <td>Vector competence of Aedes aegypti for dengue serotype 3 in NE Brazil</td>
-                  <td>E. Jorge</td>
-                  <td class="mono">2023</td>
-                  <td><span class="badge badge-a2">A2</span></td>
-                  <td class="mono">3.6</td>
-                  <td><span class="badge badge-ok">ok</span></td>
-                </tr>
-                <tr>
-                  <td>Resurgence of dengue virus serotype 5 in Minas Gerais</td>
-                  <td>R. Costa</td>
-                  <td class="mono">2024</td>
-                  <td><span class="badge badge-a3">A3</span></td>
-                  <td class="mono">5.5</td>
-                  <td><span class="badge badge-err">falha</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ─── ETL ─── -->
-        <div id="sec-etl" class="admin-section">
-          <div class="stat-grid-4">
-            <div class="stat-tile">
-              <i data-lucide="users-round" class="i-md stat-tile-icon"></i>
-              <div class="stat-tile-n">34</div>
-              <div class="stat-tile-l">currículos</div>
-              <div class="stat-tile-trend">+3 desde abril</div>
-            </div>
-            <div class="stat-tile">
-              <i data-lucide="file-text" class="i-md stat-tile-icon"></i>
-              <div class="stat-tile-n">4.821</div>
-              <div class="stat-tile-l">produções</div>
-              <div class="stat-tile-trend">+120 nesta carga</div>
-            </div>
-            <div class="stat-tile">
-              <i data-lucide="link-2" class="i-md stat-tile-icon"></i>
-              <div class="stat-tile-n">4.498</div>
-              <div class="stat-tile-l">com Qualis</div>
-              <div class="stat-tile-trend">93,3% match</div>
-            </div>
-            <div class="stat-tile">
-              <i data-lucide="circle-alert" class="i-md stat-tile-icon"></i>
-              <div class="stat-tile-n warn">323</div>
-              <div class="stat-tile-l">sem match externo</div>
-              <div class="stat-tile-trend warn">ver relatório</div>
-            </div>
-          </div>
-
-          <div class="pipeline-card">
-            <div class="pipeline-card-head">
-              <div>
-                <div class="pipeline-card-title">execução em andamento · run #128</div>
-                <div class="pipeline-card-title-sub">apache-hop · pipeline lattes-etl.hpl · iniciado 14:32:01</div>
-              </div>
-              <span class="pipeline-status"><span class="dot"></span>processando</span>
-            </div>
-            <div class="pipeline-stages">
-              <div class="p-stage done">
-                <div class="p-stage-icon"><i data-lucide="file-code-2" class="i-md"></i></div>
-                <div class="p-stage-step">01 · EXTRAÇÃO</div>
-                <div class="p-stage-name">Lattes XML</div>
-                <div class="p-stage-meta">34 arquivos · 12s</div>
-              </div>
-              <div class="p-stage done">
-                <div class="p-stage-icon"><i data-lucide="filter" class="i-md"></i></div>
-                <div class="p-stage-step">02 · PARSE</div>
-                <div class="p-stage-name">Mapeamento</div>
-                <div class="p-stage-meta">4.821 prod. · 38s</div>
-              </div>
-              <div class="p-stage active">
-                <div class="p-stage-icon"><i data-lucide="link-2" class="i-md"></i></div>
-                <div class="p-stage-step">03 · ENRIQUECER</div>
-                <div class="p-stage-name">Qualis · DOI · JCR</div>
-                <div class="p-stage-meta">2.341/4.821 · 1m12s</div>
-              </div>
-              <div class="p-stage">
-                <div class="p-stage-icon"><i data-lucide="database" class="i-md"></i></div>
-                <div class="p-stage-step">04 · UPSERT</div>
-                <div class="p-stage-name">PostgreSQL</div>
-                <div class="p-stage-meta">aguardando…</div>
-              </div>
-              <div class="p-stage">
-                <div class="p-stage-icon"><i data-lucide="check-circle-2" class="i-md"></i></div>
-                <div class="p-stage-step">05 · VALIDAÇÃO</div>
-                <div class="p-stage-name">Logs / DQ</div>
-                <div class="p-stage-meta">aguardando…</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="two-col">
-            <div class="panel">
-              <div class="panel-title">histórico de execuções</div>
-              <div class="panel-sub">últimas 4 corridas</div>
-              <div class="data-table-wrap" style="border:none;">
-                <table class="data-table">
-                  <thead>
-                    <tr><th>data/hora</th><th>status</th><th>ins.</th><th>atual.</th><th>sem match</th><th></th></tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td class="mono">12/05/2026 14:32</td>
-                      <td><span class="badge badge-run">executando</span></td>
-                      <td class="mono">—</td><td class="mono">—</td><td class="mono">—</td>
-                      <td><button class="btn btn-ghost" style="padding:4px 10px; font-size:11px;">log</button></td>
-                    </tr>
-                    <tr>
-                      <td class="mono">05/05/2026 09:11</td>
-                      <td><span class="badge badge-ok">sucesso</span></td>
-                      <td class="mono">89</td><td class="mono">12</td><td class="mono">3</td>
-                      <td><button class="btn btn-ghost" style="padding:4px 10px; font-size:11px;">log</button></td>
-                    </tr>
-                    <tr>
-                      <td class="mono">28/04/2026 17:45</td>
-                      <td><span class="badge badge-err">erro</span></td>
-                      <td class="mono">0</td><td class="mono">0</td><td class="mono">0</td>
-                      <td><button class="btn btn-ghost" style="padding:4px 10px; font-size:11px;">log</button></td>
-                    </tr>
-                    <tr>
-                      <td class="mono">21/04/2026 10:00</td>
-                      <td><span class="badge badge-ok">sucesso</span></td>
-                      <td class="mono">201</td><td class="mono">67</td><td class="mono">14</td>
-                      <td><button class="btn btn-ghost" style="padding:4px 10px; font-size:11px;">log</button></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="panel-title">log ao vivo · run #128</div>
-              <div class="panel-sub">stream do apache-hop</div>
-              <div class="log-viewer">
-<span class="log-time">14:32:01</span> <span class="log-ok">[OK]</span> step extract_xml: 34 files loaded<br/>
-<span class="log-time">14:32:13</span> <span class="log-ok">[OK]</span> step parse_curriculo: 4821 rows<br/>
-<span class="log-time">14:32:51</span> <span class="log-ok">[OK]</span> step normalize_issn: 4798 rows<br/>
-<span class="log-time">14:33:04</span> <span class="log-ok">[OK]</span> loading qualis_capes.csv...<br/>
-<span class="log-time">14:33:05</span> <span class="log-ok">[OK]</span> loading jcr_2024.csv...<br/>
-<span class="log-time">14:33:18</span> <span class="log-ok">[OK]</span> step lookup_qualis: 4498 matched<br/>
-<span class="log-time">14:33:18</span> <span class="log-warn">[WARN]</span> 323 rows without ISSN match → logged<br/>
-<span class="log-time">14:33:42</span> <span class="log-ok">[OK]</span> step enrich_doi via crossref...<br/>
-<span class="log-time">14:34:11</span> <span class="log-ok">[OK]</span> step enrich_jcr: 2341/4821 done<br/>
-<span class="log-time">14:34:12</span> <span class="log-ok">[OK]</span> processing batch 24/48<span style="color:var(--accent-300);">▍</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ─── Vetorização ─── -->
-        <div id="sec-vec" class="admin-section">
-          <div class="two-col">
-            <div class="panel">
-              <div class="panel-title">progresso da vetorização</div>
-              <div class="panel-sub">4.612 de 4.821 títulos vetorizados</div>
-              <div class="progress"><div class="progress-fill" style="width:95.6%;"></div></div>
-              <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:11px; color:var(--text-3); margin-bottom:22px;">
-                <span>95,6%</span><span>209 pendentes</span>
-              </div>
-              <div class="kv-list">
-                <div class="kv-row"><span class="kv-key">modelo principal</span><span class="kv-val">sentence-t/all-MiniLM-L6-v2</span></div>
-                <div class="kv-row"><span class="kv-key">dimensão do vetor</span><span class="kv-val">384</span></div>
-                <div class="kv-row"><span class="kv-key">índice pgvector</span><span class="kv-val">HNSW (m=16, ef=64)</span></div>
-                <div class="kv-row"><span class="kv-key">métrica</span><span class="kv-val">cosseno</span></div>
-                <div class="kv-row"><span class="kv-key">fallback</span><span class="kv-val">OpenAI text-embed-3-small</span></div>
-                <div class="kv-row"><span class="kv-key">latência média (local)</span><span class="kv-val">38 ms</span></div>
-              </div>
-              <div style="margin-top:18px; display:flex; gap:8px;">
-                <button class="btn btn-primary" style="flex:1;"><i data-lucide="play" class="i-sm"></i>processar 209 pendentes</button>
-                <button class="btn btn-ghost"><i data-lucide="settings" class="i-sm"></i>configurar</button>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="panel-title">qualidade & cobertura</div>
-              <div class="panel-sub">métricas da última execução</div>
-              <div class="kv-list">
-                <div class="kv-row"><span class="kv-key">vetores gerados</span><span class="kv-val">4.612</span></div>
-                <div class="kv-row"><span class="kv-key">falhas no local</span><span class="kv-val" style="color:var(--warn-fg);">14</span></div>
-                <div class="kv-row"><span class="kv-key">fallback acionado</span><span class="kv-val">14 / 14</span></div>
-                <div class="kv-row"><span class="kv-key">duplicatas detectadas</span><span class="kv-val">82</span></div>
-                <div class="kv-row"><span class="kv-key">similaridade média top-10</span><span class="kv-val">0.74</span></div>
-                <div class="kv-row"><span class="kv-key">tempo total</span><span class="kv-val">3m 28s</span></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-title">sandbox de similaridade</div>
-            <div class="panel-sub">teste uma consulta para inspecionar os vizinhos mais próximos</div>
-            <div class="search-mega" style="box-shadow:none; margin-bottom:18px;">
-              <i data-lucide="sparkles" class="i-lg lead-icon" style="color:var(--accent-400);"></i>
-              <input type="text" value="vigilância genômica de arboviroses no nordeste brasileiro" />
-              <button class="btn btn-primary">calcular</button>
-            </div>
-            <div class="data-table-wrap">
-              <table class="data-table">
-                <thead><tr><th>#</th><th>título</th><th>cosseno</th><th>Qualis</th></tr></thead>
-                <tbody>
-                  <tr><td class="mono">1</td><td>A new lineage nomenclature to aid genomic surveillance of dengue virus</td><td class="mono" style="color:var(--accent-600); font-weight:600;">0.92</td><td><span class="badge badge-a1">A1</span></td></tr>
-                  <tr><td class="mono">2</td><td>Shifting patterns of dengue three years after Zika virus emergence in Brazil</td><td class="mono" style="color:var(--accent-600); font-weight:600;">0.89</td><td><span class="badge badge-a1">A1</span></td></tr>
-                  <tr><td class="mono">3</td><td>Vector competence of Aedes aegypti for dengue serotype 3 in NE Brazil</td><td class="mono" style="color:var(--accent-600); font-weight:600;">0.86</td><td><span class="badge badge-a2">A2</span></td></tr>
-                  <tr><td class="mono">4</td><td>Mapping the dynamics of dengue serotypes in the 2023 epidemic</td><td class="mono" style="color:var(--accent-600); font-weight:600;">0.74</td><td><span class="badge badge-a2">A2</span></td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- ─── Exportar CSV ─── -->
-        <div id="sec-export" class="admin-section">
-          <div class="export-cards">
-            <div class="export-card">
-              <div class="export-card-head">
-                <div class="export-card-icon"><i data-lucide="user-round" class="i-md"></i></div>
-                <div class="export-card-body">
-                  <div class="export-card-name">
-                    dim_pesquisador
-                    <span class="export-card-tag">dimensão</span>
-                  </div>
-                  <div class="export-card-desc">Nome, Lattes ID, ORCID, departamento e área de atuação.</div>
-                </div>
-              </div>
-              <div class="export-card-meta">
-                <span>34 registros</span><span>·</span><span>8 KB</span>
-              </div>
-              <div class="export-card-actions">
-                <button class="btn btn-primary"><i data-lucide="download" class="i-sm"></i>baixar CSV</button>
-                <button class="icon-btn"><i data-lucide="eye" class="i-sm"></i></button>
-              </div>
-            </div>
-
-            <div class="export-card">
-              <div class="export-card-head">
-                <div class="export-card-icon"><i data-lucide="calendar-range" class="i-md"></i></div>
-                <div class="export-card-body">
-                  <div class="export-card-name">
-                    dim_quadrienal_ano
-                    <span class="export-card-tag">dimensão</span>
-                  </div>
-                  <div class="export-card-desc">Ano de referência, quadriênio CAPES e janela avaliativa.</div>
-                </div>
-              </div>
-              <div class="export-card-meta">
-                <span>10 anos</span><span>·</span><span>3 quadriênios</span>
-              </div>
-              <div class="export-card-actions">
-                <button class="btn btn-primary"><i data-lucide="download" class="i-sm"></i>baixar CSV</button>
-                <button class="icon-btn"><i data-lucide="eye" class="i-sm"></i></button>
-              </div>
-            </div>
-
-            <div class="export-card">
-              <div class="export-card-head">
-                <div class="export-card-icon"><i data-lucide="bar-chart-3" class="i-md"></i></div>
-                <div class="export-card-body">
-                  <div class="export-card-name">
-                    fato_producao
-                    <span class="export-card-tag">fato</span>
-                  </div>
-                  <div class="export-card-desc">Tabela fato com Qualis, JCR, citações e ano.</div>
-                </div>
-              </div>
-              <div class="export-card-meta">
-                <span>4.821 linhas</span><span>·</span><span>1,2 MB</span>
-              </div>
-              <div class="export-card-actions">
-                <button class="btn btn-primary"><i data-lucide="download" class="i-sm"></i>baixar CSV</button>
-                <button class="icon-btn"><i data-lucide="eye" class="i-sm"></i></button>
-              </div>
-            </div>
-          </div>
-
-          <div class="two-col">
-            <div class="panel">
-              <div class="panel-title">endpoint REST · GET /api/export/csv</div>
-              <div class="panel-sub">automação direta a partir do Power BI</div>
-              <div class="code-block">
-<span class="kw">GET</span> <span class="url">https://spark.uneb.br/api/export/csv</span><br/>
-  <span class="arg">?table</span>=<span class="val">fato_producao</span><br/>
-  <span class="arg">&amp;since</span>=<span class="val">2017-01-01</span><br/>
-  <span class="arg">&amp;format</span>=<span class="val">csv</span>
-              </div>
-            </div>
-            <div class="panel">
-              <div class="panel-title">prévia · fato_producao.csv</div>
-              <div class="panel-sub">primeiras 5 linhas tipadas</div>
-              <div class="data-table-wrap">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>id_prod</th>
-                      <th>id_pesq</th>
-                      <th>ano</th>
-                      <th>tipo</th>
-                      <th>qualis</th>
-                      <th>jcr</th>
-                      <th>cit.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr><td class="mono">P0001</td><td class="mono">R001</td><td class="mono">2024</td><td class="mono">artigo</td><td class="mono">A1</td><td class="mono">7.80</td><td class="mono">38</td></tr>
-                    <tr><td class="mono">P0002</td><td class="mono">R002</td><td class="mono">2024</td><td class="mono">artigo</td><td class="mono">A1</td><td class="mono">14.70</td><td class="mono">22</td></tr>
-                    <tr><td class="mono">P0003</td><td class="mono">R003</td><td class="mono">2024</td><td class="mono">artigo</td><td class="mono">A4</td><td class="mono">NULL</td><td class="mono">4</td></tr>
-                    <tr><td class="mono">P0004</td><td class="mono">R004</td><td class="mono">2025</td><td class="mono">artigo</td><td class="mono">B1</td><td class="mono">NULL</td><td class="mono">1</td></tr>
-                    <tr><td class="mono">P0005</td><td class="mono">R001</td><td class="mono">2023</td><td class="mono">artigo</td><td class="mono">A2</td><td class="mono">3.60</td><td class="mono">15</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ─── Arquitetura ─── -->
-        <div id="sec-arch" class="admin-section">
-          <div class="arch-board">
-            <div class="arch-layer">
-              <div class="arch-layer-name">camada de dados</div>
-              <div class="arch-row cols-4">
-                <div class="arch-block">
-                  <div class="arch-block-tag">FONTE</div>
-                  <div class="arch-block-name">Currículos Lattes</div>
-                  <div class="arch-block-tech">xml · cnpq</div>
-                </div>
-                <div class="arch-block">
-                  <div class="arch-block-tag">ETL</div>
-                  <div class="arch-block-name">Pipeline</div>
-                  <div class="arch-block-tech">apache hop</div>
-                </div>
-                <div class="arch-block">
-                  <div class="arch-block-tag">RELACIONAL</div>
-                  <div class="arch-block-name">PostgreSQL</div>
-                  <div class="arch-block-tech">supabase · tsvector</div>
-                </div>
-                <div class="arch-block">
-                  <div class="arch-block-tag">VETORIAL</div>
-                  <div class="arch-block-name">pgvector</div>
-                  <div class="arch-block-tech">HNSW · cosseno</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="arch-layer">
-              <div class="arch-layer-name">camada de aplicação</div>
-              <div class="arch-row cols-3">
-                <div class="arch-block">
-                  <div class="arch-block-tag">API</div>
-                  <div class="arch-block-name">REST · Swagger</div>
-                  <div class="arch-block-tech">fastapi · python</div>
-                </div>
-                <div class="arch-block">
-                  <div class="arch-block-tag">MODELO</div>
-                  <div class="arch-block-name">Embeddings</div>
-                  <div class="arch-block-tech">sentence-transformers</div>
-                </div>
-                <div class="arch-block">
-                  <div class="arch-block-tag">FRONT-END</div>
-                  <div class="arch-block-name">spark · web</div>
-                  <div class="arch-block-tech">react · ts</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="arch-layer">
-              <div class="arch-layer-name">camada analítica</div>
-              <div class="arch-row cols-2">
-                <div class="arch-block">
-                  <div class="arch-block-tag">EXPORT</div>
-                  <div class="arch-block-name">CSVs tipados</div>
-                  <div class="arch-block-tech">dim_pesquisador · dim_ano · fato_producao</div>
-                </div>
-                <div class="arch-block">
-                  <div class="arch-block-tag">OLAP</div>
-                  <div class="arch-block-name">Dashboards</div>
-                  <div class="arch-block-tech">power bi · .pbix</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="two-col">
-            <div class="panel">
-              <div class="panel-title">endpoints REST</div>
-              <div class="panel-sub">contratos da api spark</div>
-              <div class="kv-list">
-                <div class="kv-row"><span class="kv-key"><span class="badge badge-info">POST</span> /api/search/text</span><span class="kv-val">fts tsvector</span></div>
-                <div class="kv-row"><span class="kv-key"><span class="badge badge-info">POST</span> /api/search/semantic</span><span class="kv-val">pgvector</span></div>
-                <div class="kv-row"><span class="kv-key"><span class="badge badge-ok">GET</span> /api/researcher/{id}</span><span class="kv-val">perfil</span></div>
-                <div class="kv-row"><span class="kv-key"><span class="badge badge-ok">GET</span> /api/production/{id}</span><span class="kv-val">detalhes</span></div>
-                <div class="kv-row"><span class="kv-key"><span class="badge badge-ok">GET</span> /api/export/csv</span><span class="kv-val">olap</span></div>
-              </div>
-            </div>
-            <div class="panel">
-              <div class="panel-title">requisitos atendidos</div>
-              <div class="panel-sub">cobertura dos critérios de aceitação</div>
-              <div class="kv-list">
-                <div class="kv-row"><span class="kv-key">US-01 · busca textual</span><span class="kv-val"><span class="badge badge-ok">ok</span></span></div>
-                <div class="kv-row"><span class="kv-key">US-02 · busca semântica</span><span class="kv-val"><span class="badge badge-ok">ok</span></span></div>
-                <div class="kv-row"><span class="kv-key">US-03 · orquestração etl</span><span class="kv-val"><span class="badge badge-ok">ok</span></span></div>
-                <div class="kv-row"><span class="kv-key">US-04 · export power bi</span><span class="kv-val"><span class="badge badge-ok">ok</span></span></div>
-                <div class="kv-row"><span class="kv-key">latência busca semântica</span><span class="kv-val">&lt; 5s</span></div>
-                <div class="kv-row"><span class="kv-key">fallback openai</span><span class="kv-val">configurado</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
 
       </div>
     </section>
@@ -1507,6 +1313,185 @@
   </main>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="assets/app.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+
+  /* ──────────────────────────────────────────────
+     LOGIN / AUTENTICAÇÃO (UC-05)
+     Protege a tela admin. Credenciais de protótipo.
+  ────────────────────────────────────────────── */
+  const ADMIN_EMAIL = 'admin@spark.uneb.br';
+  const ADMIN_PASS  = 'spark2026';
+
+  const loginOverlay = document.getElementById('login-overlay');
+  const loginBtn     = document.getElementById('login-btn');
+  const loginError   = document.getElementById('login-error');
+  const logoutBtn    = document.getElementById('logout-btn');
+  const railAdminBtn = document.getElementById('rail-admin-btn');
+  // railAvatar removido (rail-foot comentado)
+
+  let adminAuthenticated = false;
+
+  function showAdminScreen() {
+    // Aciona a navegação interna do app.js via data-screen
+    const railItems = document.querySelectorAll('.rail-item[data-screen]');
+    railItems.forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const adminScreen = document.getElementById('screen-admin');
+    if (adminScreen) adminScreen.classList.add('active');
+    railAdminBtn.classList.add('active');
+    const titleEl = document.getElementById('topbar-title');
+    if (titleEl) titleEl.innerHTML = '<i data-lucide="settings-2" class="i-md"></i>painel admin';
+    const crumbEl = document.getElementById('topbar-crumbs');
+    if (crumbEl) crumbEl.textContent = 'spark / admin';
+    const ts = document.getElementById('topbar-search');
+    if (ts) ts.style.visibility = 'visible';
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (window.lucide) lucide.createIcons();
+  }
+
+  railAdminBtn.addEventListener('click', function () {
+    if (adminAuthenticated) {
+      showAdminScreen();
+    } else {
+      loginOverlay.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+  });
+
+  loginBtn.addEventListener('click', function () {
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-password').value;
+    if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
+      adminAuthenticated = true;
+      loginOverlay.classList.add('hidden');
+      loginError.classList.remove('visible');
+      showAdminScreen();
+    } else {
+      loginError.classList.add('visible');
+      if (window.lucide) lucide.createIcons();
+    }
+  });
+
+  document.getElementById('login-password').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') loginBtn.click();
+  });
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function () {
+      adminAuthenticated = false;
+      // Volta para a tela de busca
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.rail-item').forEach(b => b.classList.remove('active'));
+      const buscaScreen = document.getElementById('screen-busca');
+      if (buscaScreen) buscaScreen.classList.add('active');
+      const buscaBtn = document.querySelector('.rail-item[data-screen="busca"]');
+      if (buscaBtn) buscaBtn.classList.add('active');
+    });
+  }
+
+  /* ──────────────────────────────────────────────
+     ESTADO VAZIO — busca sem resultado
+     UC-01 fluxo exceção E1 / UC-02 fluxo exceção E1
+     Simulação: ao limpar todos os filtros, exibe o empty state.
+  ────────────────────────────────────────────── */
+  const clearFiltersBtn    = document.getElementById('clear-filters-btn');
+  const resultListNormal   = document.getElementById('result-list-normal');
+  const resultEmptyState   = document.getElementById('result-empty-state');
+  const paginationRow      = document.getElementById('pagination-row');
+  const emptyStateMsg      = document.getElementById('empty-state-msg');
+
+  function showEmptyState(msg) {
+    resultListNormal.style.display = 'none';
+    paginationRow.style.display    = 'none';
+    resultEmptyState.style.display = 'flex';
+    if (msg) emptyStateMsg.textContent = msg;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function showResults() {
+    resultListNormal.style.display = '';
+    paginationRow.style.display    = '';
+    resultEmptyState.style.display = 'none';
+  }
+
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener('click', function () {
+      // Desmarca todos os checkboxes
+      document.querySelectorAll('.filter-panel input[type=checkbox]').forEach(cb => {
+        cb.checked = false;
+      });
+      // Exibe empty state com mensagem do documento (UC-02 E1)
+      showEmptyState('Nenhuma produção encontrada com os filtros selecionados. Tente ampliar os critérios de filtro ou remova algumas restrições.');
+    });
+  }
+
+  // Sugestões de termos no empty state reativam os resultados
+  ['sug-1','sug-2','sug-3','sug-4'].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', showResults);
+  });
+
+  /* ──────────────────────────────────────────────
+     YEAR BARS (perfil · indicadores)
+  ────────────────────────────────────────────── */
+  const yb = document.getElementById('year-bars');
+  if (yb) {
+    const data = [
+      {y:'2017', v:11}, {y:'2018', v:14}, {y:'2019', v:13}, {y:'2020', v:16},
+      {y:'2021', v:17}, {y:'2022', v:18}, {y:'2023', v:19}, {y:'2024', v:21},
+      {y:'2025', v:8},  {y:'2026', v:5}
+    ];
+    const max = Math.max(...data.map(d => d.v));
+    yb.innerHTML = data.map(d => `
+      <div class="year-bar" title="${d.y}: ${d.v} produções">
+        <div class="year-bar-track" style="height:${(d.v/max)*100}px;">
+          <span class="year-bar-val">${d.v}</span>
+        </div>
+        <div class="year-bar-label">${d.y.slice(2)}</div>
+      </div>
+    `).join('');
+  }
+
+  /* ──────────────────────────────────────────────
+     MODO DE BUSCA — CA-01.3 (20/pág textual) | CA-02.2 (top-10 semântico)
+     Ao trocar o modo, ajusta visibilidade dos cards e da paginação.
+  ────────────────────────────────────────────── */
+  const allRows    = document.querySelectorAll('#result-list-normal .result-row');
+  const pagRow     = document.getElementById('pagination-row');
+  const resultsSub = document.getElementById('results-sub');
+
+  function applyMode(mode) {
+    if (mode === 'sem') {
+      // Semântico: exibe apenas top-10, sem paginação
+      allRows.forEach((r, i) => { r.style.display = i < 10 ? '' : 'none'; });
+      if (pagRow) pagRow.style.display = 'none';
+      if (resultsSub) resultsSub.textContent = '247 produções · top-10 exibidos · ordenados por similaridade · ~38ms';
+    } else {
+      // Textual: exibe 20 por página com paginação
+      allRows.forEach((r, i) => { r.style.display = i < 20 ? '' : 'none'; });
+      if (pagRow) pagRow.style.display = '';
+      if (resultsSub) resultsSub.textContent = '247 produções · 20 por página · ordenadas por relevância · ~38ms';
+    }
+  }
+
+  // Aplica modo inicial (textual)
+  applyMode('text');
+
+  // Escuta cliques nos toggles de modo da tela de resultados
+  document.querySelectorAll('#screen-resultados .mode-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#screen-resultados .mode-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      const icon = this.querySelector('[data-lucide]');
+      const mode = (icon && icon.getAttribute('data-lucide') === 'sparkles') ? 'sem' : 'text';
+      applyMode(mode);
+    });
+  });
+
+  if (window.lucide) lucide.createIcons();
+})();
+</script>
 </body>
 </html>
