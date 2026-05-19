@@ -1,4 +1,4 @@
-@startuml SPK-73_Arquitetura_v3
+@startuml SPK-73_Arquitetura_v4
 
 skinparam backgroundColor #FFFFFF
 skinparam defaultFontName Arial
@@ -41,12 +41,12 @@ rectangle "Camada Operacional" #F0FFF4 {
   component "Apache Hop\n(Pipeline ETL)"       as HOP #FFFCDC
 
   component "Qualis CAPES\n(Planilha CSV)" as QUALIS #F5F5F5
-  cloud "CrossRef\n(API DOI)"              as CROSSREF
+  cloud "CrossRef\n(API DOI + Resumo)"     as CROSSREF
   cloud "OpenAlex\n(API Impact Factor)"    as OPENALEX
 
-  XML     --> HOP : lê XMLs
-  QUALIS  --> HOP : lookup ISSN
-  CROSSREF --> HOP : lookup DOI
+  XML      --> HOP : lê XMLs
+  QUALIS   --> HOP : lookup ISSN
+  CROSSREF --> HOP : lookup DOI\ne resumo
   OPENALEX --> HOP : lookup\nFator de Impacto
 }
 
@@ -62,12 +62,10 @@ rectangle "Camada Back-End  |  Railway" #FFF8F0 {
   component "Supabase Auth\n(somente Admin)"      as SBAUTH #FFE8E8
 
   cloud "Sentence-Transformers\n(Modelo Local)" as ST
-  cloud "OpenAI / Langchain\n(Fallback)"         as OPENAI
 
   API    --> DB     : consulta /\natualiza
   WORKER --> DB     : persiste\nembeddings
   WORKER --> ST     : gera embedding
-  ST     --> OPENAI : fallback
   SBAUTH --> DB     : valida role\n(admin)
 }
 

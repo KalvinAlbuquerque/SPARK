@@ -38,12 +38,22 @@ CREATE TABLE IF NOT EXISTS pesquisadores (
   id               SERIAL       PRIMARY KEY,
   lattes_id        VARCHAR(16)  NOT NULL UNIQUE,
   nome_completo    VARCHAR(255) NOT NULL,
+  departamento     VARCHAR(255),
+  campus           VARCHAR(100),
   resumo           TEXT,
+  total_producoes  INTEGER      NOT NULL DEFAULT 0,
+  indice_h         INTEGER      NOT NULL DEFAULT 0,
+  total_a1_a2      INTEGER      NOT NULL DEFAULT 0,
   data_atualizacao TIMESTAMP    DEFAULT NOW()
 );
 
 COMMENT ON TABLE  pesquisadores                  IS 'Dados dos pesquisadores extraídos do currículo Lattes.';
 COMMENT ON COLUMN pesquisadores.lattes_id        IS 'Identificador único do currículo Lattes (16 dígitos).';
+COMMENT ON COLUMN pesquisadores.departamento     IS 'Departamento do pesquisador na UNEB, informado manualmente no XML.';
+COMMENT ON COLUMN pesquisadores.campus           IS 'Campus do pesquisador na UNEB, informado manualmente no XML.';
+COMMENT ON COLUMN pesquisadores.total_producoes  IS 'Total de produções do pesquisador, calculado e atualizado pelo ETL.';
+COMMENT ON COLUMN pesquisadores.indice_h         IS 'Índice H do pesquisador, calculado pelo ETL com base no JCR das produções.';
+COMMENT ON COLUMN pesquisadores.total_a1_a2      IS 'Total de produções com Qualis A1 ou A2, calculado e atualizado pelo ETL.';
 COMMENT ON COLUMN pesquisadores.data_atualizacao IS 'Data da última carga ETL para este pesquisador.';
 
 
@@ -60,6 +70,7 @@ CREATE TABLE IF NOT EXISTS producoes (
   nome_veiculo     VARCHAR(255),
   issn             VARCHAR(9),
   doi              VARCHAR(255),
+  resumo           TEXT,
   qualis           VARCHAR(5),
   jcr              NUMERIC(6, 3),
   texto_busca      TSVECTOR,
@@ -70,6 +81,7 @@ COMMENT ON TABLE  producoes               IS 'Produções científicas dos pesqu
 COMMENT ON COLUMN producoes.tipo_producao IS 'Tipo da produção: ARTIGO, EVENTO, LIVRO, CAPITULO ou TECNICO.';
 COMMENT ON COLUMN producoes.issn          IS 'ISSN do periódico, usado para lookup no Qualis e JCR.';
 COMMENT ON COLUMN producoes.doi           IS 'Digital Object Identifier obtido via XML Lattes ou CrossRef.';
+COMMENT ON COLUMN producoes.resumo        IS 'Resumo do artigo obtido via campo abstract da CrossRef (NULL quando indisponível).';
 COMMENT ON COLUMN producoes.qualis        IS 'Estrato Qualis CAPES do periódico (ex: A1, A2, B1).';
 COMMENT ON COLUMN producoes.jcr           IS 'Fator de Impacto do periódico via OpenAlex (2yr_mean_citedness).';
 COMMENT ON COLUMN producoes.texto_busca   IS 'Índice Full-Text Search gerado a partir do título.';

@@ -1,4 +1,4 @@
-@startuml SPK-79_DiagramaER_v3
+@startuml SPK-79_DiagramaER_v4
 
 skinparam backgroundColor #FFFFFF
 skinparam defaultFontName Arial
@@ -50,7 +50,12 @@ class "pesquisadores" as PESQ {
   --
   lattes_id : varchar <<UNIQUE>>
   nome_completo : varchar
+  departamento : varchar
+  campus : varchar
   resumo : text
+  total_producoes : integer
+  indice_h : integer
+  total_a1_a2 : integer
   data_atualizacao : timestamp
 }
 
@@ -67,6 +72,7 @@ class "producoes" as PROD {
   nome_veiculo : varchar
   issn : varchar
   doi : varchar
+  resumo : text
   qualis : varchar
   jcr : numeric
   texto_busca : tsvector
@@ -80,7 +86,7 @@ class "vetores" as VET {
   + id : serial <<PK>>
   --
   producao_id : integer <<FK producoes, UNIQUE>>
-  embedding : vector(1536)
+  embedding : vector(384)
   modelo_llm : varchar
   created_at : timestamp
 }
