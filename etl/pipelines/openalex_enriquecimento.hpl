@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info>
+    <name>openalex_enriquecimento</name>
+    <name_hi_res/>
+    <description>Enriquece producoes com Impact Factor (jcr) via OpenAlex API por ISSN (SPK-13 subetapa 5.3)</description>
+    <extended_description/>
+    <pipeline_version/>
+    <pipeline_status>0</pipeline_status>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+      <parameter>
+        <name>OPENALEX_APIKEY</name>
+        <default_value></default_value>
+        <description>API key do OpenAlex (gratuita — crie em openalex.org/settings/api)</description>
+      </parameter>
+    </parameters>
+    <capture_transform_performance>N</capture_transform_performance>
+    <transform_performance_capturing_delay>1000</transform_performance_capturing_delay>
+    <transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
+    <created_user>SPARK ETL</created_user>
+    <created_date>2026/05/23 00:00:00.000</created_date>
+    <modified_user>SPARK ETL</modified_user>
+    <modified_date>2026/05/23 00:00:00.000</modified_date>
+    <key_for_session_key>H4sIAAAAAAAA/wMAAAAAAAAAAAA=</key_for_session_key>
+    <is_key_private>N</is_key_private>
+  </info>
+  <notepads>
+    <notepad>
+      <note>Pipeline SPK-13 — OpenAlex (subetapa 5.3)
+Deduplicação: apenas 1 chamada API por ISSN único (mesmo ISSN em vários artigos)
+GET /sources/issn:{issn}?select=issn_l,display_name,summary_stats&amp;api_key={OPENALEX_APIKEY}
+Campo alvo: summary_stats.2yr_mean_citedness → producoes.jcr
+UPSERT: UPDATE producoes SET jcr=COALESCE(novo,jcr) WHERE issn=?
+Log: sem_match_jcr (HTTP 404 ou campo ausente)
+Requisito: OPENALEX_APIKEY configurado em .env</note>
+      <xloc>50</xloc>
+      <yloc>50</yloc>
+      <width>620</width>
+      <heigth>110</heigth>
+      <fontname>Arial</fontname>
+      <fontsize>10</fontsize>
+      <fontbold>N</fontbold>
+      <fontitalic>N</fontitalic>
+      <fontcolorred>14</fontcolorred>
+      <fontcolorgreen>58</fontcolorgreen>
+      <fontcolorblue>90</fontcolorblue>
+      <backgroundcolorred>201</backgroundcolorred>
+      <backgroundcolorgreen>232</backgroundcolorgreen>
+      <backgroundcolorblue>251</backgroundcolorblue>
+      <bordercolorred>14</bordercolorred>
+      <bordercolorgreen>58</bordercolorgreen>
+      <bordercolorblue>90</bordercolorblue>
+    </notepad>
+  </notepads>
+
+  <order>
+    <hop><from>Ler ISSNs</from><to>Sort ISSN</to><enabled>Y</enabled></hop>
+    <hop><from>Sort ISSN</from><to>Unico por ISSN</to><enabled>Y</enabled></hop>
+    <hop><from>Unico por ISSN</from><to>Construir URL OpenAlex</to><enabled>Y</enabled></hop>
+    <hop><from>Construir URL OpenAlex</from><to>HTTP OpenAlex</to><enabled>Y</enabled></hop>
+    <hop><from>HTTP OpenAlex</from><to>Extrair JCR</to><enabled>Y</enabled></hop>
+    <hop><from>Extrair JCR</from><to>Filtrar JCR encontrado</to><enabled>Y</enabled></hop>
+    <hop><from>Filtrar JCR encontrado</from><to>UPSERT JCR</to><enabled>Y</enabled></hop>
+    <hop><from>Filtrar JCR encontrado</from><to>Log sem_match_jcr</to><enabled>Y</enabled></hop>
+  </order>
+
+  <!-- ================================================================
+       ENTRADA — ISSNs únicos (deduplicados antes das chamadas API)
+       ================================================================ -->
+  <transform>
+    <name>Ler ISSNs</name>
+    <type>TableInput</type>
+    <description>Le ISSNs distintos da tabela producoes para deduplicar antes das chamadas OpenAlex</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <connection>spark_db</connection>
+    <sql>SELECT DISTINCT issn FROM producoes WHERE issn IS NOT NULL AND issn != ''</sql>
+    <limit>0</limit>
+    <lookup/>
+    <execute_each_row>N</execute_each_row>
+    <variables_active>N</variables_active>
+    <lazy_conversion_active>N</lazy_conversion_active>
+    <GUI><xloc>150</xloc><yloc>300</yloc></GUI>
+  </transform>
+
+  <!-- ================================================================
+       DEDUPLICAÇÃO — Garante 1 chamada por ISSN único
+       ================================================================ -->
+  <transform>
+    <name>Sort ISSN</name>
+    <type>SortRows</type>
+    <description>Ordena por ISSN — necessario antes do step Unique</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <sort_size>1000000</sort_size>
+    <free_memory_treshold>25</free_memory_treshold>
+    <compress>N</compress>
+    <compress_variable/>
+    <unique_rows>N</unique_rows>
+    <fields>
+      <field>
+        <name>issn</name>
+        <sort_direction>ascending</sort_direction>
+        <collator_enabled>N</collator_enabled>
+        <collator_strength>0</collator_strength>
+        <case_sensitive>N</case_sensitive>
+        <presorted>N</presorted>
+      </field>
+    </fields>
+    <GUI><xloc>370</xloc><yloc>300</yloc></GUI>
+  </transform>
+
+  <transform>
+    <name>Unico por ISSN</name>
+    <type>Unique</type>
+    <description>Mantém apenas um registro por ISSN — a API OpenAlex e chamada uma unica vez por ISSN</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <count_rows>N</count_rows>
+    <count_field/>
+    <redirect_rows>N</redirect_rows>
+    <error_description/>
+    <fields>
+      <field>
+        <name>issn</name>
+        <case_sensitive>N</case_sensitive>
+      </field>
+    </fields>
+    <GUI><xloc>590</xloc><yloc>300</yloc></GUI>
+  </transform>
+
+  <!-- ================================================================
+       CHAMADA API — Busca Impact Factor por ISSN no OpenAlex
+       ================================================================ -->
+  <transform>
+    <name>Construir URL OpenAlex</name>
+    <type>ScriptValueMod</type>
+    <description>Monta URL OpenAlex para busca de 2yr_mean_citedness por ISSN</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <optimizationLevel>9</optimizationLevel>
+    <jsScripts>
+      <jsScript>
+        <jsScript_type>0</jsScript_type>
+        <jsScript_name>Script 1</jsScript_name>
+        <jsScript_script><![CDATA[
+var openalex_key = java.lang.System.getenv("OPENALEX_APIKEY");
+var api_param = (openalex_key != null && String(openalex_key) != "") ? "&api_key=" + openalex_key : "";
+var url = "https://api.openalex.org/sources/issn:" + String(issn) + "?select=issn_l,display_name,summary_stats" + api_param;
+        ]]></jsScript_script>
+      </jsScript>
+    </jsScripts>
+    <fields>
+      <field>
+        <name>url</name>
+        <rename>url</rename>
+        <type>String</type>
+        <length>-1</length>
+        <precision>-1</precision>
+        <replace>N</replace>
+      </field>
+    </fields>
+    <GUI><xloc>810</xloc><yloc>300</yloc></GUI>
+  </transform>
+
+  <transform>
+    <name>HTTP OpenAlex</name>
+    <type>Http</type>
+    <description>Chama OpenAlex GET /sources/issn:{issn} para obter 2yr_mean_citedness</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <url/>
+    <urlInField>Y</urlInField>
+    <urlField>url</urlField>
+    <encoding>UTF-8</encoding>
+    <httpLogin/>
+    <httpPassword>Encrypted </httpPassword>
+    <proxyHost/>
+    <proxyPort/>
+    <socketTimeout>30000</socketTimeout>
+    <connectionTimeout>30000</connectionTimeout>
+    <closeIdleConnectionsTime>-1</closeIdleConnectionsTime>
+    <lookup/>
+    <result>
+      <name>json_response</name>
+      <code>http_status</code>
+      <response_time/>
+      <response_header/>
+    </result>
+    <attributes/>
+    <GUI><xloc>1030</xloc><yloc>300</yloc></GUI>
+  </transform>
+
+  <transform>
+    <name>Extrair JCR</name>
+    <type>ScriptValueMod</type>
+    <description>Extrai 2yr_mean_citedness do JSON OpenAlex. HTTP 404 ou campo ausente resultam em null.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <optimizationLevel>9</optimizationLevel>
+    <jsScripts>
+      <jsScript>
+        <jsScript_type>0</jsScript_type>
+        <jsScript_name>Script 1</jsScript_name>
+        <jsScript_script><![CDATA[
+var jcr_novo = null;
+var jcr_encontrado = null;
+try {
+  if (String(http_status) == "200" && json_response != null && String(json_response) != "") {
+    var resp = JSON.parse(String(json_response));
+    var citedness = (resp.summary_stats != null) ? resp.summary_stats["2yr_mean_citedness"] : null;
+    if (citedness !== null && citedness !== undefined) {
+      jcr_novo = Number(citedness);
+      if (!isNaN(jcr_novo)) {
+        jcr_encontrado = "Y"; // non-null signals match — filter uses IS NOT NULL
+      } else {
+        jcr_novo = null;
+      }
+    }
+  }
+} catch(e) {}
+        ]]></jsScript_script>
+      </jsScript>
+    </jsScripts>
+    <fields>
+      <field>
+        <name>jcr_novo</name>
+        <rename>jcr_novo</rename>
+        <type>Number</type>
+        <length>-1</length>
+        <precision>6</precision>
+        <replace>N</replace>
+      </field>
+      <field>
+        <name>jcr_encontrado</name>
+        <rename>jcr_encontrado</rename>
+        <type>String</type>
+        <length>1</length>
+        <precision>-1</precision>
+        <replace>N</replace>
+      </field>
+    </fields>
+    <GUI><xloc>1250</xloc><yloc>300</yloc></GUI>
+  </transform>
+
+  <!-- ================================================================
+       ROTEAMENTO — Grava JCR encontrado, loga ISSNs sem match
+       ================================================================ -->
+  <transform>
+    <name>Filtrar JCR encontrado</name>
+    <type>FilterRows</type>
+    <description>JCR encontrado: vai para UPSERT. JCR ausente (404 ou campo nulo): vai para log</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <send_true_to>UPSERT JCR</send_true_to>
+    <send_false_to>Log sem_match_jcr</send_false_to>
+    <compare>
+      <condition>
+        <negated>N</negated>
+        <leftvalue>jcr_encontrado</leftvalue>
+        <function>IS NOT NULL</function>
+        <rightvalue/>
+      </condition>
+    </compare>
+    <GUI><xloc>1470</xloc><yloc>300</yloc></GUI>
+  </transform>
+
+  <!-- ================================================================
+       UPSERT — Grava jcr preservando valor existente via COALESCE
+       Um UPDATE por ISSN atualiza TODOS os artigos com aquele ISSN
+       ================================================================ -->
+  <transform>
+    <name>UPSERT JCR</name>
+    <type>ExecSQL</type>
+    <description>Atualiza producoes.jcr para todos os artigos com o ISSN, preservando valor existente</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <connection>spark_db</connection>
+    <execute_each_row>Y</execute_each_row>
+    <single_statement>N</single_statement>
+    <replace_variables>N</replace_variables>
+    <set_params>Y</set_params>
+    <sql>UPDATE producoes SET jcr = COALESCE(?, jcr) WHERE issn = ?</sql>
+    <arguments>
+      <argument><name>jcr_novo</name></argument>
+      <argument><name>issn</name></argument>
+    </arguments>
+    <GUI><xloc>1690</xloc><yloc>180</yloc></GUI>
+  </transform>
+
+  <!-- ================================================================
+       LOG — ISSNs sem match no OpenAlex
+       ================================================================ -->
+  <transform>
+    <name>Log sem_match_jcr</name>
+    <type>WriteToLog</type>
+    <description>Registra ISSNs nao encontrados no OpenAlex (periodico nao indexado ou fora da base)</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <loglevel>Error</loglevel>
+    <displayHeader>Y</displayHeader>
+    <limitRows>N</limitRows>
+    <limitRowsNumber>0</limitRowsNumber>
+    <logmessage>SEM MATCH JCR — ISSN nao encontrado no OpenAlex ou campo 2yr_mean_citedness ausente</logmessage>
+    <fields>
+      <field><name>issn</name></field>
+    </fields>
+    <GUI><xloc>1690</xloc><yloc>420</yloc></GUI>
+  </transform>
+
+  <transform_error_handling/>
+</pipeline>

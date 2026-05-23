@@ -50,6 +50,35 @@ docker exec spark-db-1 psql -U spark -d spark -c "SELECT extname FROM pg_extensi
 
 As credenciais do banco são passadas ao script `setup.ps1`/`setup.sh` que as criptografa internamente — **não é necessário exportar variáveis para o Hop manualmente**. Basta definir `POSTGRES_PASSWORD` antes de rodar o setup (veja seção 4).
 
+### Carregamento automático do .env (recomendado)
+
+Os scripts `run-etl.ps1` e `run-etl.sh` **carregam automaticamente** o arquivo `.env` da raiz do repositório antes de executar o Hop. Basta copiar o template e preencher:
+
+```powershell
+Copy-Item .env.example .env
+# Edite .env com seus valores
+```
+
+Variáveis lidas do `.env` relevantes para o ETL:
+
+| Variável | Descrição | Obrigatório |
+|---|---|---|
+| `POSTGRES_PASSWORD` | Senha do banco PostgreSQL | Sim (para setup) |
+| `XML_DIR` | Diretório com os XMLs Lattes | Não (padrão: `data/xml`) |
+| `ETL_EMAIL` | E-mail para CrossRef Polite Pool | Recomendado (acesso mais rápido) |
+| `OPENALEX_APIKEY` | API key gratuita do OpenAlex | Sim para SPK-13 (crie em openalex.org) |
+
+> Variáveis já exportadas no terminal **não são sobrescritas** pelo `.env`.
+
+### Como obter a API key do OpenAlex (gratuita)
+
+1. Crie conta em [openalex.org](https://openalex.org)
+2. Acesse **Settings → API**
+3. Copie a key gerada
+4. Adicione ao `.env`: `OPENALEX_APIKEY=sua-key`
+
+### Exportação manual (alternativa ou para GUI do Hop)
+
 Se quiser exportar manualmente (ex: testes ou uso da GUI do Hop):
 
 **Windows (PowerShell):**
@@ -61,6 +90,8 @@ $env:POSTGRES_DB   = "spark"
 $env:POSTGRES_USER = "spark"
 $env:POSTGRES_PASSWORD = "sua_senha"
 $env:XML_DIR = "C:\caminho\para\data\xml"
+$env:ETL_EMAIL = "seu@email.com"
+$env:OPENALEX_APIKEY = "sua-key"
 ```
 
 **Linux/macOS (bash):**
@@ -72,6 +103,8 @@ export POSTGRES_DB=spark
 export POSTGRES_USER=spark
 export POSTGRES_PASSWORD=sua_senha
 export XML_DIR=/caminho/absoluto/para/data/xml
+export ETL_EMAIL=seu@email.com
+export OPENALEX_APIKEY=sua-key
 ```
 
 ### Via GUI do Apache Hop (persiste entre sessões)
@@ -314,9 +347,11 @@ etl/
 ├── pipelines/
 │   ├── lattes_pesquisadores.hpl     # Extrai e carrega pesquisadores (SPK-11)
 │   ├── lattes_producoes.hpl         # Extrai e carrega producoes - 4 tipos (SPK-11)
-│   └── qualis_enriquecimento.hpl    # Enriquece qualis via planilha CAPES (SPK-12)
+│   ├── qualis_enriquecimento.hpl    # Enriquece qualis via planilha CAPES (SPK-12)
+│   ├── crossref_enriquecimento.hpl  # Enriquece doi + resumo via CrossRef API (SPK-13)
+│   └── openalex_enriquecimento.hpl  # Enriquece jcr via OpenAlex API por ISSN (SPK-13)
 ├── workflows/
-│   └── spark_etl.hwf                # Orquestra os 3 pipelines + log
+│   └── spark_etl.hwf                # Orquestra os 5 pipelines + log
 ├── metadata/
 │   └── rdbms/
 │       └── spark_db.json            # Conexao PostgreSQL (gerada pelo setup)
@@ -371,7 +406,7 @@ Campos **não preenchidos pelo ETL** (calculados em sprint futura): `total_produ
 | `doi` | `@DOI` (quando disponível) |
 | `texto_busca` | Preenchido automaticamente por trigger do banco |
 
-Campo `qualis` é preenchido pelo pipeline `qualis_enriquecimento.hpl` (SPK-12). Campos **não preenchidos**: `resumo` das produções (campo `RESUMO-DA-PRODUCAO` não extraído), `jcr` (enriquecimento via OpenAlex — SPK-14).
+Campo `qualis` é preenchido pelo pipeline `qualis_enriquecimento.hpl` (SPK-12). Campos `resumo` e `doi` (quando ausente no XML) são preenchidos por `crossref_enriquecimento.hpl` (SPK-13). Campo `jcr` é preenchido por `openalex_enriquecimento.hpl` (SPK-13).
 
 ---
 
@@ -392,3 +427,20 @@ Campo `qualis` é preenchido pelo pipeline `qualis_enriquecimento.hpl` (SPK-12).
 - Taxa de correspondência validada: **93.1% dos 247 artigos** (acima do critério mínimo de 70%)
 - UPSERT via `UPDATE … SET qualis = COALESCE(?, qualis)` — não sobrescreve valor já preenchido quando não há nova correspondência
 - Artigos sem correspondência logados via `WriteToLog` sem interromper o processamento
+
+### SPK-13 (crossref_enriquecimento + openalex_enriquecimento)
+
+**crossref_enriquecimento.hpl** (subetapa 5.2):
+- Dois ramos: artigos com DOI (busca direta `/works/{doi}`) e sem DOI (busca por título com score > 70)
+- Header `User-Agent: SPARK-ETL/1.0 (mailto:{ETL_EMAIL})` obrigatório para o Polite Pool CrossRef
+- Abstract com tags HTML removidas antes de gravar em `resumo`
+- UPSERT: `UPDATE … SET doi = COALESCE(?, doi), resumo = COALESCE(?, resumo) WHERE id = ?`
+- Logs: `sem_match_doi` (score ≤ 70) e `sem_resumo` (DOI encontrado mas sem abstract)
+
+**openalex_enriquecimento.hpl** (subetapa 5.3):
+- Deduplicação por ISSN antes das chamadas — 1 chamada API por ISSN único
+- Campo `2yr_mean_citedness` do OpenAlex usado como equivalente ao JIF da Clarivate
+- Um UPDATE por ISSN atualiza todos os artigos do mesmo periódico de uma vez
+- UPSERT: `UPDATE … SET jcr = COALESCE(?, jcr) WHERE issn = ?`
+- Logs: `sem_match_jcr` (ISSN não indexado no OpenAlex ou campo ausente)
+- Configuração: `OPENALEX_APIKEY` no `.env` — API gratuita (openalex.org)

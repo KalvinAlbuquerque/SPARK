@@ -1,82 +1,70 @@
 ### Conectando Claude Code ao MCP do Jira
 
-A abordagem oficial e mais estável é usar o **Atlassian Rovo MCP Server** com autenticação por API token.
-
-O endpoint SSE mais antigo (OAuth) está sendo descontinuado após 30 de junho de 2026, então o uso de API token é o método recomendado para workflows no terminal. [Builder.io](https://www.builder.io/blog/claude-code-with-jira)
+Pacote usado: [`jira-mcp`](https://www.npmjs.com/package/jira-mcp) via npm (servidor stdio local).
 
 ---
 
-#### Passo 1: Instale o Claude Code
-
-bash
+#### Passo 1: Instale o pacote
 
 ```bash
-npminstall -g @anthropic-ai/claude-code
-claude --version
+mkdir -p ~/.config/jira-mcp
+cd ~/.config/jira-mcp
+npm init -y
+npm install jira-mcp
 ```
+
+O `index.js` ficará em `~/.config/jira-mcp/node_modules/jira-mcp/index.js`.
 
 ---
 
 #### Passo 2: Crie um API Token no Atlassian
 
-Acesse [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens), clique em  **Create API token** , dê um nome (ex: "Claude Code MCP") e copie o token gerado imediatamente, pois ele não aparecerá novamente. [Builder.io](https://www.builder.io/blog/claude-code-with-jira)
-
-Depois, codifique suas credenciais em base64:
-
-bash
-
-```bash
-echo -n "seu-email@empresa.com:seu-api-token"| base64
-```
-
-Salve o output, ele será usado na configuração.
+Acesse [https://id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens), clique em **Create API token**, dê um nome e copie o token gerado.
 
 ---
 
-#### Passo 3: Configure o MCP no Claude Code
+#### Passo 3: Adicione o servidor MCP ao projeto
 
-Crie ou edite o arquivo de configuração:
-
-**Mac/Linux:** `~/.config/claude/mcp.json`
-**Windows:** `C:\Users\[usuario]\AppData\Roaming\Claude\mcp.json`
-
-Conteúdo do arquivo:
-
-json
+No Claude Code, edite `~/.claude.json` (ou use `/mcp` → Add server) e adicione na seção `mcpServers` do projeto:
 
 ```json
 {
-"mcpServers":{
-"jira":{
-"command":"node",
-"args":["/caminho/absoluto/para/mcp-jira-server/dist/index.js"],
-"env":{
-"JIRA_HOST":"https://sua-empresa.atlassian.net",
-"JIRA_EMAIL":"seu-email@empresa.com",
-"JIRA_API_TOKEN":"seu-api-token",
-"JIRA_DEFAULT_PROJECT":"PROJ"
-}
-}
-}
+  "jira": {
+    "type": "stdio",
+    "command": "node",
+    "args": ["C:\\Users\\<usuario>\\.config\\jira-mcp\\node_modules\\jira-mcp\\index.js"],
+    "env": {
+      "JIRA_INSTANCE_URL": "https://sua-empresa.atlassian.net",
+      "JIRA_USER_EMAIL": "seu-email@gmail.com",
+      "JIRA_API_KEY": "seu-api-token",
+      "JIRA_DEFAULT_PROJECT": "PROJ"
+    }
+  }
 }
 ```
 
+**Atenção — nomes corretos das variáveis de ambiente:**
+
+| Correto | Errado (não funciona) |
+|---|---|
+| `JIRA_INSTANCE_URL` | `JIRA_HOST` |
+| `JIRA_USER_EMAIL` | `JIRA_EMAIL` |
+| `JIRA_API_KEY` | `JIRA_API_TOKEN` |
+
 ---
 
-#### Alternativa via CLI
+#### Passo 4: Reinicie o Claude Code
 
-Você pode adicionar o servidor diretamente pelo terminal com o comando `claude mcp add --transport stdio jira -- node $HOME/.config/jira-mcp/index.js`. [GitHub](https://github.com/rui-branco/jira-mcp)
+Feche e reabra. Verifique com `/mcp` — o servidor `jira` deve aparecer como `✓ connected`.
 
 ---
 
 #### Usando na prática
 
-Com o MCP configurado, você pode usar linguagem natural dentro do Claude Code:
-
 ```
-> Busque o ticket PROJ-123
-> Crie uma tarefa de bug com prioridade alta sobre o problema de login
-> Liste meus tickets abertos atribuídos a mim
+> Busque o ticket SPK-13
+> Liste os tickets abertos do projeto SPK
+> Qual o status do SPK-12?
 ```
 
-O MCP traduz seus prompts em chamadas estruturadas para a API do Jira, permitindo criar issues, atualizar tickets, gerenciar sprints e muito mais diretamente do terminal. [Composio](https://composio.dev/content/jira-mcp-server)
+As ferramentas disponíveis são `get_issue` e `jql_search`.
