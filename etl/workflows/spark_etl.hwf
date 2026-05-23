@@ -73,7 +73,7 @@ Passe XML_DIR como parâmetro ao executar:
       <type>SQL</type>
       <connection>spark_db</connection>
       <sql>INSERT INTO etl_logs (iniciado_em, status, total_inseridos, total_atualizados, total_sem_match, detalhes)
-VALUES (NOW(), 'em_andamento', 0, 0, 0, '{"xml_dir": "${XML_DIR}"}'::jsonb);</sql>
+VALUES (NOW(), 'em_andamento', 0, 0, 0, jsonb_build_object('xml_dir', '${XML_DIR}'));</sql>
       <useVariableSubstitution>Y</useVariableSubstitution>
       <sqlfromfile>N</sqlfromfile>
       <sqlfilename/>

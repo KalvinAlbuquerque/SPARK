@@ -56,7 +56,7 @@ duration=$(( end_ts - start_ts ))
 
 echo ""
 if [[ $exit_code -eq 0 ]]; then
-    echo "=== ETL concluido com sucesso em ${duration}s ==========================="
+    echo "=== ETL concluido em ${duration}s ==========================="
 else
     echo "=== ETL finalizado com erro (codigo $exit_code) =========================="
     echo "Verifique os logs acima e a tabela etl_logs no banco."

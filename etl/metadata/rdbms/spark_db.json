@@ -1,4 +1,4 @@
-{
+﻿{
   "virtualPath": "",
   "rdbms": {
     "POSTGRESQL": {
@@ -6,7 +6,7 @@
       "pluginId": "POSTGRESQL",
       "accessType": 0,
       "hostname": "localhost",
-      "password": "PLACEHOLDER_RUN_SETUP_PS1",
+      "password": "Encrypted 2be98afc86aa7f2e4a811af7ed997a2df",
       "pluginName": "PostgreSQL",
       "port": "5432",
       "attributes": {

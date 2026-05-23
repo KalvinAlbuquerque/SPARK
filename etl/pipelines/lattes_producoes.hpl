@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <pipeline>
   <info>
     <name>lattes_producoes</name>
@@ -313,7 +313,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
        ================================================================ -->
   <transform>
     <name>Extrair Artigos</name>
-    <type>GetDataFromXML</type>
+    <type>GetXmlData</type>
     <description>Loop em .//ARTIGO-PUBLICADO — um registro por artigo</description>
     <distribute>Y</distribute>
     <custom_distribution/>
@@ -331,11 +331,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
     <IsAFile>Y</IsAFile>
     <XmlField>filename</XmlField>
     <prunePath/>
-    <loops>
-      <loop>
-        <path>.//ARTIGO-PUBLICADO</path>
-      </loop>
-    </loops>
+    <loopxpath>.//ARTIGO-PUBLICADO</loopxpath>
     <fields>
       <field>
         <name>lattes_id</name>
@@ -440,7 +436,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
        ================================================================ -->
   <transform>
     <name>Extrair Eventos</name>
-    <type>GetDataFromXML</type>
+    <type>GetXmlData</type>
     <description>Loop em .//TRABALHO-EM-EVENTOS — um registro por trabalho</description>
     <distribute>Y</distribute>
     <custom_distribution/>
@@ -458,11 +454,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
     <IsAFile>Y</IsAFile>
     <XmlField>filename</XmlField>
     <prunePath/>
-    <loops>
-      <loop>
-        <path>.//TRABALHO-EM-EVENTOS</path>
-      </loop>
-    </loops>
+    <loopxpath>.//TRABALHO-EM-EVENTOS</loopxpath>
     <fields>
       <field>
         <name>lattes_id</name>
@@ -567,7 +559,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
        ================================================================ -->
   <transform>
     <name>Extrair Livros</name>
-    <type>GetDataFromXML</type>
+    <type>GetXmlData</type>
     <description>Loop em .//LIVRO-PUBLICADO-OU-ORGANIZADO — um registro por livro</description>
     <distribute>Y</distribute>
     <custom_distribution/>
@@ -585,11 +577,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
     <IsAFile>Y</IsAFile>
     <XmlField>filename</XmlField>
     <prunePath/>
-    <loops>
-      <loop>
-        <path>.//LIVRO-PUBLICADO-OU-ORGANIZADO</path>
-      </loop>
-    </loops>
+    <loopxpath>.//LIVRO-PUBLICADO-OU-ORGANIZADO</loopxpath>
     <fields>
       <field>
         <name>lattes_id</name>
@@ -694,7 +682,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
        ================================================================ -->
   <transform>
     <name>Extrair Capitulos</name>
-    <type>GetDataFromXML</type>
+    <type>GetXmlData</type>
     <description>Loop em .//CAPITULO-DE-LIVRO-PUBLICADO — um registro por capítulo</description>
     <distribute>Y</distribute>
     <custom_distribution/>
@@ -712,11 +700,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
     <IsAFile>Y</IsAFile>
     <XmlField>filename</XmlField>
     <prunePath/>
-    <loops>
-      <loop>
-        <path>.//CAPITULO-DE-LIVRO-PUBLICADO</path>
-      </loop>
-    </loops>
+    <loopxpath>.//CAPITULO-DE-LIVRO-PUBLICADO</loopxpath>
     <fields>
       <field>
         <name>lattes_id</name>
@@ -820,7 +804,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
        ================================================================ -->
   <transform>
     <name>Tipo Artigo</name>
-    <type>AddConstants</type>
+    <type>Constant</type>
     <description>Adiciona tipo_producao=ARTIGO</description>
     <distribute>Y</distribute>
     <custom_distribution/>
@@ -850,7 +834,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
 
   <transform>
     <name>Tipo Evento</name>
-    <type>AddConstants</type>
+    <type>Constant</type>
     <description>Adiciona tipo_producao=EVENTO</description>
     <distribute>Y</distribute>
     <custom_distribution/>
@@ -880,7 +864,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
 
   <transform>
     <name>Tipo Livro</name>
-    <type>AddConstants</type>
+    <type>Constant</type>
     <description>Adiciona tipo_producao=LIVRO</description>
     <distribute>Y</distribute>
     <custom_distribution/>
@@ -910,7 +894,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
 
   <transform>
     <name>Tipo Capitulo</name>
-    <type>AddConstants</type>
+    <type>Constant</type>
     <description>Adiciona tipo_producao=CAPITULO</description>
     <distribute>Y</distribute>
     <custom_distribution/>
@@ -944,7 +928,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
        ================================================================ -->
   <transform>
     <name>Unificar Producoes</name>
-    <type>AppendedStreams</type>
+    <type>Append</type>
     <description>Une os 4 fluxos de tipos de produção em um stream único</description>
     <distribute>Y</distribute>
     <custom_distribution/>

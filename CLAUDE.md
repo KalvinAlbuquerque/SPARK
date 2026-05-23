@@ -14,6 +14,8 @@ Antes de qualquer ação, leia:
 - Toda escrita nas tabelas usa UPSERT, sem exceção
 - Nenhum secret no repositório — apenas variáveis de ambiente
 - Endpoints de busca retornam 200 + lista vazia, nunca 404
+- Quando finalizar cada spec, renomeie o arquivo dela e complemente com _CONCLUIDA no final **IMPORTANTE**!!!!!!
+- Caso tenha dúvidas sobre alguma implementação, pergunte antes de tomar qualquer decisão.
 
 ## Memory file
 

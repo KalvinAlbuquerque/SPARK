@@ -1,9 +1,10 @@
 param(
-    [string]$HopHome = "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop",
-    [string]$DbHost  = "localhost",
-    [string]$DbPort  = "5432",
-    [string]$DbName  = "spark",
-    [string]$DbUser  = "spark"
+    [string]$HopHome  = "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop",
+    [string]$DbHost   = "localhost",
+    [string]$DbPort   = "5432",
+    [string]$DbName   = "spark",
+    [string]$DbUser   = "spark",
+    [string]$DbPassword = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,18 +15,26 @@ Write-Host ""
 Write-Host "=== SPARK ETL - Setup ==================================================="
 Write-Host "Hop:     $HopHome"
 Write-Host "Projeto: $ETL_DIR"
-Write-Host "Banco:   $DbUser@$DbHost:$DbPort/$DbName"
+Write-Host "Banco:   $DbUser@${DbHost}:${DbPort}/$DbName"
 Write-Host "========================================================================="
 Write-Host ""
 
-# 1. Solicitar senha do banco
-$securePwd = Read-Host "Senha do PostgreSQL ($DbUser)" -AsSecureString
-$BSTR      = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePwd)
-$plainPwd  = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
+# 1. Obter a senha: parametro > variavel de ambiente > prompt interativo
+if (-not [string]::IsNullOrWhiteSpace($DbPassword)) {
+    $plainPwd = $DbPassword
+    Write-Host "Usando senha via parametro -DbPassword."
+} elseif (-not [string]::IsNullOrWhiteSpace($env:POSTGRES_PASSWORD)) {
+    $plainPwd = $env:POSTGRES_PASSWORD
+    Write-Host "Usando senha de POSTGRES_PASSWORD."
+} else {
+    $securePwd = Read-Host "Senha do PostgreSQL ($DbUser)" -AsSecureString
+    $BSTR      = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePwd)
+    $plainPwd  = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
+}
 
 if ([string]::IsNullOrWhiteSpace($plainPwd)) {
-    Write-Error "Senha nao pode estar vazia."
+    Write-Error "Senha nao pode estar vazia. Defina POSTGRES_PASSWORD ou use -DbPassword."
     exit 1
 }
 

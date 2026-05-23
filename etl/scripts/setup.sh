@@ -20,12 +20,17 @@ echo "Banco:   $DB_USER@$DB_HOST:$DB_PORT/$DB_NAME"
 echo "========================================================================="
 echo ""
 
-# 1. Solicitar senha do banco
-read -rsp "Senha do PostgreSQL ($DB_USER): " PLAIN_PWD
-echo ""
+# 1. Obter a senha: variavel de ambiente > prompt interativo
+if [[ -n "${POSTGRES_PASSWORD:-}" ]]; then
+    PLAIN_PWD="$POSTGRES_PASSWORD"
+    echo "Usando senha de POSTGRES_PASSWORD."
+else
+    read -rsp "Senha do PostgreSQL ($DB_USER): " PLAIN_PWD
+    echo ""
+fi
 
 if [[ -z "$PLAIN_PWD" ]]; then
-    echo "ERRO: Senha nao pode estar vazia." >&2
+    echo "ERRO: Senha nao pode estar vazia. Defina POSTGRES_PASSWORD ou informe no prompt." >&2
     exit 1
 fi
 

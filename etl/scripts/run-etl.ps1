@@ -47,7 +47,7 @@ $duration  = [int]((Get-Date) - $startTime).TotalSeconds
 
 Write-Host ""
 if ($exitCode -eq 0) {
-    Write-Host "=== ETL concluido com sucesso em ${duration}s ==========================="
+    Write-Host "=== ETL concluido em ${duration}s ==========================="
 } else {
     Write-Host "=== ETL finalizado com erro (codigo $exitCode) =========================="
     Write-Host "Verifique os logs acima e a tabela etl_logs no banco."

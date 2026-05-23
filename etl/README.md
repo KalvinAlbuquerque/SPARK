@@ -112,18 +112,23 @@ Execute o script de setup **uma vez** — ele criptografa a senha, grava `spark_
 | Windows | `scripts/setup.ps1` | PowerShell |
 | Linux/macOS | `scripts/setup.sh` | bash |
 
+### Modo automatico (sem prompt)
+
+Defina `POSTGRES_PASSWORD` antes de executar — o script usa a variavel e nao pede nada interativamente:
+
 **Windows (PowerShell):**
 
 ```powershell
+$env:POSTGRES_PASSWORD = "changeme"
 cd etl\
 .\scripts\setup.ps1
 ```
 
-Parametros opcionais:
+Ou via parametro direto:
 
 ```powershell
-.\scripts\setup.ps1 -DbHost "localhost" -DbPort "5432" -DbName "spark" -DbUser "spark" `
-                    -HopHome "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop"
+cd etl\
+.\scripts\setup.ps1 -DbPassword "changeme"
 ```
 
 **Linux/macOS (bash):**
@@ -131,18 +136,31 @@ Parametros opcionais:
 ```bash
 cd etl/
 chmod +x scripts/setup.sh
-./scripts/setup.sh
+POSTGRES_PASSWORD=changeme ./scripts/setup.sh
 ```
 
-Variaveis de ambiente opcionais:
+### Modo interativo
+
+Se `POSTGRES_PASSWORD` nao estiver definida (e `-DbPassword` nao for passado), o script pede a senha no terminal com entrada segura (nao aparece na tela).
+
+### Parametros/variaveis opcionais
+
+**Windows:**
+
+```powershell
+.\scripts\setup.ps1 -DbHost "localhost" -DbPort "5432" -DbName "spark" -DbUser "spark" `
+                    -HopHome "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop"
+```
+
+**Linux/macOS:**
 
 ```bash
 HOP_HOME=/opt/apache-hop DB_HOST=localhost DB_PORT=5432 DB_NAME=spark DB_USER=spark \
-  ./scripts/setup.sh
+  POSTGRES_PASSWORD=changeme ./scripts/setup.sh
 ```
 
 O script (em ambas as versoes) faz:
-1. Pede a senha do PostgreSQL (entrada segura, nao aparece no terminal)
+1. Obtem a senha via variavel de ambiente, parametro ou prompt interativo
 2. Criptografa a senha com `hop-encrypt` (bat ou sh)
 3. Grava `etl/metadata/rdbms/spark_db.json` no formato aninhado do Hop 2.x
 4. Registra o projeto `spark` via `hop-conf` (sem abrir o Hop GUI)

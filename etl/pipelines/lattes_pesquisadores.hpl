@@ -114,7 +114,7 @@ UPSERT via ON CONFLICT (lattes_id).</note>
        ================================================================ -->
   <transform>
     <name>Extrair Pesquisador</name>
-    <type>GetDataFromXML</type>
+    <type>GetXmlData</type>
     <description>Extrai lattes_id, nome, departamento, campus e resumo de cada XML</description>
     <distribute>Y</distribute>
     <custom_distribution/>
@@ -132,11 +132,7 @@ UPSERT via ON CONFLICT (lattes_id).</note>
     <IsAFile>Y</IsAFile>
     <XmlField>filename</XmlField>
     <prunePath/>
-    <loops>
-      <loop>
-        <path>/CURRICULO-VITAE</path>
-      </loop>
-    </loops>
+    <loopxpath>/CURRICULO-VITAE</loopxpath>
     <fields>
       <field>
         <name>lattes_id</name>
