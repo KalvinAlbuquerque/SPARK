@@ -57,7 +57,7 @@ $env:POSTGRES_PORT = "5432"
 $env:POSTGRES_DB   = "spark"
 $env:POSTGRES_USER = "spark"
 $env:POSTGRES_PASSWORD = "changeme"
-$env:XML_DIR = "C:\caminho\absoluto\para\data\xml"
+$env:XML_DIR = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\data\xml"
 ```
 
 **Linux/macOS (bash):**
@@ -103,84 +103,54 @@ Coloque todos os arquivos `.xml` em um diretório (ex: `data/xml/`) e configure 
 
 ---
 
-## 4. Configurar a conexão de banco no Hop
+## 4. Configurar conexão e registrar o projeto (setup único)
 
-### Via GUI
+Execute `setup.ps1` **uma vez** — ele criptografa a senha, grava `spark_db.json` e registra o projeto `spark` no Apache Hop sem abrir a GUI:
 
-1. Abra o Apache Hop GUI
-2. Menu **File → New → Relational Database Connection**
-3. Crie uma conexão com o nome exato `spark_db`:
-   - **Type:** PostgreSQL
-   - **Host:** `${POSTGRES_HOST}` (ou o valor direto)
-   - **Port:** `${POSTGRES_PORT}`
-   - **Database:** `${POSTGRES_DB}`
-   - **Username:** `${POSTGRES_USER}`
-   - **Password:** `${POSTGRES_PASSWORD}`
-4. Salve em `etl/metadata/rdbms/spark_db.json`
+```powershell
+cd etl\
+.\scripts\setup.ps1
+```
 
-O arquivo `etl/metadata/rdbms/spark_db.json` já existe como template — ele usa variáveis de ambiente. Se o Hop não resolver as variáveis automaticamente, substitua pelos valores diretos (sem commitar no repositório).
+O script vai:
+1. Pedir a senha do PostgreSQL (entrada segura, não aparece no terminal)
+2. Criptografar a senha com `hop-encrypt.bat`
+3. Gravar `etl/metadata/rdbms/spark_db.json` no formato correto do Hop 2.x
+4. Registrar o projeto `spark` via `hop-conf.bat` (atualiza o `hop-config.json` do Hop)
+
+Parâmetros opcionais (caso o banco não seja o padrão):
+
+```powershell
+.\scripts\setup.ps1 -DbHost "localhost" -DbPort "5432" -DbName "spark" -DbUser "spark" `
+                    -HopHome "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop"
+```
 
 ---
 
 ## 5. Executar o pipeline
 
-### Via workflow (recomendado)
-
-O workflow `spark_etl.hwf` executa os dois pipelines em ordem e registra o log:
-
-**Windows (PowerShell) — defina HOP_HOME antes:**
+### Via script (recomendado — sem abrir GUI)
 
 ```powershell
-$env:XML_DIR = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\data\xml"
-
-& "$env:HOP_HOME\hop-run.bat" `
-  --runconfig=local `
-  --file=workflows/spark_etl.hwf `
-  "--parameters=XML_DIR=$env:XML_DIR"
+cd etl\
+.\scripts\run-etl.ps1
 ```
 
-**Linux/macOS:**
-
-```bash
-export XML_DIR=/caminho/absoluto/para/data/xml
-
-hop-run.sh \
-  --runconfig=local \
-  --file=workflows/spark_etl.hwf \
-  --parameters=XML_DIR=$XML_DIR
-```
-
-### Via pipelines individuais
-
-Execute **obrigatoriamente nessa ordem**:
-
-**Windows (PowerShell):**
+O script detecta automaticamente o diretório `data/xml/` do repositório. Para especificar outro diretório:
 
 ```powershell
-# 1. Pesquisadores
-& "$env:HOP_HOME\hop-run.bat" --runconfig=local `
-  --file=pipelines/lattes_pesquisadores.hpl `
-  "--parameters=XML_DIR=$env:XML_DIR"
-
-# 2. Produções (só depois do passo 1)
-& "$env:HOP_HOME\hop-run.bat" --runconfig=local `
-  --file=pipelines/lattes_producoes.hpl `
-  "--parameters=XML_DIR=$env:XML_DIR"
+.\scripts\run-etl.ps1 -XmlDir "C:\outro\caminho\xmls"
 ```
 
-**Linux/macOS:**
+### Via hop-run.bat diretamente
 
-```bash
-hop-run.sh --runconfig=local \
-  --file=pipelines/lattes_pesquisadores.hpl \
-  --parameters=XML_DIR=$XML_DIR
+```powershell
+$HOP = "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop"
+$ETL = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\etl"
+$XML = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\data\xml"
 
-hop-run.sh --runconfig=local \
-  --file=pipelines/lattes_producoes.hpl \
-  --parameters=XML_DIR=$XML_DIR
+cmd /c """$HOP\hop-run.bat"" --project=spark --runconfig=local --file=""$ETL\workflows\spark_etl.hwf"" ""--parameters=XML_DIR=$XML"""
 ```
-
-**Atenção:** `lattes_producoes.hpl` depende de `lattes_pesquisadores.hpl` ter sido executado antes, pois faz lookup de `pesquisador_id` por `lattes_id`.
 
 ### Via GUI do Apache Hop
 

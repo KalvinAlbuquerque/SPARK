@@ -1,23 +1,27 @@
 {
-  "name": "spark_db",
-  "plugin_id": "POSTGRESQL",
-  "plugin_name": "PostgreSQL",
-  "access_type": "NATIVE",
-  "hostname": "${POSTGRES_HOST}",
-  "port": "${POSTGRES_PORT}",
-  "database_name": "${POSTGRES_DB}",
-  "username": "${POSTGRES_USER}",
-  "password": "${POSTGRES_PASSWORD}",
-  "manual_url": false,
-  "url_template": "",
-  "initial_pool_size": 0,
-  "maximum_pool_size": 0,
-  "using_connection_pool": false,
-  "force_identifiers_to_lowercase": false,
-  "force_identifiers_to_uppercase": false,
-  "quote_all_fields": false,
-  "preserve_reserved_words": true,
-  "supports_boolean_data_type": true,
-  "supports_timestamp_data_type": true,
-  "default_schema_name": "public"
+  "virtualPath": "",
+  "rdbms": {
+    "POSTGRESQL": {
+      "databaseName": "spark",
+      "pluginId": "POSTGRESQL",
+      "accessType": 0,
+      "hostname": "localhost",
+      "password": "PLACEHOLDER_RUN_SETUP_PS1",
+      "pluginName": "PostgreSQL",
+      "port": "5432",
+      "attributes": {
+        "SUPPORTS_TIMESTAMP_DATA_TYPE": "Y",
+        "QUOTE_ALL_FIELDS": "N",
+        "SUPPORTS_BOOLEAN_DATA_TYPE": "Y",
+        "FORCE_IDENTIFIERS_TO_LOWERCASE": "N",
+        "PRESERVE_RESERVED_WORD_CASE": "Y",
+        "SQL_CONNECT": "",
+        "FORCE_IDENTIFIERS_TO_UPPERCASE": "N",
+        "PREFERRED_SCHEMA_NAME": "public"
+      },
+      "manualUrl": "",
+      "username": "spark"
+    }
+  },
+  "name": "spark_db"
 }
