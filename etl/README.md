@@ -103,46 +103,89 @@ Coloque todos os arquivos `.xml` em um diretório (ex: `data/xml/`) e configure 
 
 ---
 
-## 4. Configurar conexão e registrar o projeto (setup único)
+## 4. Configurar conexao e registrar o projeto (setup unico)
 
-Execute `setup.ps1` **uma vez** — ele criptografa a senha, grava `spark_db.json` e registra o projeto `spark` no Apache Hop sem abrir a GUI:
+Execute o script de setup **uma vez** — ele criptografa a senha, grava `spark_db.json` no formato correto do Hop 2.x e registra o projeto `spark` sem abrir a GUI.
+
+| Sistema | Script | Uso |
+|---------|--------|-----|
+| Windows | `scripts/setup.ps1` | PowerShell |
+| Linux/macOS | `scripts/setup.sh` | bash |
+
+**Windows (PowerShell):**
 
 ```powershell
 cd etl\
 .\scripts\setup.ps1
 ```
 
-O script vai:
-1. Pedir a senha do PostgreSQL (entrada segura, não aparece no terminal)
-2. Criptografar a senha com `hop-encrypt.bat`
-3. Gravar `etl/metadata/rdbms/spark_db.json` no formato correto do Hop 2.x
-4. Registrar o projeto `spark` via `hop-conf.bat` (atualiza o `hop-config.json` do Hop)
-
-Parâmetros opcionais (caso o banco não seja o padrão):
+Parametros opcionais:
 
 ```powershell
 .\scripts\setup.ps1 -DbHost "localhost" -DbPort "5432" -DbName "spark" -DbUser "spark" `
                     -HopHome "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop"
 ```
 
+**Linux/macOS (bash):**
+
+```bash
+cd etl/
+chmod +x scripts/setup.sh
+./scripts/setup.sh
+```
+
+Variaveis de ambiente opcionais:
+
+```bash
+HOP_HOME=/opt/apache-hop DB_HOST=localhost DB_PORT=5432 DB_NAME=spark DB_USER=spark \
+  ./scripts/setup.sh
+```
+
+O script (em ambas as versoes) faz:
+1. Pede a senha do PostgreSQL (entrada segura, nao aparece no terminal)
+2. Criptografa a senha com `hop-encrypt` (bat ou sh)
+3. Grava `etl/metadata/rdbms/spark_db.json` no formato aninhado do Hop 2.x
+4. Registra o projeto `spark` via `hop-conf` (sem abrir o Hop GUI)
+
 ---
 
 ## 5. Executar o pipeline
 
-### Via script (recomendado — sem abrir GUI)
+### Via script (recomendado — sem GUI)
+
+| Sistema | Script | Uso |
+|---------|--------|-----|
+| Windows | `scripts/run-etl.ps1` | PowerShell |
+| Linux/macOS | `scripts/run-etl.sh` | bash |
+
+**Windows (PowerShell):**
 
 ```powershell
 cd etl\
 .\scripts\run-etl.ps1
-```
 
-O script detecta automaticamente o diretório `data/xml/` do repositório. Para especificar outro diretório:
-
-```powershell
+# Especificar outro diretorio de XMLs:
 .\scripts\run-etl.ps1 -XmlDir "C:\outro\caminho\xmls"
 ```
 
-### Via hop-run.bat diretamente
+**Linux/macOS (bash):**
+
+```bash
+cd etl/
+chmod +x scripts/run-etl.sh
+./scripts/run-etl.sh
+
+# Especificar outro diretorio de XMLs:
+./scripts/run-etl.sh /outro/caminho/xmls
+# ou via variavel:
+XML_DIR=/outro/caminho/xmls ./scripts/run-etl.sh
+```
+
+Ambos os scripts detectam automaticamente `data/xml/` do repositorio se nenhum diretorio for passado.
+
+### Via hop-run diretamente
+
+**Windows:**
 
 ```powershell
 $HOP = "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop"
@@ -152,11 +195,19 @@ $XML = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\data\xml"
 cmd /c """$HOP\hop-run.bat"" --project=spark --runconfig=local --file=""$ETL\workflows\spark_etl.hwf"" ""--parameters=XML_DIR=$XML"""
 ```
 
+**Linux/macOS:**
+
+```bash
+"$HOP_HOME/hop-run.sh" --project=spark --runconfig=local \
+  --file="$ETL_DIR/workflows/spark_etl.hwf" \
+  "--parameters=XML_DIR=$XML_DIR"
+```
+
 ### Via GUI do Apache Hop
 
 1. Abra o Apache Hop GUI
-2. Vá em **File → Open** e abra `workflows/spark_etl.hwf`
-3. Configure o parâmetro `XML_DIR` no painel de parâmetros
+2. Va em **File -> Open** e abra `workflows/spark_etl.hwf`
+3. Configure o parametro `XML_DIR` no painel de parametros
 4. Clique em **Run (F9)**
 
 ---
@@ -192,15 +243,20 @@ Executar o pipeline sobre os mesmos arquivos é seguro. O UPSERT garante:
 etl/
 ├── pipelines/
 │   ├── lattes_pesquisadores.hpl   # Extrai e carrega pesquisadores
-│   └── lattes_producoes.hpl       # Extrai e carrega produções (4 tipos)
+│   └── lattes_producoes.hpl       # Extrai e carrega producoes (4 tipos)
 ├── workflows/
 │   └── spark_etl.hwf              # Orquestra ambos os pipelines + log
 ├── metadata/
 │   └── rdbms/
-│       └── spark_db.json          # Template da conexão PostgreSQL
+│       └── spark_db.json          # Conexao PostgreSQL (gerada pelo setup)
 ├── config/
-│   └── spark-env.json             # Template de variáveis Hop
-├── hop-config.json                # Configuração do projeto Hop
+│   └── spark-env.json             # Template de variaveis Hop (referencia)
+├── scripts/
+│   ├── setup.ps1                  # Setup unico — Windows (PowerShell)
+│   ├── setup.sh                   # Setup unico — Linux/macOS (bash)
+│   ├── run-etl.ps1                # Execucao do ETL — Windows (PowerShell)
+│   └── run-etl.sh                 # Execucao do ETL — Linux/macOS (bash)
+├── project-config.json            # Config do projeto no formato Hop 2.x
 └── README.md
 ```
 
