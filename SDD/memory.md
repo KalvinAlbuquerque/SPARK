@@ -355,6 +355,21 @@ O pipeline executa **6 fases em sequência**:
 **Critério de seleção dos pesquisadores da execução corrente:**
 Usa `data_atualizacao >= NOW() - INTERVAL '2 hours'` — campo atualizado pelo `lattes_pesquisadores.hpl` durante a mesma execução. Janela de 2h cobre ETLs lentos sem selecionar pesquisadores de execuções anteriores.
 
+**Resultado validado (2026-05-23):**
+
+| Pesquisador | total_producoes | total_a1_a2 | indice_h |
+|-------------|----------------|-------------|----------|
+| Aloisio Santos Nascimento Filho | 74 | 13 | 3 |
+| Eduardo Manuel de Freitas Jorge | 68 | 5 | 2 |
+| Hugo Saba Pereira Cardoso | 91 | 13 | 4 |
+| José Garcia Vivas Miranda | 127 | 45 | 6 |
+| Maria Fernanda Rios Grassi | 70 | 19 | 4 |
+| Mayara Maria de Jesus Almeida | 16 | 3 | 0 |
+| Paulo Jorge Silveira Ferreira | 0 | 0 | 0 |
+| Raphael Silva do Rosário | 16 | 6 | 2 |
+
+Idempotência confirmada: 2 execuções consecutivas → mesmo resultado ✓
+
 ### Fase 5 — Métricas bibliométricas
 
 SQL executado uma vez por pesquisador processado na execução corrente:
