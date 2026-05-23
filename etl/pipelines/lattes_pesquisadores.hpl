@@ -116,7 +116,7 @@ UPSERT via ON CONFLICT (lattes_id).</note>
     <name>Extrair Pesquisador</name>
     <type>GetXmlData</type>
     <description>Extrai lattes_id, nome, departamento, campus e resumo de cada XML</description>
-    <distribute>Y</distribute>
+    <distribute>N</distribute>
     <custom_distribution/>
     <copies>1</copies>
     <partitioning>
@@ -127,7 +127,7 @@ UPSERT via ON CONFLICT (lattes_id).</note>
     <include_field/>
     <rownum>N</rownum>
     <rownum_field/>
-    <encoding>ISO-8859-1</encoding>
+    <encoding/>
     <IsInFields>Y</IsInFields>
     <IsAFile>Y</IsAFile>
     <XmlField>filename</XmlField>
@@ -235,7 +235,7 @@ UPSERT via ON CONFLICT (lattes_id).</note>
     <execute_each_row>Y</execute_each_row>
     <single_statement>N</single_statement>
     <replace_variables>N</replace_variables>
-    <quoteString>N</quoteString>
+    <set_params>Y</set_params>
     <sql>INSERT INTO pesquisadores
   (lattes_id, nome_completo, departamento, campus, resumo, data_atualizacao)
 VALUES (?, ?, ?, ?, ?, NOW())
@@ -246,11 +246,11 @@ ON CONFLICT (lattes_id) DO UPDATE SET
   resumo           = EXCLUDED.resumo,
   data_atualizacao = NOW();</sql>
     <arguments>
-      <argument>lattes_id</argument>
-      <argument>nome_completo</argument>
-      <argument>departamento</argument>
-      <argument>campus</argument>
-      <argument>resumo</argument>
+      <argument><name>lattes_id</name></argument>
+      <argument><name>nome_completo</name></argument>
+      <argument><name>departamento</name></argument>
+      <argument><name>campus</name></argument>
+      <argument><name>resumo</name></argument>
     </arguments>
     <GUI>
       <xloc>590</xloc>

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <pipeline>
   <info>
     <name>lattes_producoes</name>
@@ -65,7 +65,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
     </hop>
     <hop>
       <from>Tipo Artigo</from>
-      <to>Unificar Producoes</to>
+      <to>Normalizar ISSN e Titulo</to>
       <enabled>Y</enabled>
     </hop>
     <hop>
@@ -86,7 +86,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
     </hop>
     <hop>
       <from>Tipo Evento</from>
-      <to>Unificar Producoes</to>
+      <to>Normalizar ISSN e Titulo</to>
       <enabled>Y</enabled>
     </hop>
     <hop>
@@ -107,7 +107,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
     </hop>
     <hop>
       <from>Tipo Livro</from>
-      <to>Unificar Producoes</to>
+      <to>Normalizar ISSN e Titulo</to>
       <enabled>Y</enabled>
     </hop>
     <hop>
@@ -128,7 +128,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
     </hop>
     <hop>
       <from>Tipo Capitulo</from>
-      <to>Unificar Producoes</to>
+      <to>Normalizar ISSN e Titulo</to>
       <enabled>Y</enabled>
     </hop>
     <hop>
@@ -138,17 +138,17 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
     </hop>
     <!-- Fluxo principal após unificação -->
     <hop>
-      <from>Unificar Producoes</from>
-      <to>Normalizar ISSN e Titulo</to>
-      <enabled>Y</enabled>
-    </hop>
-    <hop>
       <from>Normalizar ISSN e Titulo</from>
       <to>Buscar pesquisador_id</to>
       <enabled>Y</enabled>
     </hop>
     <hop>
       <from>Buscar pesquisador_id</from>
+      <to>Filtrar Sem Match</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Filtrar Sem Match</from>
       <to>UPSERT Producoes</to>
       <enabled>Y</enabled>
     </hop>
@@ -533,7 +533,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
       </field>
       <field>
         <name>issn</name>
-        <xpath/>
+        <xpath>@ISSN</xpath>
         <element_type>Attribute</element_type>
         <result_type>valueof</result_type>
         <type>String</type>
@@ -656,7 +656,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
       </field>
       <field>
         <name>issn</name>
-        <xpath/>
+        <xpath>@ISSN</xpath>
         <element_type>Attribute</element_type>
         <result_type>valueof</result_type>
         <type>String</type>
@@ -779,7 +779,7 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
       </field>
       <field>
         <name>issn</name>
-        <xpath/>
+        <xpath>@ISSN</xpath>
         <element_type>Attribute</element_type>
         <result_type>valueof</result_type>
         <type>String</type>
@@ -926,22 +926,6 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
        TRANSFORM: Unificar os 4 fluxos de produção
        Append Streams: combina artigos + eventos + livros + capítulos
        ================================================================ -->
-  <transform>
-    <name>Unificar Producoes</name>
-    <type>Append</type>
-    <description>Une os 4 fluxos de tipos de produção em um stream único</description>
-    <distribute>Y</distribute>
-    <custom_distribution/>
-    <copies>1</copies>
-    <partitioning>
-      <method>none</method>
-      <schema_name/>
-    </partitioning>
-    <GUI>
-      <xloc>760</xloc>
-      <yloc>375</yloc>
-    </GUI>
-  </transform>
 
   <!-- ================================================================
        TRANSFORM: Normalizar ISSN e Título (Modified JavaScript Value)
@@ -966,11 +950,9 @@ Requer que lattes_pesquisadores.hpl tenha rodado antes
         <jsScript_type>0</jsScript_type>
         <jsScript_name>Normalizar</jsScript_name>
         <jsScript_script>
-// Normalizar titulo: trim e remover caracteres de controle
+// Normalizar titulo: trim e colapsar whitespace
 if (titulo != null) {
-  titulo = titulo.trim()
-                 .replace(/[\r\n\t -]+/g, ' ')
-                 .replace(/\s{2,}/g, ' ');
+  titulo = titulo.trim().replace(/\s+/g, ' ');
   if (titulo.length == 0) { titulo = null; }
 }
 
@@ -980,7 +962,7 @@ if (doi != null) {
   if (doi.length == 0) { doi = null; }
 }
 
-// Normalizar ISSN: remove não-numéricos e formata com hífen
+// Normalizar ISSN: remove nao-numericos e formata com hifen
 if (issn != null) {
   var issnRaw = issn.toString().trim();
   var issnClean = issnRaw.replace(/[^0-9Xx]/g, '');
@@ -1077,6 +1059,32 @@ if (issn != null) {
        COALESCE preserva doi/resumo/qualis/jcr já preenchidos
        ================================================================ -->
   <transform>
+    <name>Filtrar Sem Match</name>
+    <type>FilterRows</type>
+    <description>Descarta producoes sem pesquisador_id</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <compare>
+      <condition>
+        <negated>N</negated>
+        <leftvalue>pesquisador_id</leftvalue>
+        <function>IS NOT NULL</function>
+        <rightvalue/>
+      </condition>
+    </compare>
+    <send_true_to>UPSERT Producoes</send_true_to>
+    <send_false_to/>
+    <GUI>
+      <xloc>1175</xloc>
+      <yloc>375</yloc>
+    </GUI>
+  </transform>
+  <transform>
     <name>UPSERT Producoes</name>
     <type>ExecSQL</type>
     <description>Insere ou atualiza produção com ON CONFLICT (pesquisador_id, titulo, ano_publicacao)</description>
@@ -1091,7 +1099,7 @@ if (issn != null) {
     <execute_each_row>Y</execute_each_row>
     <single_statement>N</single_statement>
     <replace_variables>N</replace_variables>
-    <quoteString>N</quoteString>
+    <set_params>Y</set_params>
     <sql>INSERT INTO producoes
   (pesquisador_id, titulo, tipo_producao, ano_publicacao,
    nome_veiculo, issn, doi, resumo, qualis, jcr)
@@ -1103,13 +1111,13 @@ ON CONFLICT (pesquisador_id, titulo, ano_publicacao) DO UPDATE SET
   jcr          = COALESCE(EXCLUDED.jcr, producoes.jcr),
   nome_veiculo = EXCLUDED.nome_veiculo;</sql>
     <arguments>
-      <argument>pesquisador_id</argument>
-      <argument>titulo</argument>
-      <argument>tipo_producao</argument>
-      <argument>ano_publicacao</argument>
-      <argument>nome_veiculo</argument>
-      <argument>issn</argument>
-      <argument>doi</argument>
+      <argument><name>pesquisador_id</name></argument>
+      <argument><name>titulo</name></argument>
+      <argument><name>tipo_producao</name></argument>
+      <argument><name>ano_publicacao</name></argument>
+      <argument><name>nome_veiculo</name></argument>
+      <argument><name>issn</name></argument>
+      <argument><name>doi</name></argument>
     </arguments>
     <GUI>
       <xloc>1360</xloc>

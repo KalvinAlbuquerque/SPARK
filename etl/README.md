@@ -6,12 +6,13 @@ Pipeline Apache Hop que extrai dados dos currículos Lattes (XML) e carrega nas 
 
 ## Pré-requisitos
 
-| Requisito               | Versão mínima          |
-| ----------------------- | ------------------------ |
-| Java (JDK)              | 11                       |
-| Apache Hop              | 2.x                      |
-| Docker + Docker Compose | qualquer versão recente |
-| PostgreSQL driver JDBC  | incluído no Hop         |
+| Requisito               | Versão mínima | Versão validada |
+| ----------------------- | ------------- | --------------- |
+| Java (JDK)              | 11            | 21.0.9          |
+| Apache Hop              | 2.x           | 2.15.0          |
+| Docker + Docker Compose | qualquer      | Docker 27.x     |
+| PostgreSQL              | 15            | 15 (pgvector/pgvector:pg15) |
+| PostgreSQL driver JDBC  | incluído no Hop | — |
 
 ---
 
@@ -40,14 +41,16 @@ Aguarde o healthcheck: o banco estará pronto quando `docker-compose ps` mostrar
 Para verificar que o pgvector está ativo:
 
 ```powershell
-docker exec -it <container_id> psql -U spark -d spark -c "SELECT extname FROM pg_extension WHERE extname = 'vector';"
+docker exec spark-db-1 psql -U spark -d spark -c "SELECT extname FROM pg_extension WHERE extname = 'vector';"
 ```
 
 ---
 
-## 2. Configurar variáveis de ambiente no Apache Hop
+## 2. Configurar variáveis de ambiente
 
-### Opção A — Variáveis de ambiente no terminal (antes de executar o Hop)
+As credenciais do banco são passadas ao script `setup.ps1`/`setup.sh` que as criptografa internamente — **não é necessário exportar variáveis para o Hop manualmente**. Basta definir `POSTGRES_PASSWORD` antes de rodar o setup (veja seção 4).
+
+Se quiser exportar manualmente (ex: testes ou uso da GUI do Hop):
 
 **Windows (PowerShell):**
 
@@ -56,8 +59,8 @@ $env:POSTGRES_HOST = "localhost"
 $env:POSTGRES_PORT = "5432"
 $env:POSTGRES_DB   = "spark"
 $env:POSTGRES_USER = "spark"
-$env:POSTGRES_PASSWORD = "changeme"
-$env:XML_DIR = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\data\xml"
+$env:POSTGRES_PASSWORD = "sua_senha"
+$env:XML_DIR = "C:\caminho\para\data\xml"
 ```
 
 **Linux/macOS (bash):**
@@ -67,11 +70,11 @@ export POSTGRES_HOST=localhost
 export POSTGRES_PORT=5432
 export POSTGRES_DB=spark
 export POSTGRES_USER=spark
-export POSTGRES_PASSWORD=changeme
+export POSTGRES_PASSWORD=sua_senha
 export XML_DIR=/caminho/absoluto/para/data/xml
 ```
 
-### Opção B — Ambiente Hop via GUI (recomendado, persiste entre sessões)
+### Via GUI do Apache Hop (persiste entre sessões)
 
 Abra o Apache Hop GUI → menu **File → Edit Metadata → Hop Environments** → importe o arquivo `etl/config/spark-env.json` e preencha `POSTGRES_PASSWORD`.
 
@@ -232,16 +235,37 @@ cmd /c """$HOP\hop-run.bat"" --project=spark --runconfig=local --file=""$ETL\wor
 
 ## 6. Verificar resultado
 
+```powershell
+# Conectar no banco via Docker:
+docker exec spark-db-1 psql -U spark -d spark -c "SELECT lattes_id, nome_completo, departamento, campus FROM pesquisadores;"
+```
+
 ```sql
 -- Pesquisadores carregados
 SELECT lattes_id, nome_completo, departamento, campus FROM pesquisadores;
 
--- Total de produções por tipo
+-- Total de producoes por tipo
 SELECT tipo_producao, COUNT(*) FROM producoes GROUP BY tipo_producao;
 
--- Log de execução
-SELECT * FROM etl_logs ORDER BY iniciado_em DESC LIMIT 5;
+-- Producoes por pesquisador e tipo
+SELECT p.nome_completo, pr.tipo_producao, COUNT(*) as qtd
+FROM producoes pr JOIN pesquisadores p ON p.id = pr.pesquisador_id
+GROUP BY p.nome_completo, pr.tipo_producao ORDER BY p.nome_completo;
+
+-- Log de execucao
+SELECT id, iniciado_em, finalizado_em, status, detalhes->>'arquivos_processados' as arquivos
+FROM etl_logs ORDER BY iniciado_em DESC LIMIT 5;
 ```
+
+**Resultado esperado com os 8 XMLs de `data/xml/`:**
+
+| Tipo | Qtd |
+|------|-----|
+| ARTIGO | 247 |
+| EVENTO | 161 |
+| CAPITULO | 40 |
+| LIVRO | 14 |
+| **Total** | **462** |
 
 ---
 
@@ -286,12 +310,44 @@ etl/
 - Produções sem `titulo` ou `ano_publicacao` são rejeitadas pela constraint NOT NULL do banco e registradas no log.
 - O workflow registra `status='erro'` em `etl_logs` se qualquer pipeline falhar.
 
+> **Nota sobre o `Log Erro Parse`:** No Hop 2.x com `distribute=N` (modo cópia), o step de log de erros recebe uma cópia de todas as linhas, mesmo sem falhas reais. Isso é comportamento interno do Hop e não indica problema nos dados — verifique o step `UPSERT Pesquisadores` (deve mostrar `R=8, W=8` para 8 XMLs) e a tabela `etl_logs` (deve mostrar `status='sucesso'`) para confirmar que o pipeline funcionou corretamente.
+
 ---
 
-## 10. Notas de implementação (SPK-11)
+## 10. O que o ETL extrai dos XMLs Lattes
 
-- Pipeline implementado em **Apache Hop** conforme constitution.md — não reimplementar em Python ou shell
+### Pesquisadores
+
+| Campo no banco | Fonte no XML |
+|----------------|-------------|
+| `lattes_id` | `CURRICULO-VITAE/@NUMERO-IDENTIFICADOR` |
+| `nome_completo` | `DADOS-GERAIS/@NOME-COMPLETO` |
+| `departamento` | `DADOS-GERAIS/@DEPARTAMENTO` (adicionado manualmente — ver seção 3.2) |
+| `campus` | `DADOS-GERAIS/@CAMPUS` (adicionado manualmente — ver seção 3.2) |
+| `resumo` | `DADOS-GERAIS/RESUMO-CV/@TEXTO-RESUMO-CV-RH` |
+
+Campos **não preenchidos pelo ETL** (calculados em sprint futura): `total_producoes`, `indice_h`, `total_a1_a2`.
+
+### Produções
+
+| Campo no banco | Fonte no XML |
+|----------------|-------------|
+| `titulo` | `TITULO-DO-ARTIGO` / `TITULO-DO-TRABALHO` / `TITULO-DO-LIVRO` / `TITULO-DO-CAPITULO-DO-LIVRO` |
+| `tipo_producao` | Constante por fluxo: `ARTIGO`, `EVENTO`, `LIVRO`, `CAPITULO` |
+| `ano_publicacao` | `ANO-DO-ARTIGO` / `ANO-DO-TRABALHO` / `ANO` |
+| `nome_veiculo` | Nome do periódico, evento ou livro pai |
+| `issn` | `@ISSN` (quando disponível) |
+| `doi` | `@DOI` (quando disponível) |
+| `texto_busca` | Preenchido automaticamente por trigger do banco |
+
+Campos **não preenchidos pelo ETL**: `resumo` das produções (campo `RESUMO-DA-PRODUCAO` não extraído), `qualis` e `jcr` (enriquecimento externo — Qualis CAPES / CrossRef / OpenAlex).
+
+---
+
+## 11. Notas de implementação (SPK-11)
+
+- Pipeline implementado em **Apache Hop 2.15.0** conforme constitution.md — não reimplementar em Python ou shell
 - Todo UPSERT usa `ON CONFLICT DO UPDATE` conforme obrigado pela constitution
 - Credenciais via variáveis de ambiente — nunca hardcoded
-- Encoding dos XMLs: `ISO-8859-1` (padrão CNPq)
+- Encoding dos XMLs: `ISO-8859-1` (padrão CNPq) — lido automaticamente pelo Hop via declaração no cabeçalho XML
 - `COALESCE` preserva `doi`, `resumo`, `qualis`, `jcr` já enriquecidos em reprocessamentos

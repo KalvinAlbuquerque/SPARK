@@ -21,6 +21,8 @@ Antes de qualquer ação, leia:
 
 Use o arquivo SDD/memory.md para atualizar o andamento da implementação, esse arquivo vai ser como um context keeper para que qualquer IA possa continuar de onde você parou, assim como entender o que já foi implementado no código.
 
+Sempre deixe o memory.md atualizado com as implementações que você fez. Toda vez que você terminar uma implementação, essa deve ir para o memory.md.
+
 ## Observações Gerais
 
 Você tem acesso via MCP ao projeto no jira. O nome do projeto é SPARK (codigo SPK). Caso precise, você pode consultar os cartões do projeto.
