@@ -6,22 +6,32 @@ Pipeline Apache Hop que extrai dados dos currículos Lattes (XML) e carrega nas 
 
 ## Pré-requisitos
 
-| Requisito | Versão mínima |
-|-----------|--------------|
-| Java (JDK) | 11 |
-| Apache Hop | 2.x |
+| Requisito               | Versão mínima          |
+| ----------------------- | ------------------------ |
+| Java (JDK)              | 11                       |
+| Apache Hop              | 2.x                      |
 | Docker + Docker Compose | qualquer versão recente |
-| PostgreSQL driver JDBC | incluído no Hop |
+| PostgreSQL driver JDBC  | incluído no Hop         |
 
 ---
 
 ## 1. Subir o banco local (Docker)
 
-```bash
+**Windows (PowerShell):**
+
+```powershell
 # Na raiz do repositório
-cp .env.example .env
+Copy-Item .env.example .env
 # Edite .env e defina POSTGRES_PASSWORD
 
+docker-compose up -d
+```
+
+**Linux/macOS:**
+
+```bash
+cp .env.example .env
+# Edite .env e defina POSTGRES_PASSWORD
 docker-compose up -d
 ```
 
@@ -29,7 +39,7 @@ Aguarde o healthcheck: o banco estará pronto quando `docker-compose ps` mostrar
 
 Para verificar que o pgvector está ativo:
 
-```bash
+```powershell
 docker exec -it <container_id> psql -U spark -d spark -c "SELECT extname FROM pg_extension WHERE extname = 'vector';"
 ```
 
@@ -37,20 +47,31 @@ docker exec -it <container_id> psql -U spark -d spark -c "SELECT extname FROM pg
 
 ## 2. Configurar variáveis de ambiente no Apache Hop
 
-### Opção A — Arquivo `.env` (recomendado para desenvolvimento)
+### Opção A — Variáveis de ambiente no terminal (antes de executar o Hop)
 
-Exporte as variáveis antes de executar o Hop:
+**Windows (PowerShell):**
+
+```powershell
+$env:POSTGRES_HOST = "localhost"
+$env:POSTGRES_PORT = "5432"
+$env:POSTGRES_DB   = "spark"
+$env:POSTGRES_USER = "spark"
+$env:POSTGRES_PASSWORD = "changeme"
+$env:XML_DIR = "C:\caminho\absoluto\para\data\xml"
+```
+
+**Linux/macOS (bash):**
 
 ```bash
 export POSTGRES_HOST=localhost
 export POSTGRES_PORT=5432
 export POSTGRES_DB=spark
 export POSTGRES_USER=spark
-export POSTGRES_PASSWORD=changeme      # valor do seu .env
+export POSTGRES_PASSWORD=changeme
 export XML_DIR=/caminho/absoluto/para/data/xml
 ```
 
-### Opção B — Ambiente Hop via GUI
+### Opção B — Ambiente Hop via GUI (recomendado, persiste entre sessões)
 
 Abra o Apache Hop GUI → menu **File → Edit Metadata → Hop Environments** → importe o arquivo `etl/config/spark-env.json` e preencha `POSTGRES_PASSWORD`.
 
@@ -107,32 +128,56 @@ O arquivo `etl/metadata/rdbms/spark_db.json` já existe como template — ele us
 
 O workflow `spark_etl.hwf` executa os dois pipelines em ordem e registra o log:
 
+**Windows (PowerShell) — defina HOP_HOME antes:**
+
+```powershell
+$env:XML_DIR = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\data\xml"
+
+& "$env:HOP_HOME\hop-run.bat" `
+  --runconfig=local `
+  --file=workflows/spark_etl.hwf `
+  "--parameters=XML_DIR=$env:XML_DIR"
+```
+
+**Linux/macOS:**
+
 ```bash
-# Na raiz do diretório etl/
-cd etl/
+export XML_DIR=/caminho/absoluto/para/data/xml
 
 hop-run.sh \
   --runconfig=local \
   --file=workflows/spark_etl.hwf \
-  --parameters=XML_DIR=/caminho/absoluto/para/data/xml
+  --parameters=XML_DIR=$XML_DIR
 ```
 
 ### Via pipelines individuais
 
-Execute em ordem:
+Execute **obrigatoriamente nessa ordem**:
+
+**Windows (PowerShell):**
+
+```powershell
+# 1. Pesquisadores
+& "$env:HOP_HOME\hop-run.bat" --runconfig=local `
+  --file=pipelines/lattes_pesquisadores.hpl `
+  "--parameters=XML_DIR=$env:XML_DIR"
+
+# 2. Produções (só depois do passo 1)
+& "$env:HOP_HOME\hop-run.bat" --runconfig=local `
+  --file=pipelines/lattes_producoes.hpl `
+  "--parameters=XML_DIR=$env:XML_DIR"
+```
+
+**Linux/macOS:**
 
 ```bash
-# 1. Primeiro: carregar pesquisadores
-hop-run.sh \
-  --runconfig=local \
+hop-run.sh --runconfig=local \
   --file=pipelines/lattes_pesquisadores.hpl \
-  --parameters=XML_DIR=/caminho/absoluto/para/data/xml
+  --parameters=XML_DIR=$XML_DIR
 
-# 2. Depois: carregar produções
-hop-run.sh \
-  --runconfig=local \
+hop-run.sh --runconfig=local \
   --file=pipelines/lattes_producoes.hpl \
-  --parameters=XML_DIR=/caminho/absoluto/para/data/xml
+  --parameters=XML_DIR=$XML_DIR
 ```
 
 **Atenção:** `lattes_producoes.hpl` depende de `lattes_pesquisadores.hpl` ter sido executado antes, pois faz lookup de `pesquisador_id` por `lattes_id`.
