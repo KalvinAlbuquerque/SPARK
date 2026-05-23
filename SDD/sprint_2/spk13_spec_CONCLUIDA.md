@@ -1,9 +1,9 @@
 # SPK-13 — Enriquecimento CrossRef e OpenAlex: DOI, Resumo e JCR
 
-**Issue Jira:** SPK-13  
-**Epic:** EP-02 · Camada ETL (Apache Hop)  
-**Sprint:** Sprint 2  
-**Status:** Em andamento  
+**Issue Jira:** SPK-13
+**Epic:** EP-02 · Camada ETL (Apache Hop)
+**Sprint:** Sprint 2
+**Status:** Em andamento
 
 ---
 
@@ -71,32 +71,41 @@ Sem esses campos, a página de detalhe fica incompleta, o DOI não pode ser exib
 ## 5. Core Features
 
 ### F1 — Enriquecimento de DOI por busca via título (CrossRef)
+
 Artigos sem DOI no XML são submetidos a uma busca por título na CrossRef. O DOI é aceito e gravado apenas quando o score de confiança é > 70.
 
 ### F2 — Enriquecimento de resumo via CrossRef
+
 Para todo artigo com DOI (vindo do XML ou via F1), o pipeline busca o abstract na CrossRef. Se disponível, grava em `producoes.resumo`. A ausência de abstract é comportamento esperado.
 
 ### F3 — Enriquecimento de Impact Factor via OpenAlex
+
 Para todos os registros com ISSN preenchido, o pipeline busca `2yr_mean_citedness` no OpenAlex e grava em `producoes.jcr`. Periódicos não indexados (HTTP 404) recebem NULL.
 
 ### F4 — Deduplicação de ISSNs antes das chamadas OpenAlex
+
 O mesmo ISSN pode aparecer em vários artigos do mesmo pesquisador. A API OpenAlex é chamada apenas uma vez por ISSN único, e o resultado é distribuído para todos os artigos com aquele ISSN.
 
 ### F5 — Preservação de dados existentes (UPSERT com COALESCE)
+
 Valores já preenchidos de execuções anteriores são preservados se a nova chamada retornar NULL. Nenhum dado é perdido em reprocessamentos.
 
 ### F6 — Separação de fluxos (com DOI / sem DOI) e reunificação
+
 O pipeline distingue internamente os dois caminhos CrossRef e os reúne antes da escrita no banco.
 
 ### F7 — Registro de não-correspondências no log
+
 - `sem_match_doi`: títulos sem DOI com score suficiente
 - `sem_resumo`: DOIs sem abstract na CrossRef
 - `sem_match_jcr`: ISSNs que retornaram 404 ou campo nulo no OpenAlex
 
 ### F8 — Resiliência a falhas de API
+
 Falhas resultam em NULL para o campo correspondente, nunca em falha do pipeline. Retry com backoff exponencial (3 tentativas: 2s, 4s, 8s).
 
 ### F9 — Escopo por tipo de produção
+
 - **CrossRef** (DOI + resumo): apenas `tipo_producao = 'ARTIGO'`
 - **OpenAlex** (JCR): todos os registros com ISSN preenchido (artigos)
 
@@ -104,13 +113,13 @@ Falhas resultam em NULL para o campo correspondente, nunca em falha do pipeline.
 
 ## 6. Success Metrics
 
-| Métrica | Meta |
-|---|---|
-| Taxa de artigos com `doi` preenchido após enriquecimento | ≥ 90% |
-| Taxa de artigos com `resumo` preenchido | ≥ 50% (cobertura parcial é aceitável) |
-| Taxa de artigos com `jcr` preenchido | ≥ 70% (OpenAlex cobre ~90% das fontes com ISSN) |
-| Pipeline não interrompido por falha de API | 100% dos casos de erro resultam em NULL, não em crash |
-| Idempotência confirmada | 2 execuções consecutivas → mesmo resultado |
+| Métrica                                                    | Meta                                                   |
+| ----------------------------------------------------------- | ------------------------------------------------------ |
+| Taxa de artigos com `doi` preenchido após enriquecimento | ≥ 90%                                                 |
+| Taxa de artigos com `resumo` preenchido                   | ≥ 50% (cobertura parcial é aceitável)               |
+| Taxa de artigos com `jcr` preenchido                      | ≥ 70% (OpenAlex cobre ~90% das fontes com ISSN)       |
+| Pipeline não interrompido por falha de API                 | 100% dos casos de erro resultam em NULL, não em crash |
+| Idempotência confirmada                                    | 2 execuções consecutivas → mesmo resultado          |
 
 ---
 
@@ -143,7 +152,6 @@ Falhas resultam em NULL para o campo correspondente, nunca em falha do pipeline.
 - Enriquecimento de estrato Qualis → **SPK-12 (concluído)**
 - Spike de modelos de embedding → **SPK-14**
 - Geração de vetores / embeddings → Sprint futura
-- Enriquecimento de EVENTO, LIVRO, CAPITULO com resumo (sem ISSN padronizado)
 - Armazenamento de metadados extras da CrossRef além de DOI e abstract
 - Cálculo de `indice_h` — calculado na Fase 5 (após JCR estar preenchido)
 
@@ -156,6 +164,7 @@ Leia esta spec e implemente o SPK-13 seguindo o **Roadmap ETL (seções 5.2 e 5.
 **O que implementar:**
 
 1. **`etl/pipelines/crossref_enriquecimento.hpl`** (seção 5.2 do roadmap):
+
    - `TableInput`: SELECT id, titulo, doi FROM producoes WHERE tipo_producao = 'ARTIGO'
    - `FilterRows`: separa artigos com DOI dos sem DOI
    - **Ramo com DOI**: `HTTP Client` → `GET /works/${doi}?select=DOI,title,abstract` → extrai abstract
@@ -166,8 +175,8 @@ Leia esta spec e implemente o SPK-13 seguindo o **Roadmap ETL (seções 5.2 e 5.
    - `WriteToLog`: artigos sem match (sem_match_doi) e sem abstract (sem_resumo)
    - Header obrigatório: `User-Agent: SPARK-ETL/1.0 (mailto:${ETL_EMAIL})`
    - Retry: 3 tentativas com backoff 2s/4s/8s
-
 2. **`etl/pipelines/openalex_enriquecimento.hpl`** (seção 5.3 do roadmap):
+
    - `TableInput`: SELECT DISTINCT issn, id FROM producoes WHERE issn IS NOT NULL AND issn != ''
    - `SortRows` + `Unique` por ISSN (deduplicação antes das chamadas)
    - `HTTP Client`: `GET https://api.openalex.org/sources/issn:${issn}?select=issn_l,display_name,2yr_mean_citedness&api_key=${OPENALEX_API_KEY}`
@@ -176,14 +185,12 @@ Leia esta spec e implemente o SPK-13 seguindo o **Roadmap ETL (seções 5.2 e 5.
    - `ExecSQL`: `UPDATE producoes SET jcr = COALESCE(?,jcr) WHERE issn = ?`
    - HTTP 404 ou campo null → NULL em jcr
    - `WriteToLog`: ISSNs sem match (sem_match_jcr)
-
 3. **Integrar ambos no `etl/workflows/spark_etl.hwf`** após o step de Qualis, em sequência: Qualis → CrossRef → OpenAlex → Registrar sem match → Registrar sucesso
-
 4. **Atualizar parâmetros** nos scripts `run-etl.ps1` e `run-etl.sh` com `ETL_EMAIL` e `OPENALEX_API_KEY`
-
 5. **Atualizar `etl_logs.detalhes`** ao final com `sem_match_doi`, `sem_resumo` e `sem_match_jcr`
 
 **Restrições obrigatórias:**
+
 - Todo UPSERT usa `COALESCE` — nunca sobrescreve valor existente com NULL
 - Falha de API resulta em NULL, não em erro do pipeline
 - Apenas ARTIGO para CrossRef; ISSN não nulo para OpenAlex

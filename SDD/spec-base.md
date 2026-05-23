@@ -8,11 +8,6 @@ Uma especificação é a fonte de verdade do projeto. Ela descreve **quem** vai 
 
 ---
 
-### A Regra de Ouro
-
-**Specs definem O QUÊ e POR QUÊ. Plans definem COMO. Nunca misture os dois.** [github](https://roelantd.github.io/spec-kit-workshop/03-specify-phase)
-
----
 
 ### O que DEVE estar na spec
 
