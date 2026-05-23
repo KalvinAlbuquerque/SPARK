@@ -9,6 +9,19 @@ $ErrorActionPreference = "Stop"
 $ETL_DIR   = Split-Path -Parent $PSScriptRoot
 $REPO_ROOT = Split-Path -Parent $ETL_DIR
 
+# Carrega .env da raiz do repositório (não sobrescreve vars já exportadas no terminal)
+$envFile = Join-Path $REPO_ROOT ".env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | Where-Object { $_ -notmatch '^\s*#' -and $_ -match '=' } | ForEach-Object {
+        $kv = $_ -split '=', 2
+        $k  = $kv[0].Trim()
+        $v  = if ($kv.Length -gt 1) { $kv[1].Trim() } else { "" }
+        if ($k -and -not (Get-Item "env:$k" -ErrorAction SilentlyContinue)) {
+            Set-Item "env:$k" $v
+        }
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($XmlDir)) {
     $XmlDir = if ($env:XML_DIR) { $env:XML_DIR } else { "$REPO_ROOT\data\xml" }
 }
@@ -17,14 +30,19 @@ if ([string]::IsNullOrWhiteSpace($QualisCSV)) {
     $QualisCSV = if ($env:QUALIS_CSV) { $env:QUALIS_CSV } else { "$REPO_ROOT\data\qualis\qualis_capes.csv" }
 }
 
+$EtlEmail    = if ($env:ETL_EMAIL)       { $env:ETL_EMAIL }       else { "" }
+$OpenAlexKey = if ($env:OPENALEX_APIKEY) { $env:OPENALEX_APIKEY } else { "" }
+
 $WORKFLOW = "$ETL_DIR\workflows\spark_etl.hwf"
 
 Write-Host ""
 Write-Host "=== SPARK ETL ==================================================="
-Write-Host "Hop:     $HopHome"
-Write-Host "Projeto: $ETL_DIR"
-Write-Host "XMLs:    $XmlDir"
-Write-Host "Qualis:  $QualisCSV"
+Write-Host "Hop:       $HopHome"
+Write-Host "Projeto:   $ETL_DIR"
+Write-Host "XMLs:      $XmlDir"
+Write-Host "Qualis:    $QualisCSV"
+Write-Host "ETL Email: $EtlEmail"
+Write-Host "OpenAlex:  $(if ($OpenAlexKey) { '(configurado)' } else { '(nao configurado)' })"
 Write-Host "================================================================="
 Write-Host ""
 
@@ -51,7 +69,7 @@ Write-Host ""
 
 $startTime = Get-Date
 
-cmd /c """$HopHome\hop-run.bat"" --project=spark --runconfig=local --file=""$WORKFLOW"" ""--parameters=XML_DIR=$XmlDir,QUALIS_CSV=$QualisCSV"""
+cmd /c """$HopHome\hop-run.bat"" --project=spark --runconfig=local --file=""$WORKFLOW"" ""--parameters=XML_DIR=$XmlDir,QUALIS_CSV=$QualisCSV,ETL_EMAIL=$EtlEmail,OPENALEX_APIKEY=$OpenAlexKey"""
 
 $exitCode  = $LASTEXITCODE
 $duration  = [int]((Get-Date) - $startTime).TotalSeconds

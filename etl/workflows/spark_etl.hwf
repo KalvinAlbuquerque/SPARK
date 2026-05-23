@@ -21,20 +21,34 @@
         <default_value>../../data/qualis/qualis_capes.csv</default_value>
         <description>Caminho para a planilha Qualis CAPES exportada da Plataforma Sucupira</description>
       </parameter>
+      <parameter>
+        <name>ETL_EMAIL</name>
+        <default_value>spark@email.com</default_value>
+        <description>Email para o Polite Pool da CrossRef API — lido automaticamente do .env</description>
+      </parameter>
+      <parameter>
+        <name>OPENALEX_APIKEY</name>
+        <default_value></default_value>
+        <description>API key gratuita do OpenAlex — lida automaticamente do .env</description>
+      </parameter>
     </parameters>
   </info>
   <notepads>
     <notepad>
-      <note>Workflow SPK-11 + SPK-12
+      <note>Workflow SPK-11 + SPK-12 + SPK-13
 Execução em ordem obrigatória:
 1. lattes_pesquisadores.hpl (insere pesquisadores)
 2. lattes_producoes.hpl (insere produções, busca pesquisador_id)
 3. qualis_enriquecimento.hpl (preenche campo qualis via planilha CAPES)
-4. Registra log em etl_logs
+4. crossref_enriquecimento.hpl (preenche doi + resumo via CrossRef API)
+5. openalex_enriquecimento.hpl (preenche jcr via OpenAlex API por ISSN)
+6. Registra log em etl_logs
 
 Parâmetros:
-  XML_DIR    = diretório com os XMLs Lattes
-  QUALIS_CSV = caminho para o CSV qualis_capes.csv</note>
+  XML_DIR         = diretório com os XMLs Lattes
+  QUALIS_CSV      = caminho para o CSV qualis_capes.csv
+  ETL_EMAIL       = email para CrossRef Polite Pool (lido do .env)
+  OPENALEX_APIKEY = API key OpenAlex (lida do .env)</note>
       <xloc>50</xloc>
       <yloc>50</yloc>
       <width>500</width>
@@ -173,6 +187,60 @@ VALUES (NOW(), 'em_andamento', 0, 0, 0, jsonb_build_object('xml_dir', '${XML_DIR
     </action>
 
     <action>
+      <name>Pipeline CrossRef</name>
+      <description>Enriquece doi e resumo dos artigos via CrossRef API (SPK-13 subetapa 5.2)</description>
+      <type>PIPELINE</type>
+      <filename>${PROJECT_HOME}/pipelines/crossref_enriquecimento.hpl</filename>
+      <params_from_previous>N</params_from_previous>
+      <exec_per_row>N</exec_per_row>
+      <clear_rows>Y</clear_rows>
+      <clear_files>Y</clear_files>
+      <create_parent_folder>N</create_parent_folder>
+      <wait_until_finished>Y</wait_until_finished>
+      <follow_abort_remote>N</follow_abort_remote>
+      <logging_remote_work>N</logging_remote_work>
+      <run_configuration>local</run_configuration>
+      <parameters>
+        <parameter>
+          <name>ETL_EMAIL</name>
+          <stream_name/>
+          <value>${ETL_EMAIL}</value>
+        </parameter>
+      </parameters>
+      <GUI>
+        <xloc>1100</xloc>
+        <yloc>200</yloc>
+      </GUI>
+    </action>
+
+    <action>
+      <name>Pipeline OpenAlex</name>
+      <description>Enriquece jcr dos artigos via OpenAlex API por ISSN (SPK-13 subetapa 5.3)</description>
+      <type>PIPELINE</type>
+      <filename>${PROJECT_HOME}/pipelines/openalex_enriquecimento.hpl</filename>
+      <params_from_previous>N</params_from_previous>
+      <exec_per_row>N</exec_per_row>
+      <clear_rows>Y</clear_rows>
+      <clear_files>Y</clear_files>
+      <create_parent_folder>N</create_parent_folder>
+      <wait_until_finished>Y</wait_until_finished>
+      <follow_abort_remote>N</follow_abort_remote>
+      <logging_remote_work>N</logging_remote_work>
+      <run_configuration>local</run_configuration>
+      <parameters>
+        <parameter>
+          <name>OPENALEX_APIKEY</name>
+          <stream_name/>
+          <value>${OPENALEX_APIKEY}</value>
+        </parameter>
+      </parameters>
+      <GUI>
+        <xloc>1300</xloc>
+        <yloc>200</yloc>
+      </GUI>
+    </action>
+
+    <action>
       <name>Registrar sem match Qualis</name>
       <description>Grava no log a lista de ISSNs sem correspondência na planilha Qualis</description>
       <type>SQL</type>
@@ -207,6 +275,55 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
       <sendOneStatement>Y</sendOneStatement>
       <GUI>
         <xloc>1100</xloc>
+        <yloc>330</yloc>
+      </GUI>
+    </action>
+
+    <action>
+      <name>Registrar sem match CrossRef OpenAlex</name>
+      <description>Grava no log artigos sem DOI match, sem resumo e ISSNs sem JCR</description>
+      <type>SQL</type>
+      <connection>spark_db</connection>
+      <sql>UPDATE etl_logs
+SET detalhes = jsonb_set(
+      jsonb_set(
+        jsonb_set(
+          detalhes,
+          '{sem_match_doi}',
+          COALESCE(
+            (SELECT jsonb_agg(DISTINCT titulo ORDER BY titulo)
+             FROM producoes
+             WHERE tipo_producao = 'ARTIGO' AND doi IS NULL),
+            '[]'::jsonb
+          ),
+          true
+        ),
+        '{sem_resumo}',
+        COALESCE(
+          (SELECT jsonb_agg(DISTINCT doi ORDER BY doi)
+           FROM producoes
+           WHERE tipo_producao = 'ARTIGO' AND resumo IS NULL AND doi IS NOT NULL),
+          '[]'::jsonb
+        ),
+        true
+      ),
+      '{sem_match_jcr}',
+      COALESCE(
+        (SELECT jsonb_agg(DISTINCT issn ORDER BY issn)
+         FROM producoes
+         WHERE tipo_producao = 'ARTIGO' AND jcr IS NULL
+           AND issn IS NOT NULL AND issn != ''),
+        '[]'::jsonb
+      ),
+      true
+    )
+WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
+      <useVariableSubstitution>N</useVariableSubstitution>
+      <sqlfromfile>N</sqlfromfile>
+      <sqlfilename/>
+      <sendOneStatement>Y</sendOneStatement>
+      <GUI>
+        <xloc>1500</xloc>
         <yloc>330</yloc>
       </GUI>
     </action>
@@ -313,6 +430,27 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
     </hop>
     <hop>
       <from>Registrar sem match Qualis</from>
+      <to>Pipeline CrossRef</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Pipeline CrossRef</from>
+      <to>Pipeline OpenAlex</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Pipeline OpenAlex</from>
+      <to>Registrar sem match CrossRef OpenAlex</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Registrar sem match CrossRef OpenAlex</from>
       <to>Registrar sucesso</to>
       <enabled>Y</enabled>
       <evaluation>Y</evaluation>
@@ -349,6 +487,27 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
     </hop>
     <hop>
       <from>Registrar sem match Qualis</from>
+      <to>Registrar falha</to>
+      <enabled>Y</enabled>
+      <evaluation>N</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Pipeline CrossRef</from>
+      <to>Registrar falha</to>
+      <enabled>Y</enabled>
+      <evaluation>N</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Pipeline OpenAlex</from>
+      <to>Registrar falha</to>
+      <enabled>Y</enabled>
+      <evaluation>N</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Registrar sem match CrossRef OpenAlex</from>
       <to>Registrar falha</to>
       <enabled>Y</enabled>
       <evaluation>N</evaluation>

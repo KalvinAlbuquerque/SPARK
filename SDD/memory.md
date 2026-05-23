@@ -4,7 +4,7 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 
 ---
 
-## Estado atual: Sprint II CONCLUÍDA (SPK-11 + SPK-12)
+## Estado atual: Sprint II — SPK-11 + SPK-12 + SPK-13 CONCLUÍDAS
 
 **Data última atualização:** 2026-05-23
 
@@ -141,9 +141,9 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 | `issn` | Sim (quando existe) | Do XML |
 | `doi` | Sim (quando existe) | Do XML |
 | `texto_busca` | Sim (automático) | Trigger do banco |
-| `resumo` | **Não** (fica NULL) | `RESUMO-DA-PRODUCAO` não extraído na SPK-11 |
+| `resumo` | **Sim** (SPK-13) | `crossref_enriquecimento.hpl` — cobertura parcial esperada (depende da CrossRef por editora) |
 | `qualis` | **Sim** (SPK-12) | Pipeline `qualis_enriquecimento.hpl` — 93.1% dos artigos preenchidos |
-| `jcr` | **Não** (fica NULL) | Enriquecimento externo — sprint futura |
+| `jcr` | **Sim** (SPK-13) | `openalex_enriquecimento.hpl` — 1 chamada por ISSN único |
 
 ---
 
@@ -215,9 +215,11 @@ etl/
 ├── pipelines/
 │   ├── lattes_pesquisadores.hpl     # Extrai e carrega pesquisadores (SPK-11)
 │   ├── lattes_producoes.hpl         # Extrai e carrega produções - 4 tipos (SPK-11)
-│   └── qualis_enriquecimento.hpl    # Enriquece qualis via planilha CAPES (SPK-12)
+│   ├── qualis_enriquecimento.hpl    # Enriquece qualis via planilha CAPES (SPK-12)
+│   ├── crossref_enriquecimento.hpl  # Enriquece doi + resumo via CrossRef API (SPK-13)
+│   └── openalex_enriquecimento.hpl  # Enriquece jcr via OpenAlex API por ISSN (SPK-13)
 ├── workflows/
-│   └── spark_etl.hwf                # Orquestra os 3 pipelines + log etl_logs
+│   └── spark_etl.hwf                # Orquestra os 5 pipelines + log etl_logs
 ├── metadata/
 │   └── rdbms/
 │       └── spark_db.json            # Conexão PostgreSQL (gerada pelo setup.ps1)
@@ -270,9 +272,77 @@ Pesquisador (loop raiz): `/CURRICULO-VITAE` → `@NUMERO-IDENTIFICADOR`, `DADOS-
 | Fase | Descrição | Status |
 |------|-----------|--------|
 | Fase 3 — SPK-12 | Enriquecimento Qualis CAPES | **CONCLUÍDO** (93.1% match) |
-| Fase 3 — SPK-13 | Enriquecimento CrossRef (DOI → resumo) | Pendente |
-| Fase 3 — SPK-14 | Enriquecimento OpenAlex (JCR) | Pendente |
-| Fase 5 | Atualização de métricas bibliométricas (`total_producoes`, `indice_h`, `total_a1_a2`) | Pendente |
-| Fase 6 | Worker de embeddings (`all-MiniLM-L6-v2`) para busca semântica | Pendente |
+| Fase 3 — SPK-13 | Enriquecimento CrossRef (DOI + resumo) + OpenAlex (JCR) | **CONCLUÍDO** — spec em `SDD/sprint_2/spk13_spec_CONCLUIDA.md` |
+| SPK-14 | Spike: avaliação de modelos de embedding (Sentence-Transformers vs OpenAI) | Pendente |
+| Fase 5 | Atualização de métricas bibliométricas (`total_producoes`, `indice_h`, `total_a1_a2`) via SQL por pesquisador processado | Pendente |
+| Fase 6 | Worker de embeddings (`all-MiniLM-L6-v2`) acionado via `POST /internal/trigger-embeddings` | Pendente |
 | API | Endpoints FastAPI: `POST /api/search/text`, `POST /api/search/semantic`, `POST /internal/trigger-etl` | Pendente |
 | Frontend | Next.js 14 com busca, cards de produção, filtros sem reload | Pendente |
+
+---
+
+## Roadmap completo do ETL (RoadMap_para_ETL.pdf v1.2)
+
+O pipeline executa **6 fases em sequência**:
+
+| Fase | Descrição | Sprint / Issue |
+|------|-----------|---------------|
+| Fase 1 | Extração dos XMLs Lattes | **CONCLUÍDO** (SPK-11) |
+| Fase 2 | Transformação e normalização (ISSN, títulos, UPSERT) | **CONCLUÍDO** (SPK-11) |
+| Fase 3a | Enriquecimento Qualis (CSV local, lookup por ISSN + fallback por nome) | **CONCLUÍDO** (SPK-12) |
+| Fase 3b | Enriquecimento CrossRef (DOI + abstract) + OpenAlex (JCR) — ambos no SPK-13 | **CONCLUÍDO** (SPK-13) |
+| Fase 4 | Carga no Supabase (UPSERT com COALESCE) | **CONCLUÍDO** (SPK-11) |
+| Fase 5 | Atualização de métricas por pesquisador (`total_producoes`, `indice_h`, `total_a1_a2`) | Pendente |
+| Fase 6 | Acionamento do Worker de embeddings (`all-MiniLM-L6-v2`) via HTTP | Pendente |
+
+**Endpoint interno:** `POST /internal/trigger-etl` — executa as 6 fases sem Apache Hop (para upload pelo Admin via interface web).
+
+### SPK-13 — CONCLUÍDO (CrossRef + OpenAlex)
+
+**crossref_enriquecimento.hpl** (Fase 3b — subetapa 5.2):
+- Scope: apenas `tipo_producao = 'ARTIGO'`
+- Ramo A (com DOI): `GET /works/{doi}?select=DOI,title,abstract` → extrai abstract
+- Ramo B (sem DOI): `GET /works?query.bibliographic={titulo}&rows=1` → aceita DOI apenas se `score > 70`
+- Header obrigatório: `User-Agent: SPARK-ETL/1.0 (mailto:${ETL_EMAIL})`
+- Variável de ambiente: `ETL_EMAIL` no `.env`
+- Tags HTML removidas do abstract via regex `/<[^>]+>/g`
+- UPSERT: `UPDATE producoes SET doi = COALESCE(?,doi), resumo = COALESCE(?,resumo) WHERE id = ?`
+- Logs: `sem_match_doi`, `sem_resumo`
+
+**openalex_enriquecimento.hpl** (Fase 3b — subetapa 5.3):
+- Scope: todos os registros com ISSN preenchido
+- Deduplicação: `SortRows` + `Unique` por ISSN antes das chamadas HTTP
+- Endpoint: `GET /sources/issn:{issn}?select=issn_l,display_name,2yr_mean_citedness&api_key={OPENALEX_APIKEY}`
+- Campo: `2yr_mean_citedness` → `producoes.jcr`
+- Um UPDATE por ISSN atualiza TODOS os artigos com aquele ISSN
+- Variável de ambiente: `OPENALEX_APIKEY` no `.env` (API key gratuita — openalex.org)
+- HTTP 404 ou campo null → NULL (não é falha)
+- UPSERT: `UPDATE producoes SET jcr = COALESCE(?,jcr) WHERE issn = ?`
+- Log: `sem_match_jcr`
+
+**Integração no workflow:**
+- Fluxo: Qualis → Registrar sem match Qualis → CrossRef → OpenAlex → Registrar sem match CrossRef OpenAlex → Registrar sucesso
+- Parâmetros novos no workflow: `ETL_EMAIL`, `OPENALEX_APIKEY`
+- Scripts `run-etl.ps1` e `run-etl.sh` carregam `.env` automaticamente e passam essas vars ao hop-run
+
+**Quirks descobertos no SPK-13:**
+10. **`SelectValues` antes de `AppendStreams`**: Necessário normalizar o schema dos dois ramos (com DOI e sem DOI) para os mesmos campos (`id`, `doi_novo`, `resumo_novo`) antes de reunir — AppendStreams usa o schema do head stream como base.
+11. **`getVariable()` no JavaScript Hop**: Para acessar parâmetros de pipeline dentro de `ScriptValueMod`, usar `parent.getVariable("ETL_EMAIL", "default")`.
+12. **OpenAlex API key obrigatória desde 13/02/2026**: Plano gratuito inclui 100k créditos/dia; singletons (`/sources/issn:xxx`) custam 0 créditos.
+
+### Fase 5 — Métricas bibliométricas
+
+SQL executado uma vez por pesquisador processado na execução corrente:
+```sql
+UPDATE pesquisadores SET
+  total_producoes = (SELECT COUNT(*) FROM producoes WHERE pesquisador_id = ?),
+  total_a1_a2 = (SELECT COUNT(*) FROM producoes WHERE pesquisador_id = ? AND qualis IN ('A1','A2')),
+  indice_h = (
+    SELECT COUNT(*) FROM (
+      SELECT jcr, ROW_NUMBER() OVER (ORDER BY jcr DESC) AS pos
+      FROM producoes WHERE pesquisador_id = ? AND jcr IS NOT NULL
+    ) ranked WHERE jcr >= pos
+  )
+WHERE id = ?;
+```
+Produções sem JCR são excluídas do cálculo do `indice_h`. `total_producoes` conta todos os tipos.

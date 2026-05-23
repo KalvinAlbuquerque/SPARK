@@ -9,8 +9,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ETL_DIR="$(dirname "$SCRIPT_DIR")"
 REPO_ROOT="$(dirname "$ETL_DIR")"
 
+# Carrega .env da raiz do repositório (não sobrescreve vars já exportadas no terminal)
+ENV_FILE="$REPO_ROOT/.env"
+if [[ -f "$ENV_FILE" ]]; then
+    while IFS='=' read -r k v; do
+        [[ "$k" =~ ^[[:space:]]*# ]] && continue
+        k="${k// /}"
+        [[ -z "$k" ]] && continue
+        [[ -z "${!k+x}" ]] && export "$k=$v"
+    done < "$ENV_FILE"
+fi
+
 XML_DIR="${XML_DIR:-$REPO_ROOT/data/xml}"
 QUALIS_CSV="${QUALIS_CSV:-$REPO_ROOT/data/qualis/qualis_capes.csv}"
+ETL_EMAIL="${ETL_EMAIL:-}"
+OPENALEX_APIKEY="${OPENALEX_APIKEY:-}"
 
 # Permite sobrescrever via argumentos posicionais: $1=XML_DIR, $2=QUALIS_CSV
 if [[ $# -ge 1 ]]; then
@@ -24,10 +37,12 @@ WORKFLOW="$ETL_DIR/workflows/spark_etl.hwf"
 
 echo ""
 echo "=== SPARK ETL ==================================================="
-echo "Hop:     $HOP_HOME"
-echo "Projeto: $ETL_DIR"
-echo "XMLs:    $XML_DIR"
-echo "Qualis:  $QUALIS_CSV"
+echo "Hop:       $HOP_HOME"
+echo "Projeto:   $ETL_DIR"
+echo "XMLs:      $XML_DIR"
+echo "Qualis:    $QUALIS_CSV"
+echo "ETL Email: $ETL_EMAIL"
+echo "OpenAlex:  $([ -n "$OPENALEX_APIKEY" ] && echo '(configurado)' || echo '(nao configurado)')"
 echo "================================================================="
 echo ""
 
@@ -58,7 +73,7 @@ start_ts=$(date +%s)
     --project=spark \
     --runconfig=local \
     --file="$WORKFLOW" \
-    "--parameters=XML_DIR=$XML_DIR,QUALIS_CSV=$QUALIS_CSV"
+    "--parameters=XML_DIR=$XML_DIR,QUALIS_CSV=$QUALIS_CSV,ETL_EMAIL=$ETL_EMAIL,OPENALEX_APIKEY=$OPENALEX_APIKEY"
 
 exit_code=$?
 end_ts=$(date +%s)
