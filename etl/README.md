@@ -1,6 +1,6 @@
 # ETL — Pipeline Lattes SPARK
 
-Pipeline Apache Hop que extrai dados dos currículos Lattes (XML) e carrega nas tabelas `pesquisadores` e `producoes` do banco PostgreSQL.
+Pipeline Apache Hop que extrai dados dos currículos Lattes (XML), carrega nas tabelas `pesquisadores` e `producoes` do banco PostgreSQL, e enriquece o campo `qualis` via planilha Qualis CAPES.
 
 ---
 
@@ -106,6 +106,20 @@ Coloque todos os arquivos `.xml` em um diretório (ex: `data/xml/`) e configure 
 
 ---
 
+### 3.4 Obter a planilha Qualis CAPES (para enriquecimento SPK-12)
+
+O campo `qualis` é preenchido a partir da planilha oficial da Plataforma Sucupira. Não existe API — o download é manual:
+
+1. Acesse [https://sucupira.capes.gov.br/sucupira/](https://sucupira.capes.gov.br/sucupira/)
+2. Vá em **Coleta Capes → Qualis → Consultar Classificação de Periódicos**
+3. Selecione o quadriênio desejado (referência: **2017–2020**) e exporte a planilha
+4. Converta o arquivo XLSX para CSV com cabeçalho: `ISSN,Titulo,Area,Estrato`
+5. Salve como `data/qualis/qualis_capes.csv` (UTF-8)
+
+O repositório já contém o arquivo `data/qualis/qualis_capes.csv` gerado a partir do quadriênio 2017–2020 (154.518 linhas, 31.350 ISSNs únicos). Para usar outro quadriênio, substitua o arquivo ou passe o caminho via parâmetro `QUALIS_CSV`.
+
+---
+
 ## 4. Configurar conexao e registrar o projeto (setup unico)
 
 Execute o script de setup **uma vez** — ele criptografa a senha, grava `spark_db.json` no formato correto do Hop 2.x e registra o projeto `spark` sem abrir a GUI.
@@ -185,8 +199,12 @@ O script (em ambas as versoes) faz:
 cd etl\
 .\scripts\run-etl.ps1
 
-# Especificar outro diretorio de XMLs:
+# Especificar outro diretorio de XMLs ou outra planilha Qualis:
 .\scripts\run-etl.ps1 -XmlDir "C:\outro\caminho\xmls"
+.\scripts\run-etl.ps1 -QualisCSV "C:\outro\caminho\qualis_capes.csv"
+
+# Ambos ao mesmo tempo:
+.\scripts\run-etl.ps1 -XmlDir "C:\outro\caminho\xmls" -QualisCSV "C:\outro\caminho\qualis_capes.csv"
 ```
 
 **Linux/macOS (bash):**
@@ -196,24 +214,26 @@ cd etl/
 chmod +x scripts/run-etl.sh
 ./scripts/run-etl.sh
 
-# Especificar outro diretorio de XMLs:
+# Especificar outro diretorio de XMLs ou outra planilha Qualis:
 ./scripts/run-etl.sh /outro/caminho/xmls
-# ou via variavel:
-XML_DIR=/outro/caminho/xmls ./scripts/run-etl.sh
+./scripts/run-etl.sh /outro/caminho/xmls /outro/caminho/qualis_capes.csv
+# ou via variaveis:
+XML_DIR=/outro/caminho/xmls QUALIS_CSV=/outro/caminho/qualis.csv ./scripts/run-etl.sh
 ```
 
-Ambos os scripts detectam automaticamente `data/xml/` do repositorio se nenhum diretorio for passado.
+Os scripts detectam automaticamente `data/xml/` e `data/qualis/qualis_capes.csv` se nenhum caminho for passado.
 
 ### Via hop-run diretamente
 
 **Windows:**
 
 ```powershell
-$HOP = "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop"
-$ETL = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\etl"
-$XML = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\data\xml"
+$HOP    = "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop"
+$ETL    = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\etl"
+$XML    = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\data\xml"
+$QUALIS = "C:\Users\glend\Desktop\UNEB\TOPICOS\Repositorio\SPARK\data\qualis\qualis_capes.csv"
 
-cmd /c """$HOP\hop-run.bat"" --project=spark --runconfig=local --file=""$ETL\workflows\spark_etl.hwf"" ""--parameters=XML_DIR=$XML"""
+cmd /c """$HOP\hop-run.bat"" --project=spark --runconfig=local --file=""$ETL\workflows\spark_etl.hwf"" ""--parameters=XML_DIR=$XML,QUALIS_CSV=$QUALIS"""
 ```
 
 **Linux/macOS:**
@@ -221,7 +241,7 @@ cmd /c """$HOP\hop-run.bat"" --project=spark --runconfig=local --file=""$ETL\wor
 ```bash
 "$HOP_HOME/hop-run.sh" --project=spark --runconfig=local \
   --file="$ETL_DIR/workflows/spark_etl.hwf" \
-  "--parameters=XML_DIR=$XML_DIR"
+  "--parameters=XML_DIR=$XML_DIR,QUALIS_CSV=$QUALIS_CSV"
 ```
 
 ### Via GUI do Apache Hop
@@ -247,10 +267,18 @@ SELECT lattes_id, nome_completo, departamento, campus FROM pesquisadores;
 -- Total de producoes por tipo
 SELECT tipo_producao, COUNT(*) FROM producoes GROUP BY tipo_producao;
 
--- Producoes por pesquisador e tipo
-SELECT p.nome_completo, pr.tipo_producao, COUNT(*) as qtd
-FROM producoes pr JOIN pesquisadores p ON p.id = pr.pesquisador_id
-GROUP BY p.nome_completo, pr.tipo_producao ORDER BY p.nome_completo;
+-- Distribuicao Qualis dos artigos
+SELECT qualis, COUNT(*) FROM producoes
+WHERE tipo_producao = 'ARTIGO' AND qualis IS NOT NULL
+GROUP BY qualis ORDER BY qualis;
+
+-- Taxa de match Qualis
+SELECT
+  COUNT(*) FILTER (WHERE tipo_producao = 'ARTIGO') AS total_artigos,
+  COUNT(*) FILTER (WHERE tipo_producao = 'ARTIGO' AND qualis IS NOT NULL) AS com_qualis,
+  ROUND(COUNT(*) FILTER (WHERE tipo_producao = 'ARTIGO' AND qualis IS NOT NULL)::numeric /
+        NULLIF(COUNT(*) FILTER (WHERE tipo_producao = 'ARTIGO'), 0) * 100, 1) AS taxa_pct
+FROM producoes;
 
 -- Log de execucao
 SELECT id, iniciado_em, finalizado_em, status, detalhes->>'arquivos_processados' as arquivos
@@ -284,21 +312,24 @@ Executar o pipeline sobre os mesmos arquivos é seguro. O UPSERT garante:
 ```
 etl/
 ├── pipelines/
-│   ├── lattes_pesquisadores.hpl   # Extrai e carrega pesquisadores
-│   └── lattes_producoes.hpl       # Extrai e carrega producoes (4 tipos)
+│   ├── lattes_pesquisadores.hpl     # Extrai e carrega pesquisadores (SPK-11)
+│   ├── lattes_producoes.hpl         # Extrai e carrega producoes - 4 tipos (SPK-11)
+│   └── qualis_enriquecimento.hpl    # Enriquece qualis via planilha CAPES (SPK-12)
 ├── workflows/
-│   └── spark_etl.hwf              # Orquestra ambos os pipelines + log
+│   └── spark_etl.hwf                # Orquestra os 3 pipelines + log
 ├── metadata/
 │   └── rdbms/
-│       └── spark_db.json          # Conexao PostgreSQL (gerada pelo setup)
+│       └── spark_db.json            # Conexao PostgreSQL (gerada pelo setup)
 ├── config/
-│   └── spark-env.json             # Template de variaveis Hop (referencia)
+│   └── spark-env.json               # Template de variaveis Hop (referencia)
 ├── scripts/
-│   ├── setup.ps1                  # Setup unico — Windows (PowerShell)
-│   ├── setup.sh                   # Setup unico — Linux/macOS (bash)
-│   ├── run-etl.ps1                # Execucao do ETL — Windows (PowerShell)
-│   └── run-etl.sh                 # Execucao do ETL — Linux/macOS (bash)
-├── project-config.json            # Config do projeto no formato Hop 2.x
+│   ├── setup.ps1                    # Setup unico — Windows (PowerShell)
+│   ├── setup.sh                     # Setup unico — Linux/macOS (bash)
+│   ├── run-etl.ps1                  # Execucao do ETL — Windows (PowerShell)
+│   └── run-etl.sh                   # Execucao do ETL — Linux/macOS (bash)
+├── docs/
+│   └── upsert_proof_of_work.md      # Prova de idempotencia do UPSERT
+├── project-config.json              # Config do projeto no formato Hop 2.x
 └── README.md
 ```
 
@@ -340,14 +371,24 @@ Campos **não preenchidos pelo ETL** (calculados em sprint futura): `total_produ
 | `doi` | `@DOI` (quando disponível) |
 | `texto_busca` | Preenchido automaticamente por trigger do banco |
 
-Campos **não preenchidos pelo ETL**: `resumo` das produções (campo `RESUMO-DA-PRODUCAO` não extraído), `qualis` e `jcr` (enriquecimento externo — Qualis CAPES / CrossRef / OpenAlex).
+Campo `qualis` é preenchido pelo pipeline `qualis_enriquecimento.hpl` (SPK-12). Campos **não preenchidos**: `resumo` das produções (campo `RESUMO-DA-PRODUCAO` não extraído), `jcr` (enriquecimento via OpenAlex — SPK-14).
 
 ---
 
-## 11. Notas de implementação (SPK-11)
+## 11. Notas de implementação
+
+### SPK-11 (lattes_pesquisadores + lattes_producoes)
 
 - Pipeline implementado em **Apache Hop 2.15.0** conforme constitution.md — não reimplementar em Python ou shell
 - Todo UPSERT usa `ON CONFLICT DO UPDATE` conforme obrigado pela constitution
 - Credenciais via variáveis de ambiente — nunca hardcoded
 - Encoding dos XMLs: `ISO-8859-1` (padrão CNPq) — lido automaticamente pelo Hop via declaração no cabeçalho XML
 - `COALESCE` preserva `doi`, `resumo`, `qualis`, `jcr` já enriquecidos em reprocessamentos
+
+### SPK-12 (qualis_enriquecimento)
+
+- Lookup por ISSN com fallback por nome do periódico (`nome_veiculo`)
+- Melhor estrato por ISSN via `SortRows` (ISSN asc, Estrato asc) + `UniqueRows` — a ordenação alfabética dos estratos (A1 < A2 < … < C) coincide com a ordem de qualidade decrescente, tornando desnecessária a conversão numérica
+- Taxa de correspondência validada: **93.1% dos 247 artigos** (acima do critério mínimo de 70%)
+- UPSERT via `UPDATE … SET qualis = COALESCE(?, qualis)` — não sobrescreve valor já preenchido quando não há nova correspondência
+- Artigos sem correspondência logados via `WriteToLog` sem interromper o processamento

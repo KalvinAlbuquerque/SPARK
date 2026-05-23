@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info>
+    <name>qualis_enriquecimento</name>
+    <name_hi_res/>
+    <description>Enriquece producoes com estrato Qualis CAPES via lookup por ISSN (primario) e nome do periodico (fallback)</description>
+    <extended_description/>
+    <pipeline_version/>
+    <pipeline_status>0</pipeline_status>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+      <parameter>
+        <name>QUALIS_CSV</name>
+        <default_value>../../data/qualis/qualis_capes.csv</default_value>
+        <description>Caminho absoluto para o arquivo qualis_capes.csv</description>
+      </parameter>
+    </parameters>
+    <capture_transform_performance>N</capture_transform_performance>
+    <transform_performance_capturing_delay>1000</transform_performance_capturing_delay>
+    <transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
+    <created_user>SPARK ETL</created_user>
+    <created_date>2026/05/23 00:00:00.000</created_date>
+    <modified_user>SPARK ETL</modified_user>
+    <modified_date>2026/05/23 00:00:00.000</modified_date>
+    <key_for_session_key>H4sIAAAAAAAA/wMAAAAAAAAAAAA=</key_for_session_key>
+    <is_key_private>N</is_key_private>
+  </info>
+  <notepads>
+    <notepad>
+      <note>Pipeline SPK-12
+Lookup 1: ISSN (producoes) = ISSN (Qualis CSV) → estrato mais alto por ISSN
+Lookup 2 (fallback): nome_veiculo = Titulo (Qualis CSV) para ISSNs sem match
+UPSERT: UPDATE producoes SET qualis = COALESCE(novo, existente) WHERE id = ?
+Log: sem_match registrado via WriteToLog
+
+Nota: A ordenacao alfabetica dos estratos (A1 &lt; A2 &lt; ... &lt; B5 &lt; C)
+coincide com a ordem de qualidade descrescente — sort ASC + Unique
+garante o melhor estrato sem precisar de conversao numerica.</note>
+      <xloc>50</xloc>
+      <yloc>50</yloc>
+      <width>580</width>
+      <heigth>110</heigth>
+      <fontname>Arial</fontname>
+      <fontsize>10</fontsize>
+      <fontbold>N</fontbold>
+      <fontitalic>N</fontitalic>
+      <fontcolorred>14</fontcolorred>
+      <fontcolorgreen>58</fontcolorgreen>
+      <fontcolorblue>90</fontcolorblue>
+      <backgroundcolorred>201</backgroundcolorred>
+      <backgroundcolorgreen>232</backgroundcolorgreen>
+      <backgroundcolorblue>251</backgroundcolorblue>
+      <bordercolorred>14</bordercolorred>
+      <bordercolorgreen>58</bordercolorgreen>
+      <bordercolorblue>90</bordercolorblue>
+    </notepad>
+  </notepads>
+
+  <order>
+    <!-- Ramo A: tabela de lookup por ISSN -->
+    <hop><from>CSV Qualis ISSN</from><to>Sort por ISSN</to><enabled>Y</enabled></hop>
+    <hop><from>Sort por ISSN</from><to>Unico por ISSN</to><enabled>Y</enabled></hop>
+
+    <!-- Ramo B: tabela de lookup por nome (fallback) -->
+    <hop><from>CSV Qualis Nome</from><to>Sort por Titulo</to><enabled>Y</enabled></hop>
+    <hop><from>Sort por Titulo</from><to>Unico por Titulo</to><enabled>Y</enabled></hop>
+
+    <!-- Fluxo principal: producoes -->
+    <hop><from>Ler Artigos</from><to>Lookup por ISSN</to><enabled>Y</enabled></hop>
+    <hop><from>Unico por ISSN</from><to>Lookup por ISSN</to><enabled>Y</enabled></hop>
+    <hop><from>Lookup por ISSN</from><to>Filtrar Match ISSN</to><enabled>Y</enabled></hop>
+    <hop><from>Filtrar Match ISSN</from><to>UPSERT Qualis</to><enabled>Y</enabled></hop>
+    <hop><from>Filtrar Match ISSN</from><to>Lookup por Nome</to><enabled>Y</enabled></hop>
+    <hop><from>Unico por Titulo</from><to>Lookup por Nome</to><enabled>Y</enabled></hop>
+    <hop><from>Lookup por Nome</from><to>Filtrar Match Nome</to><enabled>Y</enabled></hop>
+    <hop><from>Filtrar Match Nome</from><to>UPSERT Qualis</to><enabled>Y</enabled></hop>
+    <hop><from>Filtrar Match Nome</from><to>Log Sem Match</to><enabled>Y</enabled></hop>
+  </order>
+
+  <!-- ================================================================
+       RAMO A — Lookup table por ISSN
+       CSV → sort (ISSN asc, Estrato asc) → deduplica → lookup
+       Ordem alfabetica A1<A2<...<B5<C = qualidade decrescente, logo
+       sort ASC + Unique mantem A1 (melhor) por ISSN.
+       ================================================================ -->
+
+  <transform>
+    <name>CSV Qualis ISSN</name>
+    <type>CSVInput</type>
+    <description>Le planilha Qualis CAPES para lookup por ISSN</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <filename>${QUALIS_CSV}</filename>
+    <filename_field/>
+    <rownum_field/>
+    <include_filename>N</include_filename>
+    <separator>,</separator>
+    <enclosure>"</enclosure>
+    <header>Y</header>
+    <buffer_size>50000</buffer_size>
+    <lazy_conversion>N</lazy_conversion>
+    <parallel>N</parallel>
+    <newline_possible>N</newline_possible>
+    <add_filename_result>N</add_filename_result>
+    <encoding>UTF-8</encoding>
+    <fields>
+      <field>
+        <name>ISSN</name>
+        <type>String</type>
+        <format/><currency/><decimal/><group/>
+        <length>9</length><precision>-1</precision>
+        <trim_type>both</trim_type>
+      </field>
+      <field>
+        <name>Titulo</name>
+        <type>String</type>
+        <format/><currency/><decimal/><group/>
+        <length>500</length><precision>-1</precision>
+        <trim_type>both</trim_type>
+      </field>
+      <field>
+        <name>Area</name>
+        <type>String</type>
+        <format/><currency/><decimal/><group/>
+        <length>500</length><precision>-1</precision>
+        <trim_type>both</trim_type>
+      </field>
+      <field>
+        <name>Estrato</name>
+        <type>String</type>
+        <format/><currency/><decimal/><group/>
+        <length>5</length><precision>-1</precision>
+        <trim_type>both</trim_type>
+      </field>
+    </fields>
+    <GUI><xloc>150</xloc><yloc>200</yloc></GUI>
+  </transform>
+
+  <transform>
+    <name>Sort por ISSN</name>
+    <type>SortRows</type>
+    <description>Ordena por ISSN asc e Estrato asc — A1 fica antes de A2 (melhor primeiro)</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <sort_size>1000000</sort_size>
+    <free_memory_treshold>25</free_memory_treshold>
+    <compress>N</compress>
+    <compress_variable/>
+    <unique_rows>N</unique_rows>
+    <fields>
+      <field>
+        <name>ISSN</name>
+        <sort_direction>ascending</sort_direction>
+        <collator_enabled>N</collator_enabled>
+        <collator_strength>0</collator_strength>
+        <case_sensitive>N</case_sensitive>
+        <presorted>N</presorted>
+      </field>
+      <field>
+        <name>Estrato</name>
+        <sort_direction>ascending</sort_direction>
+        <collator_enabled>N</collator_enabled>
+        <collator_strength>0</collator_strength>
+        <case_sensitive>N</case_sensitive>
+        <presorted>N</presorted>
+      </field>
+    </fields>
+    <GUI><xloc>350</xloc><yloc>200</yloc></GUI>
+  </transform>
+
+  <transform>
+    <name>Unico por ISSN</name>
+    <type>Unique</type>
+    <description>Mantem apenas a primeira linha por ISSN (melhor estrato — A1 fica primeiro apos sort ASC)</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <count_rows>N</count_rows>
+    <count_field/>
+    <redirect_rows>N</redirect_rows>
+    <error_description/>
+    <fields>
+      <field>
+        <name>ISSN</name>
+        <case_sensitive>N</case_sensitive>
+      </field>
+    </fields>
+    <GUI><xloc>550</xloc><yloc>200</yloc></GUI>
+  </transform>
+
+  <!-- ================================================================
+       RAMO B — Lookup table por Titulo (fallback)
+       CSV → sort (Titulo asc, Estrato asc) → deduplica → lookup
+       ================================================================ -->
+
+  <transform>
+    <name>CSV Qualis Nome</name>
+    <type>CSVInput</type>
+    <description>Segunda leitura da planilha Qualis para lookup por nome do periodico</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <filename>${QUALIS_CSV}</filename>
+    <filename_field/>
+    <rownum_field/>
+    <include_filename>N</include_filename>
+    <separator>,</separator>
+    <enclosure>"</enclosure>
+    <header>Y</header>
+    <buffer_size>50000</buffer_size>
+    <lazy_conversion>N</lazy_conversion>
+    <parallel>N</parallel>
+    <newline_possible>N</newline_possible>
+    <add_filename_result>N</add_filename_result>
+    <encoding>UTF-8</encoding>
+    <fields>
+      <field>
+        <name>ISSN</name>
+        <type>String</type>
+        <format/><currency/><decimal/><group/>
+        <length>9</length><precision>-1</precision>
+        <trim_type>both</trim_type>
+      </field>
+      <field>
+        <name>Titulo</name>
+        <type>String</type>
+        <format/><currency/><decimal/><group/>
+        <length>500</length><precision>-1</precision>
+        <trim_type>both</trim_type>
+      </field>
+      <field>
+        <name>Area</name>
+        <type>String</type>
+        <format/><currency/><decimal/><group/>
+        <length>500</length><precision>-1</precision>
+        <trim_type>both</trim_type>
+      </field>
+      <field>
+        <name>Estrato</name>
+        <type>String</type>
+        <format/><currency/><decimal/><group/>
+        <length>5</length><precision>-1</precision>
+        <trim_type>both</trim_type>
+      </field>
+    </fields>
+    <GUI><xloc>150</xloc><yloc>380</yloc></GUI>
+  </transform>
+
+  <transform>
+    <name>Sort por Titulo</name>
+    <type>SortRows</type>
+    <description>Ordena por Titulo asc e Estrato asc para fallback por nome</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <sort_size>1000000</sort_size>
+    <free_memory_treshold>25</free_memory_treshold>
+    <compress>N</compress>
+    <compress_variable/>
+    <unique_rows>N</unique_rows>
+    <fields>
+      <field>
+        <name>Titulo</name>
+        <sort_direction>ascending</sort_direction>
+        <collator_enabled>N</collator_enabled>
+        <collator_strength>0</collator_strength>
+        <case_sensitive>N</case_sensitive>
+        <presorted>N</presorted>
+      </field>
+      <field>
+        <name>Estrato</name>
+        <sort_direction>ascending</sort_direction>
+        <collator_enabled>N</collator_enabled>
+        <collator_strength>0</collator_strength>
+        <case_sensitive>N</case_sensitive>
+        <presorted>N</presorted>
+      </field>
+    </fields>
+    <GUI><xloc>350</xloc><yloc>380</yloc></GUI>
+  </transform>
+
+  <transform>
+    <name>Unico por Titulo</name>
+    <type>Unique</type>
+    <description>Mantem apenas a primeira linha por Titulo (melhor estrato)</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <count_rows>N</count_rows>
+    <count_field/>
+    <redirect_rows>N</redirect_rows>
+    <error_description/>
+    <fields>
+      <field>
+        <name>Titulo</name>
+        <case_sensitive>N</case_sensitive>
+      </field>
+    </fields>
+    <GUI><xloc>550</xloc><yloc>380</yloc></GUI>
+  </transform>
+
+  <!-- ================================================================
+       FLUXO PRINCIPAL — Producoes
+       TableInput → Lookup ISSN → Filter → Lookup Nome → Filter → UPSERT
+       ================================================================ -->
+
+  <transform>
+    <name>Ler Artigos</name>
+    <type>TableInput</type>
+    <description>Le todos os artigos com ISSN da tabela producoes</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <connection>spark_db</connection>
+    <sql>SELECT id, issn, nome_veiculo FROM producoes WHERE tipo_producao = 'ARTIGO' AND issn IS NOT NULL AND issn != ''</sql>
+    <limit>0</limit>
+    <lookup/>
+    <execute_each_row>N</execute_each_row>
+    <variables_active>N</variables_active>
+    <lazy_conversion_active>N</lazy_conversion_active>
+    <GUI><xloc>150</xloc><yloc>560</yloc></GUI>
+  </transform>
+
+  <transform>
+    <name>Lookup por ISSN</name>
+    <type>StreamLookup</type>
+    <description>Join producoes.issn com ISSN da planilha Qualis (melhor estrato ja deduplicado)</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <from>Unico por ISSN</from>
+    <input_sorted>N</input_sorted>
+    <preserve_memory>N</preserve_memory>
+    <lookup>
+      <key>
+        <name>issn</name>
+        <field>ISSN</field>
+      </key>
+      <value>
+        <name>Estrato</name>
+        <rename>qualis</rename>
+        <default/>
+        <type>String</type>
+      </value>
+    </lookup>
+    <GUI><xloc>370</xloc><yloc>560</yloc></GUI>
+  </transform>
+
+  <transform>
+    <name>Filtrar Match ISSN</name>
+    <type>FilterRows</type>
+    <description>Separa artigos com match por ISSN (vai para UPSERT) dos sem match (vai para fallback por nome)</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <send_true_to>UPSERT Qualis</send_true_to>
+    <send_false_to>Lookup por Nome</send_false_to>
+    <compare>
+      <condition>
+        <negated>N</negated>
+        <leftvalue>qualis</leftvalue>
+        <function>IS NOT NULL</function>
+        <rightvalue/>
+      </condition>
+    </compare>
+    <GUI><xloc>590</xloc><yloc>560</yloc></GUI>
+  </transform>
+
+  <transform>
+    <name>Lookup por Nome</name>
+    <type>StreamLookup</type>
+    <description>Fallback: join producoes.nome_veiculo com Titulo da planilha Qualis</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <from>Unico por Titulo</from>
+    <input_sorted>N</input_sorted>
+    <preserve_memory>N</preserve_memory>
+    <lookup>
+      <key>
+        <name>nome_veiculo</name>
+        <field>Titulo</field>
+      </key>
+      <value>
+        <name>Estrato</name>
+        <rename>qualis</rename>
+        <default/>
+        <type>String</type>
+      </value>
+    </lookup>
+    <GUI><xloc>810</xloc><yloc>560</yloc></GUI>
+  </transform>
+
+  <transform>
+    <name>Filtrar Match Nome</name>
+    <type>FilterRows</type>
+    <description>Separa artigos com match por nome (vai para UPSERT) dos sem match algum (vai para log)</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <send_true_to>UPSERT Qualis</send_true_to>
+    <send_false_to>Log Sem Match</send_false_to>
+    <compare>
+      <condition>
+        <negated>N</negated>
+        <leftvalue>qualis</leftvalue>
+        <function>IS NOT NULL</function>
+        <rightvalue/>
+      </condition>
+    </compare>
+    <GUI><xloc>1030</xloc><yloc>560</yloc></GUI>
+  </transform>
+
+  <!-- ================================================================
+       UPSERT — Atualiza qualis preservando valor existente via COALESCE
+       ================================================================ -->
+  <transform>
+    <name>UPSERT Qualis</name>
+    <type>ExecSQL</type>
+    <description>Atualiza producoes.qualis preservando valor ja enriquecido se novo for NULL</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <connection>spark_db</connection>
+    <execute_each_row>Y</execute_each_row>
+    <single_statement>N</single_statement>
+    <replace_variables>N</replace_variables>
+    <set_params>Y</set_params>
+    <sql>UPDATE producoes SET qualis = COALESCE(?, qualis) WHERE id = ?</sql>
+    <arguments>
+      <argument><name>qualis</name></argument>
+      <argument><name>id</name></argument>
+    </arguments>
+    <GUI><xloc>810</xloc><yloc>720</yloc></GUI>
+  </transform>
+
+  <!-- ================================================================
+       LOG — Registra periodicos sem match algum
+       ================================================================ -->
+  <transform>
+    <name>Log Sem Match</name>
+    <type>WriteToLog</type>
+    <description>Registra artigos sem Qualis para revisao — nao interrompe o processamento</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning><method>none</method><schema_name/></partitioning>
+    <loglevel>Error</loglevel>
+    <displayHeader>Y</displayHeader>
+    <limitRows>N</limitRows>
+    <limitRowsNumber>0</limitRowsNumber>
+    <logmessage>SEM MATCH QUALIS — periodico nao encontrado por ISSN nem por nome</logmessage>
+    <fields>
+      <field><name>issn</name></field>
+      <field><name>nome_veiculo</name></field>
+    </fields>
+    <GUI><xloc>1250</xloc><yloc>560</yloc></GUI>
+  </transform>
+
+  <transform_error_handling/>
+</pipeline>
