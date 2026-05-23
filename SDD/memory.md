@@ -4,7 +4,7 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 
 ---
 
-## Estado atual: Sprint II CONCLUÍDA
+## Estado atual: Sprint II CONCLUÍDA (SPK-11 + SPK-12)
 
 **Data última atualização:** 2026-05-23
 
@@ -24,7 +24,7 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 
 ---
 
-### Sprint II — SPK-11 (CONCLUÍDA e VALIDADA ✓)
+### Sprint II — SPK-11 + SPK-12 (CONCLUÍDAS e VALIDADAS ✓)
 
 **Spec:** `SDD/sprint_2/spk11_spec_CONCLUIDA.md`
 
@@ -43,6 +43,40 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 - UPSERT pesquisadores: `ON CONFLICT (lattes_id) DO UPDATE SET ...`
 - UPSERT produções: `ON CONFLICT (pesquisador_id, titulo, ano_publicacao) DO UPDATE SET doi=COALESCE(...), resumo=COALESCE(...), qualis=COALESCE(...), jcr=COALESCE(...)` — preserva campos já enriquecidos em reprocessamentos
 - **Idempotência confirmada:** 2 execuções consecutivas → mesmos 8 pesquisadores, 462 produções, sem duplicatas
+
+---
+
+### Sprint II — SPK-12 (CONCLUÍDA e VALIDADA ✓)
+
+**Spec:** `SDD/sprint_2/spk12_spec_CONCLUIDA.md`
+
+**Pipeline de enriquecimento Qualis CAPES**
+
+- `etl/pipelines/qualis_enriquecimento.hpl` — Pipeline Apache Hop que:
+  - Lê `data/qualis/qualis_capes.csv` (154.518 linhas, quadriênio 2017–2020)
+  - Ramo A: `CSVInput` → `SortRows` (ISSN asc, Estrato asc) → `Unique` por ISSN → `StreamLookup` no fluxo de artigos
+  - Ramo B (fallback): mesma estrutura mas por `Titulo` → `StreamLookup` por `nome_veiculo`
+  - `FilterRows` roteia: match → `ExecSQL` UPSERT, sem match → `WriteToLog`
+  - UPSERT: `UPDATE producoes SET qualis = COALESCE(?, qualis) WHERE id = ?`
+  - **Idempotência confirmada:** 2 execuções consecutivas → mesmo resultado
+- `etl/workflows/spark_etl.hwf` — Pipeline Qualis adicionado entre "Pipeline Producoes" e "Registrar sucesso"; parâmetro `QUALIS_CSV` adicionado
+- `etl/scripts/run-etl.ps1` e `run-etl.sh` — Parâmetro `-QualisCSV` / `QUALIS_CSV` adicionado
+- `data/qualis/qualis_capes.csv` — CSV gerado do XLSX da Plataforma Sucupira (31.350 ISSNs únicos)
+
+**Resultado validado (2026-05-23):**
+
+| Métrica | Resultado |
+|---------|-----------|
+| Taxa de match (ISSN + fallback nome) | **93.1%** (230/247 artigos) |
+| Artigos sem correspondência | 17 (logados sem interromper o batch) |
+| Idempotência | ✓ (2 runs consecutivos → mesmo resultado) |
+| Estratos preenchidos | A1:64, A2:40, A3:21, A4:33, B1:27, B2:18, B3:2, B4:2, C:23 |
+
+**Quirks descobertos no SPK-12:**
+
+7. **Tipos de transform CSVInput no Hop 2.x**: O tipo correto é `CSVInput` (não `CsvInput`) e o tag de buffer é `<buffer_size>` (não `<bufferSize>`) — caso contrário: `NumberFormatException: Cannot parse null string` no init.
+8. **UniqueRows no Hop 2.x**: O tipo correto é `Unique` (não `UniqueRows`) — confirmar via sample `unique-rows-basic.hpl`.
+9. **Ordem alfabética dos estratos Qualis**: A1 < A2 < ... < B5 < C alfabeticamente = ordem de qualidade decrescente. Logo `SortRows` (ISSN asc, Estrato asc) + `UniqueRows` garante o melhor estrato por ISSN sem conversão numérica — elimina a necessidade de `ScriptValueMod`/`ScriptValues`.
 
 **SPK-39 — README, scripts e commit (CONCLUÍDO)**
 - `etl/README.md` — instruções completas com sintaxe PowerShell e bash
@@ -108,7 +142,7 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 | `doi` | Sim (quando existe) | Do XML |
 | `texto_busca` | Sim (automático) | Trigger do banco |
 | `resumo` | **Não** (fica NULL) | `RESUMO-DA-PRODUCAO` não extraído na SPK-11 |
-| `qualis` | **Não** (fica NULL) | Enriquecimento externo — sprint futura |
+| `qualis` | **Sim** (SPK-12) | Pipeline `qualis_enriquecimento.hpl` — 93.1% dos artigos preenchidos |
 | `jcr` | **Não** (fica NULL) | Enriquecimento externo — sprint futura |
 
 ---
@@ -137,7 +171,8 @@ cd etl\; .\scripts\setup.ps1
 
 1. **`distribute=N` em copy mode**: Com `distribute=N` e um error handler configurado, o Hop em modo "copy" envia cada linha para TODOS os hops de saída (incluindo o error handler), não apenas para o hop principal. Isso faz com que o `Log Erro Parse` receba todas as linhas, mesmo sem erros reais (E=0). O UPSERT recebe igualmente todas as linhas e funciona corretamente — é um comportamento cosmético do log, não afeta os dados.
 
-2. **Tipo correto dos transforms**: `GetXmlData` (não `GetDataFromXML`), `Constant` (não `AddConstants`), `ScriptValueMod` (não `ScriptValuesMod`).
+2. **Tipo correto dos transforms (SPK-11)**: `GetXmlData` (não `GetDataFromXML`), `Constant` (não `AddConstants`), `ScriptValueMod` (não `ScriptValuesMod`).
+   **Tipos corretos (SPK-12)**: `CSVInput` (não `CsvInput`), `Unique` (não `UniqueRows`). Tag `<buffer_size>` (não `<bufferSize>`).
 
 3. **`loopxpath` como tag direta**: `<loopxpath>/CURRICULO-VITAE</loopxpath>`, não dentro de `<loops><loop><path>`.
 
@@ -178,21 +213,24 @@ cd etl\; .\scripts\setup.ps1
 ```
 etl/
 ├── pipelines/
-│   ├── lattes_pesquisadores.hpl   # Extrai e carrega pesquisadores
-│   └── lattes_producoes.hpl       # Extrai e carrega produções (4 tipos)
+│   ├── lattes_pesquisadores.hpl     # Extrai e carrega pesquisadores (SPK-11)
+│   ├── lattes_producoes.hpl         # Extrai e carrega produções - 4 tipos (SPK-11)
+│   └── qualis_enriquecimento.hpl    # Enriquece qualis via planilha CAPES (SPK-12)
 ├── workflows/
-│   └── spark_etl.hwf              # Orquestra ambos + log etl_logs
+│   └── spark_etl.hwf                # Orquestra os 3 pipelines + log etl_logs
 ├── metadata/
 │   └── rdbms/
-│       └── spark_db.json          # Conexão PostgreSQL (gerada pelo setup.ps1)
+│       └── spark_db.json            # Conexão PostgreSQL (gerada pelo setup.ps1)
 ├── config/
-│   └── spark-env.json             # Template de variáveis Hop (referência)
+│   └── spark-env.json               # Template de variáveis Hop (referência)
 ├── scripts/
-│   ├── setup.ps1                  # Setup único — Windows
-│   ├── setup.sh                   # Setup único — Linux/macOS
-│   ├── run-etl.ps1                # Execução do ETL — Windows
-│   └── run-etl.sh                 # Execução do ETL — Linux/macOS
-├── project-config.json            # Config do projeto no formato Hop 2.x
+│   ├── setup.ps1                    # Setup único — Windows
+│   ├── setup.sh                     # Setup único — Linux/macOS
+│   ├── run-etl.ps1                  # Execução do ETL — Windows (aceita -QualisCSV)
+│   └── run-etl.sh                   # Execução do ETL — Linux/macOS (aceita $2 ou QUALIS_CSV)
+├── docs/
+│   └── upsert_proof_of_work.md      # Prova de idempotência do UPSERT
+├── project-config.json              # Config do projeto no formato Hop 2.x
 └── README.md
 ```
 
@@ -229,11 +267,12 @@ Pesquisador (loop raiz): `/CURRICULO-VITAE` → `@NUMERO-IDENTIFICADOR`, `DADOS-
 
 ## O que falta fazer (próximas sprints)
 
-| Fase | Descrição | Prioridade |
-|------|-----------|-----------|
-| Fase 3 | Enriquecimento: Qualis CAPES (CSV Sucupira), CrossRef (DOI → resumo), OpenAlex (JCR) | Alta |
-| Fase 5 | Atualização de métricas bibliométricas (`total_producoes`, `indice_h`, `total_a1_a2`) | Alta |
-| Fase 6 | Worker de embeddings (`all-MiniLM-L6-v2`) para busca semântica | Média |
-| API | Endpoints FastAPI: `POST /api/search/text`, `POST /api/search/semantic`, `POST /internal/trigger-etl` | Alta |
-| Frontend | Next.js 14 com busca, cards de produção, filtros sem reload | Média |
-| ETL futuro | Extrair `resumo` das produções (`RESUMO-DA-PRODUCAO`) se necessário | Baixa |
+| Fase | Descrição | Status |
+|------|-----------|--------|
+| Fase 3 — SPK-12 | Enriquecimento Qualis CAPES | **CONCLUÍDO** (93.1% match) |
+| Fase 3 — SPK-13 | Enriquecimento CrossRef (DOI → resumo) | Pendente |
+| Fase 3 — SPK-14 | Enriquecimento OpenAlex (JCR) | Pendente |
+| Fase 5 | Atualização de métricas bibliométricas (`total_producoes`, `indice_h`, `total_a1_a2`) | Pendente |
+| Fase 6 | Worker de embeddings (`all-MiniLM-L6-v2`) para busca semântica | Pendente |
+| API | Endpoints FastAPI: `POST /api/search/text`, `POST /api/search/semantic`, `POST /internal/trigger-etl` | Pendente |
+| Frontend | Next.js 14 com busca, cards de produção, filtros sem reload | Pendente |

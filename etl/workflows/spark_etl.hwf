@@ -16,18 +16,25 @@
         <default_value>../../data/xml</default_value>
         <description>Diretório com os arquivos XML Lattes a processar</description>
       </parameter>
+      <parameter>
+        <name>QUALIS_CSV</name>
+        <default_value>../../data/qualis/qualis_capes.csv</default_value>
+        <description>Caminho para a planilha Qualis CAPES exportada da Plataforma Sucupira</description>
+      </parameter>
     </parameters>
   </info>
   <notepads>
     <notepad>
-      <note>Workflow SPK-11
+      <note>Workflow SPK-11 + SPK-12
 Execução em ordem obrigatória:
 1. lattes_pesquisadores.hpl (insere pesquisadores)
 2. lattes_producoes.hpl (insere produções, busca pesquisador_id)
-3. Registra log em etl_logs
+3. qualis_enriquecimento.hpl (preenche campo qualis via planilha CAPES)
+4. Registra log em etl_logs
 
-Passe XML_DIR como parâmetro ao executar:
-  hop-run.sh -r local -j spark_etl.hwf -p XML_DIR=/caminho/para/xmls</note>
+Parâmetros:
+  XML_DIR    = diretório com os XMLs Lattes
+  QUALIS_CSV = caminho para o CSV qualis_capes.csv</note>
       <xloc>50</xloc>
       <yloc>50</yloc>
       <width>500</width>
@@ -139,6 +146,72 @@ VALUES (NOW(), 'em_andamento', 0, 0, 0, jsonb_build_object('xml_dir', '${XML_DIR
     </action>
 
     <action>
+      <name>Pipeline Qualis</name>
+      <description>Enriquece o campo qualis das produções ARTIGO via planilha Qualis CAPES</description>
+      <type>PIPELINE</type>
+      <filename>${PROJECT_HOME}/pipelines/qualis_enriquecimento.hpl</filename>
+      <params_from_previous>N</params_from_previous>
+      <exec_per_row>N</exec_per_row>
+      <clear_rows>Y</clear_rows>
+      <clear_files>Y</clear_files>
+      <create_parent_folder>N</create_parent_folder>
+      <wait_until_finished>Y</wait_until_finished>
+      <follow_abort_remote>N</follow_abort_remote>
+      <logging_remote_work>N</logging_remote_work>
+      <run_configuration>local</run_configuration>
+      <parameters>
+        <parameter>
+          <name>QUALIS_CSV</name>
+          <stream_name/>
+          <value>${QUALIS_CSV}</value>
+        </parameter>
+      </parameters>
+      <GUI>
+        <xloc>900</xloc>
+        <yloc>200</yloc>
+      </GUI>
+    </action>
+
+    <action>
+      <name>Registrar sem match Qualis</name>
+      <description>Grava no log a lista de ISSNs sem correspondência na planilha Qualis</description>
+      <type>SQL</type>
+      <connection>spark_db</connection>
+      <sql>UPDATE etl_logs
+SET total_sem_match = (
+      SELECT COUNT(DISTINCT issn)
+      FROM producoes
+      WHERE tipo_producao = 'ARTIGO'
+        AND qualis IS NULL
+        AND issn IS NOT NULL
+        AND issn != ''
+    ),
+    detalhes = jsonb_set(
+      detalhes,
+      '{sem_match_qualis}',
+      COALESCE(
+        (SELECT jsonb_agg(DISTINCT issn ORDER BY issn)
+         FROM producoes
+         WHERE tipo_producao = 'ARTIGO'
+           AND qualis IS NULL
+           AND issn IS NOT NULL
+           AND issn != ''),
+        '[]'::jsonb
+      ),
+      true
+    )
+WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
+      <useVariableSubstitution>N</useVariableSubstitution>
+      <sqlfromfile>N</sqlfromfile>
+      <sqlfilename/>
+      <sendOneStatement>Y</sendOneStatement>
+      <GUI>
+        <xloc>1100</xloc>
+        <yloc>330</yloc>
+      </GUI>
+    </action>
+
+    <action>
       <name>Registrar sucesso</name>
       <description>Atualiza o log com status sucesso e timestamp de finalização</description>
       <type>SQL</type>
@@ -157,7 +230,7 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
       <sqlfilename/>
       <sendOneStatement>Y</sendOneStatement>
       <GUI>
-        <xloc>900</xloc>
+        <xloc>1100</xloc>
         <yloc>200</yloc>
       </GUI>
     </action>
@@ -177,7 +250,7 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
       <sqlfilename/>
       <sendOneStatement>Y</sendOneStatement>
       <GUI>
-        <xloc>900</xloc>
+        <xloc>1100</xloc>
         <yloc>350</yloc>
       </GUI>
     </action>
@@ -196,7 +269,7 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
       <weekDay>1</weekDay>
       <DayOfMonth>1</DayOfMonth>
       <GUI>
-        <xloc>1100</xloc>
+        <xloc>1300</xloc>
         <yloc>200</yloc>
       </GUI>
     </action>
@@ -226,6 +299,20 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
     </hop>
     <hop>
       <from>Pipeline Producoes</from>
+      <to>Pipeline Qualis</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Pipeline Qualis</from>
+      <to>Registrar sem match Qualis</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Registrar sem match Qualis</from>
       <to>Registrar sucesso</to>
       <enabled>Y</enabled>
       <evaluation>Y</evaluation>
@@ -248,6 +335,20 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
     </hop>
     <hop>
       <from>Pipeline Producoes</from>
+      <to>Registrar falha</to>
+      <enabled>Y</enabled>
+      <evaluation>N</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Pipeline Qualis</from>
+      <to>Registrar falha</to>
+      <enabled>Y</enabled>
+      <evaluation>N</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Registrar sem match Qualis</from>
       <to>Registrar falha</to>
       <enabled>Y</enabled>
       <evaluation>N</evaluation>

@@ -1,6 +1,7 @@
 param(
-    [string]$HopHome = "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop",
-    [string]$XmlDir  = ""
+    [string]$HopHome   = "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop",
+    [string]$XmlDir    = "",
+    [string]$QualisCSV = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,6 +13,10 @@ if ([string]::IsNullOrWhiteSpace($XmlDir)) {
     $XmlDir = if ($env:XML_DIR) { $env:XML_DIR } else { "$REPO_ROOT\data\xml" }
 }
 
+if ([string]::IsNullOrWhiteSpace($QualisCSV)) {
+    $QualisCSV = if ($env:QUALIS_CSV) { $env:QUALIS_CSV } else { "$REPO_ROOT\data\qualis\qualis_capes.csv" }
+}
+
 $WORKFLOW = "$ETL_DIR\workflows\spark_etl.hwf"
 
 Write-Host ""
@@ -19,6 +24,7 @@ Write-Host "=== SPARK ETL ==================================================="
 Write-Host "Hop:     $HopHome"
 Write-Host "Projeto: $ETL_DIR"
 Write-Host "XMLs:    $XmlDir"
+Write-Host "Qualis:  $QualisCSV"
 Write-Host "================================================================="
 Write-Host ""
 
@@ -32,6 +38,11 @@ if (-not (Test-Path $XmlDir)) {
     exit 1
 }
 
+if (-not (Test-Path $QualisCSV)) {
+    Write-Error "Arquivo Qualis nao encontrado: $QualisCSV. Obtenha a planilha da Plataforma Sucupira e coloque em data\qualis\qualis_capes.csv ou passe -QualisCSV <caminho>."
+    exit 1
+}
+
 $xmlCount = (Get-ChildItem "$XmlDir\*.xml" -ErrorAction SilentlyContinue).Count
 Write-Host "Arquivos XML encontrados: $xmlCount"
 Write-Host ""
@@ -40,7 +51,7 @@ Write-Host ""
 
 $startTime = Get-Date
 
-cmd /c """$HopHome\hop-run.bat"" --project=spark --runconfig=local --file=""$WORKFLOW"" ""--parameters=XML_DIR=$XmlDir"""
+cmd /c """$HopHome\hop-run.bat"" --project=spark --runconfig=local --file=""$WORKFLOW"" ""--parameters=XML_DIR=$XmlDir,QUALIS_CSV=$QualisCSV"""
 
 $exitCode  = $LASTEXITCODE
 $duration  = [int]((Get-Date) - $startTime).TotalSeconds
