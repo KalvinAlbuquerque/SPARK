@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow>
+  <info>
+    <name>spark_etl</name>
+    <name_hi_res/>
+    <description>Orquestra o pipeline ETL completo: pesquisadores → produções → registro de log</description>
+    <extended_description/>
+    <workflow_version/>
+    <created_user>SPARK ETL</created_user>
+    <created_date>2026/05/22 00:00:00.000</created_date>
+    <modified_user>SPARK ETL</modified_user>
+    <modified_date>2026/05/22 00:00:00.000</modified_date>
+    <parameters>
+      <parameter>
+        <name>XML_DIR</name>
+        <default_value>../../data/xml</default_value>
+        <description>Diretório com os arquivos XML Lattes a processar</description>
+      </parameter>
+    </parameters>
+  </info>
+  <notepads>
+    <notepad>
+      <note>Workflow SPK-11
+Execução em ordem obrigatória:
+1. lattes_pesquisadores.hpl (insere pesquisadores)
+2. lattes_producoes.hpl (insere produções, busca pesquisador_id)
+3. Registra log em etl_logs
+
+Passe XML_DIR como parâmetro ao executar:
+  hop-run.sh -r local -j spark_etl.hwf -p XML_DIR=/caminho/para/xmls</note>
+      <xloc>50</xloc>
+      <yloc>50</yloc>
+      <width>500</width>
+      <heigth>100</heigth>
+      <fontname>Arial</fontname>
+      <fontsize>10</fontsize>
+      <fontbold>N</fontbold>
+      <fontitalic>N</fontitalic>
+      <fontcolorred>14</fontcolorred>
+      <fontcolorgreen>58</fontcolorgreen>
+      <fontcolorblue>90</fontcolorblue>
+      <backgroundcolorred>201</backgroundcolorred>
+      <backgroundcolorgreen>232</backgroundcolorgreen>
+      <backgroundcolorblue>251</backgroundcolorblue>
+      <bordercolorred>14</bordercolorred>
+      <bordercolorgreen>58</bordercolorgreen>
+      <bordercolorblue>90</bordercolorblue>
+    </notepad>
+  </notepads>
+  <actions>
+    <action>
+      <name>Inicio</name>
+      <description>Ponto de entrada do workflow</description>
+      <type>SPECIAL</type>
+      <attributes/>
+      <DayOfWeek>1</DayOfWeek>
+      <SchedulerType>0</SchedulerType>
+      <IntervalMinutes>60</IntervalMinutes>
+      <IntervalSeconds>0</IntervalSeconds>
+      <hour>12</hour>
+      <minutes>0</minutes>
+      <weekDay>1</weekDay>
+      <DayOfMonth>1</DayOfMonth>
+      <GUI>
+        <xloc>100</xloc>
+        <yloc>200</yloc>
+      </GUI>
+    </action>
+
+    <action>
+      <name>Registrar inicio ETL</name>
+      <description>Cria registro de log com status em_andamento</description>
+      <type>SQL</type>
+      <connection>spark_db</connection>
+      <sql>INSERT INTO etl_logs (iniciado_em, status, total_inseridos, total_atualizados, total_sem_match, detalhes)
+VALUES (NOW(), 'em_andamento', 0, 0, 0, jsonb_build_object('xml_dir', '${XML_DIR}'));</sql>
+      <useVariableSubstitution>Y</useVariableSubstitution>
+      <sqlfromfile>N</sqlfromfile>
+      <sqlfilename/>
+      <sendOneStatement>Y</sendOneStatement>
+      <GUI>
+        <xloc>290</xloc>
+        <yloc>200</yloc>
+      </GUI>
+    </action>
+
+    <action>
+      <name>Pipeline Pesquisadores</name>
+      <description>Extrai e carrega dados dos pesquisadores (deve rodar ANTES das produções)</description>
+      <type>PIPELINE</type>
+      <filename>${PROJECT_HOME}/pipelines/lattes_pesquisadores.hpl</filename>
+      <params_from_previous>N</params_from_previous>
+      <exec_per_row>N</exec_per_row>
+      <clear_rows>Y</clear_rows>
+      <clear_files>Y</clear_files>
+      <create_parent_folder>N</create_parent_folder>
+      <wait_until_finished>Y</wait_until_finished>
+      <follow_abort_remote>N</follow_abort_remote>
+      <logging_remote_work>N</logging_remote_work>
+      <run_configuration>local</run_configuration>
+      <parameters>
+        <parameter>
+          <name>XML_DIR</name>
+          <stream_name/>
+          <value>${XML_DIR}</value>
+        </parameter>
+      </parameters>
+      <GUI>
+        <xloc>500</xloc>
+        <yloc>200</yloc>
+      </GUI>
+    </action>
+
+    <action>
+      <name>Pipeline Producoes</name>
+      <description>Extrai e carrega produções científicas (artigos, eventos, livros, capítulos)</description>
+      <type>PIPELINE</type>
+      <filename>${PROJECT_HOME}/pipelines/lattes_producoes.hpl</filename>
+      <params_from_previous>N</params_from_previous>
+      <exec_per_row>N</exec_per_row>
+      <clear_rows>Y</clear_rows>
+      <clear_files>Y</clear_files>
+      <create_parent_folder>N</create_parent_folder>
+      <wait_until_finished>Y</wait_until_finished>
+      <follow_abort_remote>N</follow_abort_remote>
+      <logging_remote_work>N</logging_remote_work>
+      <run_configuration>local</run_configuration>
+      <parameters>
+        <parameter>
+          <name>XML_DIR</name>
+          <stream_name/>
+          <value>${XML_DIR}</value>
+        </parameter>
+      </parameters>
+      <GUI>
+        <xloc>700</xloc>
+        <yloc>200</yloc>
+      </GUI>
+    </action>
+
+    <action>
+      <name>Registrar sucesso</name>
+      <description>Atualiza o log com status sucesso e timestamp de finalização</description>
+      <type>SQL</type>
+      <connection>spark_db</connection>
+      <sql>UPDATE etl_logs
+SET finalizado_em = NOW(),
+    status = 'sucesso',
+    detalhes = jsonb_set(
+      detalhes,
+      '{arquivos_processados}',
+      (SELECT count(*)::text::jsonb FROM pesquisadores WHERE data_atualizacao >= NOW() - INTERVAL '1 hour')
+    )
+WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
+      <useVariableSubstitution>N</useVariableSubstitution>
+      <sqlfromfile>N</sqlfromfile>
+      <sqlfilename/>
+      <sendOneStatement>Y</sendOneStatement>
+      <GUI>
+        <xloc>900</xloc>
+        <yloc>200</yloc>
+      </GUI>
+    </action>
+
+    <action>
+      <name>Registrar falha</name>
+      <description>Registra erro no log quando algum pipeline falha</description>
+      <type>SQL</type>
+      <connection>spark_db</connection>
+      <sql>UPDATE etl_logs
+SET finalizado_em = NOW(),
+    status = 'erro',
+    detalhes = jsonb_set(detalhes, '{erro}', '"pipeline falhou — verifique logs do Apache Hop"'::jsonb)
+WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
+      <useVariableSubstitution>N</useVariableSubstitution>
+      <sqlfromfile>N</sqlfromfile>
+      <sqlfilename/>
+      <sendOneStatement>Y</sendOneStatement>
+      <GUI>
+        <xloc>900</xloc>
+        <yloc>350</yloc>
+      </GUI>
+    </action>
+
+    <action>
+      <name>Fim</name>
+      <description>Fim do workflow</description>
+      <type>SPECIAL</type>
+      <attributes/>
+      <DayOfWeek>1</DayOfWeek>
+      <SchedulerType>0</SchedulerType>
+      <IntervalMinutes>60</IntervalMinutes>
+      <IntervalSeconds>0</IntervalSeconds>
+      <hour>12</hour>
+      <minutes>0</minutes>
+      <weekDay>1</weekDay>
+      <DayOfMonth>1</DayOfMonth>
+      <GUI>
+        <xloc>1100</xloc>
+        <yloc>200</yloc>
+      </GUI>
+    </action>
+  </actions>
+
+  <hops>
+    <hop>
+      <from>Inicio</from>
+      <to>Registrar inicio ETL</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>Y</unconditional>
+    </hop>
+    <hop>
+      <from>Registrar inicio ETL</from>
+      <to>Pipeline Pesquisadores</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Pipeline Pesquisadores</from>
+      <to>Pipeline Producoes</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Pipeline Producoes</from>
+      <to>Registrar sucesso</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Registrar sucesso</from>
+      <to>Fim</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <!-- Ramo de falha: qualquer etapa que falhe vai para Registrar falha -->
+    <hop>
+      <from>Pipeline Pesquisadores</from>
+      <to>Registrar falha</to>
+      <enabled>Y</enabled>
+      <evaluation>N</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Pipeline Producoes</from>
+      <to>Registrar falha</to>
+      <enabled>Y</enabled>
+      <evaluation>N</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Registrar falha</from>
+      <to>Fim</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>Y</unconditional>
+    </hop>
+  </hops>
+</workflow>

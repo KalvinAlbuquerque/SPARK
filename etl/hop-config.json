@@ -1,0 +1,9 @@
+{
+  "projectName": "spark",
+  "projectHome": "${HOP_PROJECT_HOME}",
+  "metadataBaseFolder": "${HOP_PROJECT_HOME}/metadata",
+  "unitTestsBasePath": "",
+  "dataSetCsvFolder": "",
+  "enforcingExecutionInHome": false,
+  "config": {}
+}

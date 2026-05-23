@@ -1,4 +1,3 @@
-
 ## Summary
 
 O SPARK é uma plataforma de busca de produções científicas da UNEB que orquestra um pipeline ETL sobre XMLs do Lattes (Apache Hop), enriquece os dados com Qualis CAPES, CrossRef e OpenAlex, e expõe duas modalidades de busca via API FastAPI: textual (Full-Text Search com `tsvector`/GIN no PostgreSQL) e semântica (embeddings `all-MiniLM-L6-v2` + similaridade de cosseno via `pgvector`). O front-end Next.js consome a API REST e exibe os resultados em cards responsivos com indicadores bibliométricos.
@@ -37,7 +36,7 @@ O SPARK é uma plataforma de busca de produções científicas da UNEB que orque
 * Acesso de leitura às produções e pesquisadores é sempre público (sem autenticação)
 * Autenticação apenas para o papel Admin (Supabase Auth)
 
-**Scale/Scope:** Produções científicas de pesquisadores da UNEB; testado com mínimo de 10 currículos Lattes reais no Sprint II
+**Scale/Scope:** Produções científicas de pesquisadores da UNEB; testado com mínimo de 3 currículos Lattes reais no Sprint II
 
 ---
 
@@ -65,7 +64,7 @@ O SPARK é uma plataforma de busca de produções científicas da UNEB que orque
 ### Documentação do projeto
 
 ```
-docs/
+SDD/
 ├── constitution.md       # Princípios imutáveis do projeto
 ├── plan.md               # Este arquivo
 ├── data-model.md         # Esquema de banco (ER + descrição das tabelas)
@@ -127,7 +126,7 @@ docs/
 
 ---
 
-## Implementation 
+## Implementation
 
 ### Research
 
@@ -142,8 +141,6 @@ Decisões técnicas já resolvidas na especificação:
 | Orquestração ETL  | Apache Hop                       | Requisito do projeto; pipeline visual e auditável            |
 | Enriquecimento      | CrossRef + OpenAlex + Qualis CSV | Fontes oficiais; CrossRef e OpenAlex são APIs abertas        |
 | Auth                | Supabase Auth                    | Já integrado ao banco; apenas para Admin                     |
-
-Artefato gerado: `docs/research.md`
 
 ---
 
