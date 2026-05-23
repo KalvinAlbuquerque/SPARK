@@ -1,14 +1,9 @@
-# ============================================================
-# setup.ps1 — Configuração única do projeto SPARK no Apache Hop
-# Execute uma vez antes do primeiro run-etl.ps1
-# ============================================================
-
 param(
-    [string]$HopHome   = "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop",
-    [string]$DbHost    = "localhost",
-    [string]$DbPort    = "5432",
-    [string]$DbName    = "spark",
-    [string]$DbUser    = "spark"
+    [string]$HopHome = "C:\Users\glend\Downloads\apache-hop-client-2.15.0\hop",
+    [string]$DbHost  = "localhost",
+    [string]$DbPort  = "5432",
+    [string]$DbName  = "spark",
+    [string]$DbUser  = "spark"
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,39 +11,39 @@ $ErrorActionPreference = "Stop"
 $ETL_DIR = Split-Path -Parent $PSScriptRoot
 
 Write-Host ""
-Write-Host "=== SPARK ETL — Setup ==================================================="
+Write-Host "=== SPARK ETL - Setup ==================================================="
 Write-Host "Hop:     $HopHome"
 Write-Host "Projeto: $ETL_DIR"
 Write-Host "Banco:   $DbUser@$DbHost:$DbPort/$DbName"
 Write-Host "========================================================================="
 Write-Host ""
 
-# ── 1. Solicitar senha do banco ──────────────────────────────────────────────
+# 1. Solicitar senha do banco
 $securePwd = Read-Host "Senha do PostgreSQL ($DbUser)" -AsSecureString
-$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePwd)
-$plainPwd = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+$BSTR      = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePwd)
+$plainPwd  = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
 [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
 
 if ([string]::IsNullOrWhiteSpace($plainPwd)) {
-    Write-Error "Senha não pode estar vazia."
+    Write-Error "Senha nao pode estar vazia."
     exit 1
 }
 
-# ── 2. Criptografar a senha com hop-encrypt.bat ──────────────────────────────
+# 2. Criptografar a senha com hop-encrypt.bat
 Write-Host "Criptografando senha..."
 $encRaw = cmd /c """$HopHome\hop-encrypt.bat"" -hop ""$plainPwd""" 2>&1
-$plainPwd = $null   # limpar da memória
+$plainPwd = $null
 
 $encPassword = ($encRaw | Where-Object { $_ -match "^Encrypted " } | Select-Object -Last 1)
 
 if ([string]::IsNullOrWhiteSpace($encPassword)) {
-    Write-Error "Falha ao criptografar a senha. Saída do hop-encrypt:`n$encRaw"
+    Write-Error "Falha ao criptografar a senha. Saida do hop-encrypt:`n$encRaw"
     exit 1
 }
 
 Write-Host "Senha criptografada com sucesso."
 
-# ── 3. Escrever spark_db.json com o formato correto do Hop 2.x ──────────────
+# 3. Escrever spark_db.json no formato correto do Hop 2.x
 $metaDir = Join-Path $ETL_DIR "metadata\rdbms"
 New-Item -ItemType Directory -Force $metaDir | Out-Null
 
@@ -84,15 +79,15 @@ $connJson = @"
 
 $connPath = Join-Path $metaDir "spark_db.json"
 [System.IO.File]::WriteAllText($connPath, $connJson, [System.Text.Encoding]::UTF8)
-Write-Host "Conexão salva em: $connPath"
+Write-Host "Conexao salva em: $connPath"
 
-# ── 4. Registrar projeto 'spark' no Apache Hop ───────────────────────────────
+# 4. Registrar projeto 'spark' no Apache Hop via hop-conf.bat
 Write-Host ""
 Write-Host "Registrando projeto 'spark' no Hop..."
 $regOutput = cmd /c """$HopHome\hop-conf.bat"" -p=spark -pc -ph=""$ETL_DIR"" -pf=project-config.json" 2>&1
 Write-Host $regOutput
 
 Write-Host ""
-Write-Host "=== Setup concluído! ==================================================="
+Write-Host "=== Setup concluido! ===================================================="
 Write-Host "Agora execute:  .\scripts\run-etl.ps1"
-Write-Host "========================================================================"
+Write-Host "========================================================================="
