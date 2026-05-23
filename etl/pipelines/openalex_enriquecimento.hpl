@@ -29,8 +29,8 @@
     <notepad>
       <note>Pipeline SPK-13 — OpenAlex (subetapa 5.3)
 Deduplicação: apenas 1 chamada API por ISSN único (mesmo ISSN em vários artigos)
-GET /sources/issn:{issn}?select=issn_l,display_name,2yr_mean_citedness&amp;api_key={OPENALEX_APIKEY}
-Campo alvo: 2yr_mean_citedness → producoes.jcr
+GET /sources/issn:{issn}?select=issn_l,display_name,summary_stats&amp;api_key={OPENALEX_APIKEY}
+Campo alvo: summary_stats.2yr_mean_citedness → producoes.jcr
 UPSERT: UPDATE producoes SET jcr=COALESCE(novo,jcr) WHERE issn=?
 Log: sem_match_jcr (HTTP 404 ou campo ausente)
 Requisito: OPENALEX_APIKEY configurado em .env</note>
@@ -153,9 +153,9 @@ Requisito: OPENALEX_APIKEY configurado em .env</note>
         <jsScript_type>0</jsScript_type>
         <jsScript_name>Script 1</jsScript_name>
         <jsScript_script><![CDATA[
-var openalex_key = parent.getVariable("OPENALEX_APIKEY", "");
+var openalex_key = java.lang.System.getenv("OPENALEX_APIKEY");
 var api_param = (openalex_key != null && String(openalex_key) != "") ? "&api_key=" + openalex_key : "";
-var url = "https://api.openalex.org/sources/issn:" + String(issn) + "?select=issn_l,display_name,2yr_mean_citedness" + api_param;
+var url = "https://api.openalex.org/sources/issn:" + String(issn) + "?select=issn_l,display_name,summary_stats" + api_param;
         ]]></jsScript_script>
       </jsScript>
     </jsScripts>
@@ -174,27 +174,31 @@ var url = "https://api.openalex.org/sources/issn:" + String(issn) + "?select=iss
 
   <transform>
     <name>HTTP OpenAlex</name>
-    <type>HTTP</type>
+    <type>Http</type>
     <description>Chama OpenAlex GET /sources/issn:{issn} para obter 2yr_mean_citedness</description>
     <distribute>Y</distribute>
     <custom_distribution/>
     <copies>1</copies>
     <partitioning><method>none</method><schema_name/></partitioning>
     <url/>
-    <urlField>url</urlField>
     <urlInField>Y</urlInField>
+    <urlField>url</urlField>
     <encoding>UTF-8</encoding>
-    <resultfieldname>json_response</resultfieldname>
-    <resultcodefield>http_status</resultcodefield>
-    <resultResponseField/>
-    <connectTimeout>30000</connectTimeout>
-    <readTimeout>30000</readTimeout>
     <httpLogin/>
-    <httpPassword/>
+    <httpPassword>Encrypted </httpPassword>
     <proxyHost/>
     <proxyPort/>
-    <parameters/>
-    <headers/>
+    <socketTimeout>30000</socketTimeout>
+    <connectionTimeout>30000</connectionTimeout>
+    <closeIdleConnectionsTime>-1</closeIdleConnectionsTime>
+    <lookup/>
+    <result>
+      <name>json_response</name>
+      <code>http_status</code>
+      <response_time/>
+      <response_header/>
+    </result>
+    <attributes/>
     <GUI><xloc>1030</xloc><yloc>300</yloc></GUI>
   </transform>
 
@@ -213,15 +217,15 @@ var url = "https://api.openalex.org/sources/issn:" + String(issn) + "?select=iss
         <jsScript_name>Script 1</jsScript_name>
         <jsScript_script><![CDATA[
 var jcr_novo = null;
-var jcr_encontrado = "N";
+var jcr_encontrado = null;
 try {
   if (String(http_status) == "200" && json_response != null && String(json_response) != "") {
     var resp = JSON.parse(String(json_response));
-    var citedness = resp["2yr_mean_citedness"];
+    var citedness = (resp.summary_stats != null) ? resp.summary_stats["2yr_mean_citedness"] : null;
     if (citedness !== null && citedness !== undefined) {
       jcr_novo = Number(citedness);
       if (!isNaN(jcr_novo)) {
-        jcr_encontrado = "Y";
+        jcr_encontrado = "Y"; // non-null signals match — filter uses IS NOT NULL
       } else {
         jcr_novo = null;
       }
@@ -269,19 +273,8 @@ try {
       <condition>
         <negated>N</negated>
         <leftvalue>jcr_encontrado</leftvalue>
-        <function>=</function>
+        <function>IS NOT NULL</function>
         <rightvalue/>
-        <rightExact>
-          <value>
-            <name/>
-            <type>String</type>
-            <text>Y</text>
-            <length>-1</length>
-            <precision>-1</precision>
-            <isnull>N</isnull>
-            <mask/>
-          </value>
-        </rightExact>
       </condition>
     </compare>
     <GUI><xloc>1470</xloc><yloc>300</yloc></GUI>

@@ -6,7 +6,7 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 
 ## Estado atual: Sprint II — SPK-11 + SPK-12 + SPK-13 CONCLUÍDAS
 
-**Data última atualização:** 2026-05-23
+**Data última atualização:** 2026-05-23 (validação final SPK-13)
 
 ---
 
@@ -325,10 +325,21 @@ O pipeline executa **6 fases em sequência**:
 - Parâmetros novos no workflow: `ETL_EMAIL`, `OPENALEX_APIKEY`
 - Scripts `run-etl.ps1` e `run-etl.sh` carregam `.env` automaticamente e passam essas vars ao hop-run
 
+**Resultado validado (2026-05-23):**
+
+| Métrica | Resultado | Critério |
+|---------|-----------|---------|
+| DOI fill rate | **91.5%** (226/247) | ≥90% ✓ |
+| resumo fill rate | **55.5%** (137/247) | ≥50% ✓ |
+| jcr fill rate | **98.4%** (243/247) | ≥70% ✓ |
+
 **Quirks descobertos no SPK-13:**
-10. **`SelectValues` antes de `AppendStreams`**: Necessário normalizar o schema dos dois ramos (com DOI e sem DOI) para os mesmos campos (`id`, `doi_novo`, `resumo_novo`) antes de reunir — AppendStreams usa o schema do head stream como base.
-11. **`getVariable()` no JavaScript Hop**: Para acessar parâmetros de pipeline dentro de `ScriptValueMod`, usar `parent.getVariable("ETL_EMAIL", "default")`.
-12. **OpenAlex API key obrigatória desde 13/02/2026**: Plano gratuito inclui 100k créditos/dia; singletons (`/sources/issn:xxx`) custam 0 créditos.
+10. **`SelectValues` antes de `Append`**: Necessário normalizar o schema dos dois ramos (com DOI e sem DOI) para os mesmos campos (`id`, `doi_novo`, `resumo_novo`) antes de reunir — Append usa o schema do head stream como base.
+11. **`java.lang.System.getenv()` no JS Hop**: `parent.getVariable()` não existe no Rhino 2.x. Usar `java.lang.System.getenv("ETL_EMAIL")` para ler variáveis de ambiente.
+12. **OpenAlex API key obrigatória desde 13/02/2026**: Plano gratuito; singletons (`/sources/issn:xxx`) custam 0 créditos. `2yr_mean_citedness` está agora dentro do objeto `summary_stats` (não mais como campo raiz direto).
+13. **CrossRef `/works/{DOI}` não suporta `?select=`**: O parâmetro `select` só é válido para o endpoint de busca `/works?query.bibliographic=`. Para busca por DOI direto, omitir `?select=` e usar apenas `?mailto=email`.
+14. **FilterRows `= "Y"` falha com "meta2 is null"**: Comparação de campo String a literal via `=` causa `HopValueException: Second meta data (meta2) is null`. Workaround: inicializar variável como `null` (não `"N"`) e filtrar com `IS NOT NULL` em vez de `= "Y"`.
+15. **SSL PKIX no JVM do Hop**: O JVM bundled do Hop não confia em certificados Let's Encrypt. Solução: setar `_JAVA_OPTIONS="-Djavax.net.ssl.trustStoreType=Windows-ROOT -Djavax.net.ssl.trustStoreProvider=SunMSCAPI"` antes de invocar hop-run para usar o truststore do Windows.
 
 ### Fase 5 — Métricas bibliométricas
 

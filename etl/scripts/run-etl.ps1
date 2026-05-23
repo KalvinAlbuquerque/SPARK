@@ -69,6 +69,9 @@ Write-Host ""
 
 $startTime = Get-Date
 
+# Usa o truststore do Windows para que o JVM do Hop confie em certificados modernos (Let's Encrypt, etc.)
+$env:_JAVA_OPTIONS = "-Djavax.net.ssl.trustStoreType=Windows-ROOT -Djavax.net.ssl.trustStoreProvider=SunMSCAPI"
+
 cmd /c """$HopHome\hop-run.bat"" --project=spark --runconfig=local --file=""$WORKFLOW"" ""--parameters=XML_DIR=$XmlDir,QUALIS_CSV=$QualisCSV,ETL_EMAIL=$EtlEmail,OPENALEX_APIKEY=$OpenAlexKey"""
 
 $exitCode  = $LASTEXITCODE

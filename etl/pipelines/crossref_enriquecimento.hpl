@@ -142,8 +142,9 @@ Requisito: ETL_EMAIL configurado em .env para Polite Pool</note>
         <jsScript_name>Script 1</jsScript_name>
         <jsScript_script><![CDATA[
 var doi_enc = encodeURIComponent(String(doi));
-var url = "https://api.crossref.org/works/" + doi_enc + "?select=DOI,title,abstract";
-var user_agent = "SPARK-ETL/1.0 (mailto:" + parent.getVariable("ETL_EMAIL", "spark@email.com") + ")";
+var etl_email = java.lang.System.getenv("ETL_EMAIL");
+var mailto_param = (etl_email != null && String(etl_email) != "") ? "?mailto=" + etl_email : "";
+var url = "https://api.crossref.org/works/" + doi_enc + mailto_param;
         ]]></jsScript_script>
       </jsScript>
     </jsScripts>
@@ -156,46 +157,37 @@ var user_agent = "SPARK-ETL/1.0 (mailto:" + parent.getVariable("ETL_EMAIL", "spa
         <precision>-1</precision>
         <replace>N</replace>
       </field>
-      <field>
-        <name>user_agent</name>
-        <rename>user_agent</rename>
-        <type>String</type>
-        <length>-1</length>
-        <precision>-1</precision>
-        <replace>N</replace>
-      </field>
     </fields>
     <GUI><xloc>590</xloc><yloc>180</yloc></GUI>
   </transform>
 
   <transform>
     <name>HTTP CrossRef DOI</name>
-    <type>HTTP</type>
+    <type>Http</type>
     <description>Chama CrossRef GET /works/{doi} para obter abstract</description>
     <distribute>Y</distribute>
     <custom_distribution/>
     <copies>1</copies>
     <partitioning><method>none</method><schema_name/></partitioning>
     <url/>
-    <urlField>url</urlField>
     <urlInField>Y</urlInField>
+    <urlField>url</urlField>
     <encoding>UTF-8</encoding>
-    <resultfieldname>json_response</resultfieldname>
-    <resultcodefield>http_status</resultcodefield>
-    <resultResponseField/>
-    <connectTimeout>30000</connectTimeout>
-    <readTimeout>30000</readTimeout>
     <httpLogin/>
-    <httpPassword/>
+    <httpPassword>Encrypted </httpPassword>
     <proxyHost/>
     <proxyPort/>
-    <parameters/>
-    <headers>
-      <header>
-        <field>user_agent</field>
-        <name>User-Agent</name>
-      </header>
-    </headers>
+    <socketTimeout>30000</socketTimeout>
+    <connectionTimeout>30000</connectionTimeout>
+    <closeIdleConnectionsTime>-1</closeIdleConnectionsTime>
+    <lookup/>
+    <result>
+      <name>json_response</name>
+      <code>http_status</code>
+      <response_time/>
+      <response_header/>
+    </result>
+    <attributes/>
     <GUI><xloc>810</xloc><yloc>180</yloc></GUI>
   </transform>
 
@@ -288,8 +280,9 @@ try {
         <jsScript_name>Script 1</jsScript_name>
         <jsScript_script><![CDATA[
 var titulo_enc = encodeURIComponent(String(titulo));
-var url = "https://api.crossref.org/works?query.bibliographic=" + titulo_enc + "&rows=1&select=DOI,title,abstract,score";
-var user_agent = "SPARK-ETL/1.0 (mailto:" + parent.getVariable("ETL_EMAIL", "spark@email.com") + ")";
+var etl_email = java.lang.System.getenv("ETL_EMAIL");
+var mailto_param = (etl_email != null && String(etl_email) != "") ? "&mailto=" + etl_email : "";
+var url = "https://api.crossref.org/works?query.bibliographic=" + titulo_enc + "&rows=1&select=DOI,title,abstract,score" + mailto_param;
         ]]></jsScript_script>
       </jsScript>
     </jsScripts>
@@ -302,46 +295,37 @@ var user_agent = "SPARK-ETL/1.0 (mailto:" + parent.getVariable("ETL_EMAIL", "spa
         <precision>-1</precision>
         <replace>N</replace>
       </field>
-      <field>
-        <name>user_agent</name>
-        <rename>user_agent</rename>
-        <type>String</type>
-        <length>-1</length>
-        <precision>-1</precision>
-        <replace>N</replace>
-      </field>
     </fields>
     <GUI><xloc>590</xloc><yloc>420</yloc></GUI>
   </transform>
 
   <transform>
     <name>HTTP CrossRef Titulo</name>
-    <type>HTTP</type>
+    <type>Http</type>
     <description>Chama CrossRef GET /works?query.bibliographic={titulo} para buscar DOI + abstract</description>
     <distribute>Y</distribute>
     <custom_distribution/>
     <copies>1</copies>
     <partitioning><method>none</method><schema_name/></partitioning>
     <url/>
-    <urlField>url</urlField>
     <urlInField>Y</urlInField>
+    <urlField>url</urlField>
     <encoding>UTF-8</encoding>
-    <resultfieldname>json_response</resultfieldname>
-    <resultcodefield>http_status</resultcodefield>
-    <resultResponseField/>
-    <connectTimeout>30000</connectTimeout>
-    <readTimeout>30000</readTimeout>
     <httpLogin/>
-    <httpPassword/>
+    <httpPassword>Encrypted </httpPassword>
     <proxyHost/>
     <proxyPort/>
-    <parameters/>
-    <headers>
-      <header>
-        <field>user_agent</field>
-        <name>User-Agent</name>
-      </header>
-    </headers>
+    <socketTimeout>30000</socketTimeout>
+    <connectionTimeout>30000</connectionTimeout>
+    <closeIdleConnectionsTime>-1</closeIdleConnectionsTime>
+    <lookup/>
+    <result>
+      <name>json_response</name>
+      <code>http_status</code>
+      <response_time/>
+      <response_header/>
+    </result>
+    <attributes/>
     <GUI><xloc>810</xloc><yloc>420</yloc></GUI>
   </transform>
 
@@ -361,7 +345,7 @@ var user_agent = "SPARK-ETL/1.0 (mailto:" + parent.getVariable("ETL_EMAIL", "spa
         <jsScript_script><![CDATA[
 var doi_novo = null;
 var resumo_novo = null;
-var match_encontrado = "N";
+var match_encontrado = null;
 try {
   if (String(http_status) == "200" && json_response != null && String(json_response) != "") {
     var resp = JSON.parse(String(json_response));
@@ -425,19 +409,8 @@ try {
       <condition>
         <negated>N</negated>
         <leftvalue>match_encontrado</leftvalue>
-        <function>=</function>
+        <function>IS NOT NULL</function>
         <rightvalue/>
-        <rightExact>
-          <value>
-            <name/>
-            <type>String</type>
-            <text>Y</text>
-            <length>-1</length>
-            <precision>-1</precision>
-            <isnull>N</isnull>
-            <mask/>
-          </value>
-        </rightExact>
       </condition>
     </compare>
     <GUI><xloc>1250</xloc><yloc>420</yloc></GUI>
@@ -487,14 +460,14 @@ try {
        ================================================================ -->
   <transform>
     <name>Reunir Ramos</name>
-    <type>AppendStreams</type>
+    <type>Append</type>
     <description>Reune artigos com DOI e artigos sem DOI (com match) em um unico fluxo</description>
     <distribute>Y</distribute>
     <custom_distribution/>
     <copies>1</copies>
     <partitioning><method>none</method><schema_name/></partitioning>
-    <headStreamName>Normalizar Schema DOI</headStreamName>
-    <tailStreamName>Normalizar Schema Titulo</tailStreamName>
+    <head_name>Normalizar Schema DOI</head_name>
+    <tail_name>Normalizar Schema Titulo</tail_name>
     <GUI><xloc>1690</xloc><yloc>300</yloc></GUI>
   </transform>
 
