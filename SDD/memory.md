@@ -4,9 +4,9 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 
 ---
 
-## Estado atual: Sprint II — SPK-11 + SPK-12 + SPK-13 CONCLUÍDAS
+## Estado atual: Sprint II — SPK-11 + SPK-12 + SPK-13 + SPK-89 CONCLUÍDAS
 
-**Data última atualização:** 2026-05-23 (validação final SPK-13)
+**Data última atualização:** 2026-05-23 (SPK-89 implementado)
 
 ---
 
@@ -273,10 +273,11 @@ Pesquisador (loop raiz): `/CURRICULO-VITAE` → `@NUMERO-IDENTIFICADOR`, `DADOS-
 |------|-----------|--------|
 | Fase 3 — SPK-12 | Enriquecimento Qualis CAPES | **CONCLUÍDO** (93.1% match) |
 | Fase 3 — SPK-13 | Enriquecimento CrossRef (DOI + resumo) + OpenAlex (JCR) | **CONCLUÍDO** — spec em `SDD/sprint_2/spk13_spec_CONCLUIDA.md` |
+| Fase 5 — SPK-89 | Atualização de métricas bibliométricas (`total_producoes`, `indice_h`, `total_a1_a2`) via SQL por pesquisador processado | **CONCLUÍDO** — spec em `SDD/sprint_2/spk89_spec_CONCLUIDA.md` |
 | SPK-14 | Spike: avaliação de modelos de embedding (Sentence-Transformers vs OpenAI) | Pendente |
-| Fase 5 | Atualização de métricas bibliométricas (`total_producoes`, `indice_h`, `total_a1_a2`) via SQL por pesquisador processado | Pendente |
 | Fase 6 | Worker de embeddings (`all-MiniLM-L6-v2`) acionado via `POST /internal/trigger-embeddings` | Pendente |
-| API | Endpoints FastAPI: `POST /api/search/text`, `POST /api/search/semantic`, `POST /internal/trigger-etl` | Pendente |
+| Endpoint `/internal/trigger-etl` | FastAPI: recebe XMLs por upload, executa as 6 fases sem Apache Hop | Pendente |
+| API | Endpoints FastAPI: `POST /api/search/text`, `POST /api/search/semantic` | Pendente |
 | Frontend | Next.js 14 com busca, cards de produção, filtros sem reload | Pendente |
 
 ---
@@ -292,7 +293,7 @@ O pipeline executa **6 fases em sequência**:
 | Fase 3a | Enriquecimento Qualis (CSV local, lookup por ISSN + fallback por nome) | **CONCLUÍDO** (SPK-12) |
 | Fase 3b | Enriquecimento CrossRef (DOI + abstract) + OpenAlex (JCR) — ambos no SPK-13 | **CONCLUÍDO** (SPK-13) |
 | Fase 4 | Carga no Supabase (UPSERT com COALESCE) | **CONCLUÍDO** (SPK-11) |
-| Fase 5 | Atualização de métricas por pesquisador (`total_producoes`, `indice_h`, `total_a1_a2`) | Pendente |
+| Fase 5 | Atualização de métricas por pesquisador (`total_producoes`, `indice_h`, `total_a1_a2`) | **CONCLUÍDO** (SPK-89) |
 | Fase 6 | Acionamento do Worker de embeddings (`all-MiniLM-L6-v2`) via HTTP | Pendente |
 
 **Endpoint interno:** `POST /internal/trigger-etl` — executa as 6 fases sem Apache Hop (para upload pelo Admin via interface web).
@@ -340,6 +341,19 @@ O pipeline executa **6 fases em sequência**:
 13. **CrossRef `/works/{DOI}` não suporta `?select=`**: O parâmetro `select` só é válido para o endpoint de busca `/works?query.bibliographic=`. Para busca por DOI direto, omitir `?select=` e usar apenas `?mailto=email`.
 14. **FilterRows `= "Y"` falha com "meta2 is null"**: Comparação de campo String a literal via `=` causa `HopValueException: Second meta data (meta2) is null`. Workaround: inicializar variável como `null` (não `"N"`) e filtrar com `IS NOT NULL` em vez de `= "Y"`.
 15. **SSL PKIX no JVM do Hop**: O JVM bundled do Hop não confia em certificados Let's Encrypt. Solução: setar `_JAVA_OPTIONS="-Djavax.net.ssl.trustStoreType=Windows-ROOT -Djavax.net.ssl.trustStoreProvider=SunMSCAPI"` antes de invocar hop-run para usar o truststore do Windows.
+
+### SPK-89 — CONCLUÍDO (Fase 5 — Métricas bibliométricas)
+
+**metricas_pesquisadores.hpl** (Fase 5):
+- `TableInput`: `SELECT id FROM pesquisadores WHERE data_atualizacao >= NOW() - INTERVAL '2 hours'`
+- `ExecSQL` com `execute_each_row=Y`: um UPDATE por pesquisador
+- 4 parâmetros `?` todos mapeados para o campo `id` (3 subqueries + WHERE id = ?)
+- Error handler: `Log Erro Metrica` (WriteToLog) — falha individual não interrompe o pipeline
+- Integrado ao `spark_etl.hwf` após "Registrar sem match CrossRef OpenAlex", antes de "Registrar sucesso"
+- Ramo de falha: `Pipeline Metricas → Registrar falha`
+
+**Critério de seleção dos pesquisadores da execução corrente:**
+Usa `data_atualizacao >= NOW() - INTERVAL '2 hours'` — campo atualizado pelo `lattes_pesquisadores.hpl` durante a mesma execução. Janela de 2h cobre ETLs lentos sem selecionar pesquisadores de execuções anteriores.
 
 ### Fase 5 — Métricas bibliométricas
 

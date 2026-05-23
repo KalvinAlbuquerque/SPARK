@@ -35,14 +35,15 @@
   </info>
   <notepads>
     <notepad>
-      <note>Workflow SPK-11 + SPK-12 + SPK-13
+      <note>Workflow SPK-11 + SPK-12 + SPK-13 + SPK-89
 Execução em ordem obrigatória:
 1. lattes_pesquisadores.hpl (insere pesquisadores)
 2. lattes_producoes.hpl (insere produções, busca pesquisador_id)
 3. qualis_enriquecimento.hpl (preenche campo qualis via planilha CAPES)
 4. crossref_enriquecimento.hpl (preenche doi + resumo via CrossRef API)
 5. openalex_enriquecimento.hpl (preenche jcr via OpenAlex API por ISSN)
-6. Registra log em etl_logs
+6. metricas_pesquisadores.hpl (calcula total_producoes, total_a1_a2, indice_h)
+7. Registra log em etl_logs
 
 Parâmetros:
   XML_DIR         = diretório com os XMLs Lattes
@@ -329,6 +330,26 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
     </action>
 
     <action>
+      <name>Pipeline Metricas</name>
+      <description>Fase 5 (SPK-89): calcula total_producoes, total_a1_a2 e indice_h para pesquisadores da execucao corrente</description>
+      <type>PIPELINE</type>
+      <filename>${PROJECT_HOME}/pipelines/metricas_pesquisadores.hpl</filename>
+      <params_from_previous>N</params_from_previous>
+      <exec_per_row>N</exec_per_row>
+      <clear_rows>Y</clear_rows>
+      <clear_files>Y</clear_files>
+      <create_parent_folder>N</create_parent_folder>
+      <wait_until_finished>Y</wait_until_finished>
+      <follow_abort_remote>N</follow_abort_remote>
+      <logging_remote_work>N</logging_remote_work>
+      <run_configuration>local</run_configuration>
+      <GUI>
+        <xloc>1700</xloc>
+        <yloc>200</yloc>
+      </GUI>
+    </action>
+
+    <action>
       <name>Registrar sucesso</name>
       <description>Atualiza o log com status sucesso e timestamp de finalização</description>
       <type>SQL</type>
@@ -451,6 +472,13 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
     </hop>
     <hop>
       <from>Registrar sem match CrossRef OpenAlex</from>
+      <to>Pipeline Metricas</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Pipeline Metricas</from>
       <to>Registrar sucesso</to>
       <enabled>Y</enabled>
       <evaluation>Y</evaluation>
@@ -508,6 +536,13 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
     </hop>
     <hop>
       <from>Registrar sem match CrossRef OpenAlex</from>
+      <to>Registrar falha</to>
+      <enabled>Y</enabled>
+      <evaluation>N</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Pipeline Metricas</from>
       <to>Registrar falha</to>
       <enabled>Y</enabled>
       <evaluation>N</evaluation>
