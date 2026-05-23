@@ -1,0 +1,42 @@
+{
+  "environmentName": "spark-local",
+  "description": "Ambiente local de desenvolvimento SPARK",
+  "variables": [
+    {
+      "name": "POSTGRES_HOST",
+      "value": "localhost",
+      "scope": "JVM",
+      "description": "Host do PostgreSQL local"
+    },
+    {
+      "name": "POSTGRES_PORT",
+      "value": "5432",
+      "scope": "JVM",
+      "description": "Porta do PostgreSQL local"
+    },
+    {
+      "name": "POSTGRES_DB",
+      "value": "spark",
+      "scope": "JVM",
+      "description": "Nome do banco de dados"
+    },
+    {
+      "name": "POSTGRES_USER",
+      "value": "spark",
+      "scope": "JVM",
+      "description": "Usuário do PostgreSQL"
+    },
+    {
+      "name": "POSTGRES_PASSWORD",
+      "value": "",
+      "scope": "JVM",
+      "description": "Senha do PostgreSQL — preencha antes de executar"
+    },
+    {
+      "name": "XML_DIR",
+      "value": "${HOP_PROJECT_HOME}/../data/xml",
+      "scope": "JVM",
+      "description": "Diretório contendo os XMLs Lattes para processamento"
+    }
+  ]
+}

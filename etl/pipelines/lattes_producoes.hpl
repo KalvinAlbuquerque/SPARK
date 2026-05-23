@@ -1,0 +1,1216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info>
+    <name>lattes_producoes</name>
+    <name_hi_res/>
+    <description>Extrai produções científicas dos XMLs Lattes (artigos, eventos, livros, capítulos) e carrega na tabela producoes via UPSERT</description>
+    <extended_description/>
+    <pipeline_version/>
+    <pipeline_status>0</pipeline_status>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+      <parameter>
+        <name>XML_DIR</name>
+        <default_value>../../data/xml</default_value>
+        <description>Diretório com os arquivos XML Lattes</description>
+      </parameter>
+    </parameters>
+    <capture_transform_performance>N</capture_transform_performance>
+    <transform_performance_capturing_delay>1000</transform_performance_capturing_delay>
+    <transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
+    <created_user>SPARK ETL</created_user>
+    <created_date>2026/05/22 00:00:00.000</created_date>
+    <modified_user>SPARK ETL</modified_user>
+    <modified_date>2026/05/22 00:00:00.000</modified_date>
+    <key_for_session_key>H4sIAAAAAAAA/wMAAAAAAAAAAAA=</key_for_session_key>
+    <is_key_private>N</is_key_private>
+  </info>
+  <notepads>
+    <notepad>
+      <note>Pipeline SPK-11 / SPK-37
+4 fluxos de produção (ARTIGO, EVENTO, LIVRO, CAPITULO)
+unificados via Append Streams.
+Requer que lattes_pesquisadores.hpl tenha rodado antes
+(lookup de pesquisador_id por lattes_id).</note>
+      <xloc>50</xloc>
+      <yloc>50</yloc>
+      <width>450</width>
+      <heigth>90</heigth>
+      <fontname>Arial</fontname>
+      <fontsize>10</fontsize>
+      <fontbold>N</fontbold>
+      <fontitalic>N</fontitalic>
+      <fontcolorred>14</fontcolorred>
+      <fontcolorgreen>58</fontcolorgreen>
+      <fontcolorblue>90</fontcolorblue>
+      <backgroundcolorred>201</backgroundcolorred>
+      <backgroundcolorgreen>232</backgroundcolorgreen>
+      <backgroundcolorblue>251</backgroundcolorblue>
+      <bordercolorred>14</bordercolorred>
+      <bordercolorgreen>58</bordercolorgreen>
+      <bordercolorblue>90</bordercolorblue>
+    </notepad>
+  </notepads>
+  <order>
+    <!-- Artigos -->
+    <hop>
+      <from>Listar XMLs Artigos</from>
+      <to>Extrair Artigos</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Extrair Artigos</from>
+      <to>Tipo Artigo</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Tipo Artigo</from>
+      <to>Unificar Producoes</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Extrair Artigos</from>
+      <to>Log Erro Parse</to>
+      <enabled>Y</enabled>
+    </hop>
+    <!-- Eventos -->
+    <hop>
+      <from>Listar XMLs Eventos</from>
+      <to>Extrair Eventos</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Extrair Eventos</from>
+      <to>Tipo Evento</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Tipo Evento</from>
+      <to>Unificar Producoes</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Extrair Eventos</from>
+      <to>Log Erro Parse</to>
+      <enabled>Y</enabled>
+    </hop>
+    <!-- Livros -->
+    <hop>
+      <from>Listar XMLs Livros</from>
+      <to>Extrair Livros</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Extrair Livros</from>
+      <to>Tipo Livro</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Tipo Livro</from>
+      <to>Unificar Producoes</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Extrair Livros</from>
+      <to>Log Erro Parse</to>
+      <enabled>Y</enabled>
+    </hop>
+    <!-- Capítulos -->
+    <hop>
+      <from>Listar XMLs Capitulos</from>
+      <to>Extrair Capitulos</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Extrair Capitulos</from>
+      <to>Tipo Capitulo</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Tipo Capitulo</from>
+      <to>Unificar Producoes</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Extrair Capitulos</from>
+      <to>Log Erro Parse</to>
+      <enabled>Y</enabled>
+    </hop>
+    <!-- Fluxo principal após unificação -->
+    <hop>
+      <from>Unificar Producoes</from>
+      <to>Normalizar ISSN e Titulo</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Normalizar ISSN e Titulo</from>
+      <to>Buscar pesquisador_id</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Buscar pesquisador_id</from>
+      <to>UPSERT Producoes</to>
+      <enabled>Y</enabled>
+    </hop>
+  </order>
+
+  <!-- ================================================================
+       TRANSFORM: Listar XMLs — Artigos
+       (um GetFileNames por fluxo para enviar mesma lista a cada parser)
+       ================================================================ -->
+  <transform>
+    <name>Listar XMLs Artigos</name>
+    <type>GetFileNames</type>
+    <description>Lista XMLs para o fluxo de artigos</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <filter>
+      <filterfiletype>all_files</filterfiletype>
+    </filter>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <rownum>N</rownum>
+    <rownumField/>
+    <isaddresult>N</isaddresult>
+    <filefield>N</filefield>
+    <filename_Field/>
+    <wildcard_Field/>
+    <exclude_wildcard_Field/>
+    <dynamic_include_subfolders>N</dynamic_include_subfolders>
+    <limit>0</limit>
+    <file>
+      <name>${XML_DIR}</name>
+      <filemask>.*\.xml$</filemask>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <GUI>
+      <xloc>100</xloc>
+      <yloc>150</yloc>
+    </GUI>
+  </transform>
+
+  <transform>
+    <name>Listar XMLs Eventos</name>
+    <type>GetFileNames</type>
+    <description>Lista XMLs para o fluxo de eventos</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <filter>
+      <filterfiletype>all_files</filterfiletype>
+    </filter>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <rownum>N</rownum>
+    <rownumField/>
+    <isaddresult>N</isaddresult>
+    <filefield>N</filefield>
+    <filename_Field/>
+    <wildcard_Field/>
+    <exclude_wildcard_Field/>
+    <dynamic_include_subfolders>N</dynamic_include_subfolders>
+    <limit>0</limit>
+    <file>
+      <name>${XML_DIR}</name>
+      <filemask>.*\.xml$</filemask>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <GUI>
+      <xloc>100</xloc>
+      <yloc>300</yloc>
+    </GUI>
+  </transform>
+
+  <transform>
+    <name>Listar XMLs Livros</name>
+    <type>GetFileNames</type>
+    <description>Lista XMLs para o fluxo de livros</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <filter>
+      <filterfiletype>all_files</filterfiletype>
+    </filter>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <rownum>N</rownum>
+    <rownumField/>
+    <isaddresult>N</isaddresult>
+    <filefield>N</filefield>
+    <filename_Field/>
+    <wildcard_Field/>
+    <exclude_wildcard_Field/>
+    <dynamic_include_subfolders>N</dynamic_include_subfolders>
+    <limit>0</limit>
+    <file>
+      <name>${XML_DIR}</name>
+      <filemask>.*\.xml$</filemask>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <GUI>
+      <xloc>100</xloc>
+      <yloc>450</yloc>
+    </GUI>
+  </transform>
+
+  <transform>
+    <name>Listar XMLs Capitulos</name>
+    <type>GetFileNames</type>
+    <description>Lista XMLs para o fluxo de capítulos</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <filter>
+      <filterfiletype>all_files</filterfiletype>
+    </filter>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <rownum>N</rownum>
+    <rownumField/>
+    <isaddresult>N</isaddresult>
+    <filefield>N</filefield>
+    <filename_Field/>
+    <wildcard_Field/>
+    <exclude_wildcard_Field/>
+    <dynamic_include_subfolders>N</dynamic_include_subfolders>
+    <limit>0</limit>
+    <file>
+      <name>${XML_DIR}</name>
+      <filemask>.*\.xml$</filemask>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <GUI>
+      <xloc>100</xloc>
+      <yloc>600</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM: Extrair Artigos
+       Loop XPath: .//ARTIGO-PUBLICADO
+       lattes_id extraído com XPath absoluto do nó raiz
+       ================================================================ -->
+  <transform>
+    <name>Extrair Artigos</name>
+    <type>GetDataFromXML</type>
+    <description>Loop em .//ARTIGO-PUBLICADO — um registro por artigo</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <rownum_field/>
+    <encoding>ISO-8859-1</encoding>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>Y</IsAFile>
+    <XmlField>filename</XmlField>
+    <prunePath/>
+    <loops>
+      <loop>
+        <path>.//ARTIGO-PUBLICADO</path>
+      </loop>
+    </loops>
+    <fields>
+      <field>
+        <name>lattes_id</name>
+        <xpath>/CURRICULO-VITAE/@NUMERO-IDENTIFICADOR</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>16</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>titulo</name>
+        <xpath>DADOS-BASICOS-DO-ARTIGO/@TITULO-DO-ARTIGO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>500</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>ano_publicacao</name>
+        <xpath>DADOS-BASICOS-DO-ARTIGO/@ANO-DO-ARTIGO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>4</length>
+        <precision>0</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>doi</name>
+        <xpath>DADOS-BASICOS-DO-ARTIGO/@DOI</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>255</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>nome_veiculo</name>
+        <xpath>DETALHAMENTO-DO-ARTIGO/@TITULO-DO-PERIODICO-OU-REVISTA</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>255</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>issn</name>
+        <xpath>DETALHAMENTO-DO-ARTIGO/@ISSN</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>9</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>320</xloc>
+      <yloc>150</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM: Extrair Eventos
+       Loop XPath: .//TRABALHO-EM-EVENTOS
+       ================================================================ -->
+  <transform>
+    <name>Extrair Eventos</name>
+    <type>GetDataFromXML</type>
+    <description>Loop em .//TRABALHO-EM-EVENTOS — um registro por trabalho</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <rownum_field/>
+    <encoding>ISO-8859-1</encoding>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>Y</IsAFile>
+    <XmlField>filename</XmlField>
+    <prunePath/>
+    <loops>
+      <loop>
+        <path>.//TRABALHO-EM-EVENTOS</path>
+      </loop>
+    </loops>
+    <fields>
+      <field>
+        <name>lattes_id</name>
+        <xpath>/CURRICULO-VITAE/@NUMERO-IDENTIFICADOR</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>16</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>titulo</name>
+        <xpath>DADOS-BASICOS-DO-TRABALHO/@TITULO-DO-TRABALHO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>500</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>ano_publicacao</name>
+        <xpath>DADOS-BASICOS-DO-TRABALHO/@ANO-DO-TRABALHO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>4</length>
+        <precision>0</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>doi</name>
+        <xpath>DADOS-BASICOS-DO-TRABALHO/@DOI</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>255</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>nome_veiculo</name>
+        <xpath>DETALHAMENTO-DO-TRABALHO/@NOME-DO-EVENTO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>255</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>issn</name>
+        <xpath/>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>9</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>320</xloc>
+      <yloc>300</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM: Extrair Livros
+       Loop XPath: .//LIVRO-PUBLICADO-OU-ORGANIZADO
+       ================================================================ -->
+  <transform>
+    <name>Extrair Livros</name>
+    <type>GetDataFromXML</type>
+    <description>Loop em .//LIVRO-PUBLICADO-OU-ORGANIZADO — um registro por livro</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <rownum_field/>
+    <encoding>ISO-8859-1</encoding>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>Y</IsAFile>
+    <XmlField>filename</XmlField>
+    <prunePath/>
+    <loops>
+      <loop>
+        <path>.//LIVRO-PUBLICADO-OU-ORGANIZADO</path>
+      </loop>
+    </loops>
+    <fields>
+      <field>
+        <name>lattes_id</name>
+        <xpath>/CURRICULO-VITAE/@NUMERO-IDENTIFICADOR</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>16</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>titulo</name>
+        <xpath>DADOS-BASICOS-DO-LIVRO/@TITULO-DO-LIVRO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>500</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>ano_publicacao</name>
+        <xpath>DADOS-BASICOS-DO-LIVRO/@ANO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>4</length>
+        <precision>0</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>doi</name>
+        <xpath>DADOS-BASICOS-DO-LIVRO/@DOI</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>255</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>nome_veiculo</name>
+        <xpath>DADOS-BASICOS-DO-LIVRO/@TITULO-DO-LIVRO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>255</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>issn</name>
+        <xpath/>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>9</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>320</xloc>
+      <yloc>450</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM: Extrair Capítulos
+       Loop XPath: .//CAPITULO-DE-LIVRO-PUBLICADO
+       ================================================================ -->
+  <transform>
+    <name>Extrair Capitulos</name>
+    <type>GetDataFromXML</type>
+    <description>Loop em .//CAPITULO-DE-LIVRO-PUBLICADO — um registro por capítulo</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <rownum_field/>
+    <encoding>ISO-8859-1</encoding>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>Y</IsAFile>
+    <XmlField>filename</XmlField>
+    <prunePath/>
+    <loops>
+      <loop>
+        <path>.//CAPITULO-DE-LIVRO-PUBLICADO</path>
+      </loop>
+    </loops>
+    <fields>
+      <field>
+        <name>lattes_id</name>
+        <xpath>/CURRICULO-VITAE/@NUMERO-IDENTIFICADOR</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>16</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>titulo</name>
+        <xpath>DADOS-BASICOS-DO-CAPITULO/@TITULO-DO-CAPITULO-DO-LIVRO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>500</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>ano_publicacao</name>
+        <xpath>DADOS-BASICOS-DO-CAPITULO/@ANO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>4</length>
+        <precision>0</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>doi</name>
+        <xpath>DADOS-BASICOS-DO-CAPITULO/@DOI</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>255</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>nome_veiculo</name>
+        <xpath>DETALHAMENTO-DO-CAPITULO/@TITULO-DO-LIVRO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>255</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>issn</name>
+        <xpath/>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>9</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>320</xloc>
+      <yloc>600</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORMS: AddConstants — adiciona tipo_producao a cada fluxo
+       ================================================================ -->
+  <transform>
+    <name>Tipo Artigo</name>
+    <type>AddConstants</type>
+    <description>Adiciona tipo_producao=ARTIGO</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <name>tipo_producao</name>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <nullif>ARTIGO</nullif>
+        <length>20</length>
+        <precision>-1</precision>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>540</xloc>
+      <yloc>150</yloc>
+    </GUI>
+  </transform>
+
+  <transform>
+    <name>Tipo Evento</name>
+    <type>AddConstants</type>
+    <description>Adiciona tipo_producao=EVENTO</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <name>tipo_producao</name>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <nullif>EVENTO</nullif>
+        <length>20</length>
+        <precision>-1</precision>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>540</xloc>
+      <yloc>300</yloc>
+    </GUI>
+  </transform>
+
+  <transform>
+    <name>Tipo Livro</name>
+    <type>AddConstants</type>
+    <description>Adiciona tipo_producao=LIVRO</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <name>tipo_producao</name>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <nullif>LIVRO</nullif>
+        <length>20</length>
+        <precision>-1</precision>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>540</xloc>
+      <yloc>450</yloc>
+    </GUI>
+  </transform>
+
+  <transform>
+    <name>Tipo Capitulo</name>
+    <type>AddConstants</type>
+    <description>Adiciona tipo_producao=CAPITULO</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <name>tipo_producao</name>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <nullif>CAPITULO</nullif>
+        <length>20</length>
+        <precision>-1</precision>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>540</xloc>
+      <yloc>600</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM: Unificar os 4 fluxos de produção
+       Append Streams: combina artigos + eventos + livros + capítulos
+       ================================================================ -->
+  <transform>
+    <name>Unificar Producoes</name>
+    <type>AppendedStreams</type>
+    <description>Une os 4 fluxos de tipos de produção em um stream único</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <GUI>
+      <xloc>760</xloc>
+      <yloc>375</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM: Normalizar ISSN e Título (Modified JavaScript Value)
+       - ISSN: remove não-numéricos, insere hífen na posição 4
+       - Título: trim, remove caracteres de controle
+       ================================================================ -->
+  <transform>
+    <name>Normalizar ISSN e Titulo</name>
+    <type>ScriptValueMod</type>
+    <description>Normaliza ISSN (hífen na posição 4) e título (trim + controle)</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <compatible>N</compatible>
+    <optimizationLevel>9</optimizationLevel>
+    <jsScripts>
+      <jsScript>
+        <jsScript_type>0</jsScript_type>
+        <jsScript_name>Normalizar</jsScript_name>
+        <jsScript_script>
+// Normalizar titulo: trim e remover caracteres de controle
+if (titulo != null) {
+  titulo = titulo.trim()
+                 .replace(/[\r\n\t -]+/g, ' ')
+                 .replace(/\s{2,}/g, ' ');
+  if (titulo.length == 0) { titulo = null; }
+}
+
+// Normalizar DOI: NULL se vazio
+if (doi != null) {
+  doi = doi.trim();
+  if (doi.length == 0) { doi = null; }
+}
+
+// Normalizar ISSN: remove não-numéricos e formata com hífen
+if (issn != null) {
+  var issnRaw = issn.toString().trim();
+  var issnClean = issnRaw.replace(/[^0-9Xx]/g, '');
+  if (issnClean.length == 8) {
+    issn = issnClean.substring(0, 4) + '-' + issnClean.substring(4);
+  } else if (issnClean.length == 0) {
+    issn = null;
+  } else {
+    issn = null;
+  }
+}
+        </jsScript_script>
+      </jsScript>
+    </jsScripts>
+    <fields>
+      <field>
+        <name>titulo</name>
+        <rename>titulo</rename>
+        <type>String</type>
+        <length>500</length>
+        <precision>-1</precision>
+        <replace>Y</replace>
+      </field>
+      <field>
+        <name>issn</name>
+        <rename>issn</rename>
+        <type>String</type>
+        <length>9</length>
+        <precision>-1</precision>
+        <replace>Y</replace>
+      </field>
+      <field>
+        <name>doi</name>
+        <rename>doi</rename>
+        <type>String</type>
+        <length>255</length>
+        <precision>-1</precision>
+        <replace>Y</replace>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>960</xloc>
+      <yloc>375</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM: Buscar pesquisador_id por lattes_id
+       Database Lookup na tabela pesquisadores
+       ================================================================ -->
+  <transform>
+    <name>Buscar pesquisador_id</name>
+    <type>DBLookup</type>
+    <description>Resolve lattes_id → pesquisador_id na tabela pesquisadores</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <connection>spark_db</connection>
+    <lookup>
+      <schema>public</schema>
+      <table>pesquisadores</table>
+      <orderby/>
+      <fail_on_multiple>N</fail_on_multiple>
+      <eat_row_on_failure>N</eat_row_on_failure>
+      <cache>Y</cache>
+      <cache_size>5000</cache_size>
+      <cache_load_all>N</cache_load_all>
+      <key>
+        <name>lattes_id</name>
+        <field>lattes_id</field>
+        <condition>=</condition>
+        <name2/>
+      </key>
+      <value>
+        <name>id</name>
+        <rename>pesquisador_id</rename>
+        <default/>
+        <type>Integer</type>
+      </value>
+    </lookup>
+    <GUI>
+      <xloc>1160</xloc>
+      <yloc>375</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM: UPSERT na tabela producoes
+       Chave: (pesquisador_id, titulo, ano_publicacao)
+       COALESCE preserva doi/resumo/qualis/jcr já preenchidos
+       ================================================================ -->
+  <transform>
+    <name>UPSERT Producoes</name>
+    <type>ExecSQL</type>
+    <description>Insere ou atualiza produção com ON CONFLICT (pesquisador_id, titulo, ano_publicacao)</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <connection>spark_db</connection>
+    <execute_each_row>Y</execute_each_row>
+    <single_statement>N</single_statement>
+    <replace_variables>N</replace_variables>
+    <quoteString>N</quoteString>
+    <sql>INSERT INTO producoes
+  (pesquisador_id, titulo, tipo_producao, ano_publicacao,
+   nome_veiculo, issn, doi, resumo, qualis, jcr)
+VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)
+ON CONFLICT (pesquisador_id, titulo, ano_publicacao) DO UPDATE SET
+  doi          = COALESCE(EXCLUDED.doi, producoes.doi),
+  resumo       = COALESCE(EXCLUDED.resumo, producoes.resumo),
+  qualis       = COALESCE(EXCLUDED.qualis, producoes.qualis),
+  jcr          = COALESCE(EXCLUDED.jcr, producoes.jcr),
+  nome_veiculo = EXCLUDED.nome_veiculo;</sql>
+    <arguments>
+      <argument>pesquisador_id</argument>
+      <argument>titulo</argument>
+      <argument>tipo_producao</argument>
+      <argument>ano_publicacao</argument>
+      <argument>nome_veiculo</argument>
+      <argument>issn</argument>
+      <argument>doi</argument>
+    </arguments>
+    <GUI>
+      <xloc>1360</xloc>
+      <yloc>375</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM: Log de erros de parse (destino do error handling)
+       ================================================================ -->
+  <transform>
+    <name>Log Erro Parse</name>
+    <type>WriteToLog</type>
+    <description>Registra arquivos com erro de parse sem interromper o batch</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <loglevel>Error</loglevel>
+    <displayHeader>Y</displayHeader>
+    <limitRows>N</limitRows>
+    <limitRowsNumber>0</limitRowsNumber>
+    <logmessage>ERRO ao processar XML — arquivo ignorado, processamento continua</logmessage>
+    <fields>
+      <field>
+        <name>filename</name>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>540</xloc>
+      <yloc>750</yloc>
+    </GUI>
+  </transform>
+
+  <transform_error_handling>
+    <error>
+      <source_transform>Extrair Artigos</source_transform>
+      <target_transform>Log Erro Parse</target_transform>
+      <enabled>Y</enabled>
+      <nr_valuename>ErrorCount</nr_valuename>
+      <descriptions_valuename>ErrorDescription</descriptions_valuename>
+      <fields_valuename>ErrorFields</fields_valuename>
+      <codes_valuename>ErrorCodes</codes_valuename>
+      <max_errors/>
+      <max_pct_errors/>
+      <min_pct_rows/>
+    </error>
+    <error>
+      <source_transform>Extrair Eventos</source_transform>
+      <target_transform>Log Erro Parse</target_transform>
+      <enabled>Y</enabled>
+      <nr_valuename>ErrorCount</nr_valuename>
+      <descriptions_valuename>ErrorDescription</descriptions_valuename>
+      <fields_valuename>ErrorFields</fields_valuename>
+      <codes_valuename>ErrorCodes</codes_valuename>
+      <max_errors/>
+      <max_pct_errors/>
+      <min_pct_rows/>
+    </error>
+    <error>
+      <source_transform>Extrair Livros</source_transform>
+      <target_transform>Log Erro Parse</target_transform>
+      <enabled>Y</enabled>
+      <nr_valuename>ErrorCount</nr_valuename>
+      <descriptions_valuename>ErrorDescription</descriptions_valuename>
+      <fields_valuename>ErrorFields</fields_valuename>
+      <codes_valuename>ErrorCodes</codes_valuename>
+      <max_errors/>
+      <max_pct_errors/>
+      <min_pct_rows/>
+    </error>
+    <error>
+      <source_transform>Extrair Capitulos</source_transform>
+      <target_transform>Log Erro Parse</target_transform>
+      <enabled>Y</enabled>
+      <nr_valuename>ErrorCount</nr_valuename>
+      <descriptions_valuename>ErrorDescription</descriptions_valuename>
+      <fields_valuename>ErrorFields</fields_valuename>
+      <codes_valuename>ErrorCodes</codes_valuename>
+      <max_errors/>
+      <max_pct_errors/>
+      <min_pct_rows/>
+    </error>
+  </transform_error_handling>
+</pipeline>

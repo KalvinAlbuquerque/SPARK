@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info>
+    <name>lattes_pesquisadores</name>
+    <name_hi_res/>
+    <description>Extrai dados de pesquisadores dos XMLs Lattes e carrega na tabela pesquisadores via UPSERT</description>
+    <extended_description/>
+    <pipeline_version/>
+    <pipeline_status>0</pipeline_status>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+      <parameter>
+        <name>XML_DIR</name>
+        <default_value>../../data/xml</default_value>
+        <description>Diretório com os arquivos XML Lattes</description>
+      </parameter>
+    </parameters>
+    <capture_transform_performance>N</capture_transform_performance>
+    <transform_performance_capturing_delay>1000</transform_performance_capturing_delay>
+    <transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
+    <created_user>SPARK ETL</created_user>
+    <created_date>2026/05/22 00:00:00.000</created_date>
+    <modified_user>SPARK ETL</modified_user>
+    <modified_date>2026/05/22 00:00:00.000</modified_date>
+    <key_for_session_key>H4sIAAAAAAAA/wMAAAAAAAAAAAA=</key_for_session_key>
+    <is_key_private>N</is_key_private>
+  </info>
+  <notepads>
+    <notepad>
+      <note>Pipeline SPK-11 / SPK-37
+Extrai dados do pesquisador de cada XML Lattes.
+Loop XPath: /CURRICULO-VITAE (um registro por arquivo).
+UPSERT via ON CONFLICT (lattes_id).</note>
+      <xloc>50</xloc>
+      <yloc>50</yloc>
+      <width>400</width>
+      <heigth>80</heigth>
+      <fontname>Arial</fontname>
+      <fontsize>10</fontsize>
+      <fontbold>N</fontbold>
+      <fontitalic>N</fontitalic>
+      <fontcolorred>14</fontcolorred>
+      <fontcolorgreen>58</fontcolorgreen>
+      <fontcolorblue>90</fontcolorblue>
+      <backgroundcolorred>201</backgroundcolorred>
+      <backgroundcolorgreen>232</backgroundcolorgreen>
+      <backgroundcolorblue>251</backgroundcolorblue>
+      <bordercolorred>14</bordercolorred>
+      <bordercolorgreen>58</bordercolorgreen>
+      <bordercolorblue>90</bordercolorblue>
+    </notepad>
+  </notepads>
+  <order>
+    <hop>
+      <from>Listar XMLs</from>
+      <to>Extrair Pesquisador</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Extrair Pesquisador</from>
+      <to>UPSERT Pesquisadores</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Extrair Pesquisador</from>
+      <to>Log Erro Parse</to>
+      <enabled>Y</enabled>
+    </hop>
+  </order>
+
+  <!-- ================================================================
+       TRANSFORM 1: Listar todos os arquivos .xml do diretório
+       ================================================================ -->
+  <transform>
+    <name>Listar XMLs</name>
+    <type>GetFileNames</type>
+    <description>Lista todos os arquivos .xml do diretório XML_DIR</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <filter>
+      <filterfiletype>all_files</filterfiletype>
+    </filter>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <rownum>N</rownum>
+    <rownumField/>
+    <isaddresult>N</isaddresult>
+    <filefield>N</filefield>
+    <filename_Field/>
+    <wildcard_Field/>
+    <exclude_wildcard_Field/>
+    <dynamic_include_subfolders>N</dynamic_include_subfolders>
+    <limit>0</limit>
+    <file>
+      <name>${XML_DIR}</name>
+      <filemask>.*\.xml$</filemask>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <GUI>
+      <xloc>150</xloc>
+      <yloc>200</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM 2: Parsear XML e extrair dados do pesquisador
+       Loop XPath: /CURRICULO-VITAE (1 linha por arquivo)
+       ================================================================ -->
+  <transform>
+    <name>Extrair Pesquisador</name>
+    <type>GetDataFromXML</type>
+    <description>Extrai lattes_id, nome, departamento, campus e resumo de cada XML</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <rownum_field/>
+    <encoding>ISO-8859-1</encoding>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>Y</IsAFile>
+    <XmlField>filename</XmlField>
+    <prunePath/>
+    <loops>
+      <loop>
+        <path>/CURRICULO-VITAE</path>
+      </loop>
+    </loops>
+    <fields>
+      <field>
+        <name>lattes_id</name>
+        <xpath>@NUMERO-IDENTIFICADOR</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>16</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>nome_completo</name>
+        <xpath>DADOS-GERAIS/@NOME-COMPLETO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>255</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>departamento</name>
+        <xpath>DADOS-GERAIS/@DEPARTAMENTO</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>255</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>campus</name>
+        <xpath>DADOS-GERAIS/@CAMPUS</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>100</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>resumo</name>
+        <xpath>DADOS-GERAIS/RESUMO-CV/@TEXTO-RESUMO-CV-RH</xpath>
+        <element_type>Attribute</element_type>
+        <result_type>valueof</result_type>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>both</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>370</xloc>
+      <yloc>200</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM 3: UPSERT na tabela pesquisadores
+       Chave de conflito: lattes_id
+       ================================================================ -->
+  <transform>
+    <name>UPSERT Pesquisadores</name>
+    <type>ExecSQL</type>
+    <description>Insere ou atualiza pesquisador com ON CONFLICT (lattes_id)</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <connection>spark_db</connection>
+    <execute_each_row>Y</execute_each_row>
+    <single_statement>N</single_statement>
+    <replace_variables>N</replace_variables>
+    <quoteString>N</quoteString>
+    <sql>INSERT INTO pesquisadores
+  (lattes_id, nome_completo, departamento, campus, resumo, data_atualizacao)
+VALUES (?, ?, ?, ?, ?, NOW())
+ON CONFLICT (lattes_id) DO UPDATE SET
+  nome_completo    = EXCLUDED.nome_completo,
+  departamento     = EXCLUDED.departamento,
+  campus           = EXCLUDED.campus,
+  resumo           = EXCLUDED.resumo,
+  data_atualizacao = NOW();</sql>
+    <arguments>
+      <argument>lattes_id</argument>
+      <argument>nome_completo</argument>
+      <argument>departamento</argument>
+      <argument>campus</argument>
+      <argument>resumo</argument>
+    </arguments>
+    <GUI>
+      <xloc>590</xloc>
+      <yloc>200</yloc>
+    </GUI>
+  </transform>
+
+  <!-- ================================================================
+       TRANSFORM 4: Log de erro de parse (destino do error handling)
+       ================================================================ -->
+  <transform>
+    <name>Log Erro Parse</name>
+    <type>WriteToLog</type>
+    <description>Registra arquivos com erro de parse sem interromper o batch</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <loglevel>Error</loglevel>
+    <displayHeader>Y</displayHeader>
+    <limitRows>N</limitRows>
+    <limitRowsNumber>0</limitRowsNumber>
+    <logmessage>ERRO ao processar arquivo XML — verifique encoding e estrutura</logmessage>
+    <fields>
+      <field>
+        <name>filename</name>
+      </field>
+    </fields>
+    <GUI>
+      <xloc>370</xloc>
+      <yloc>350</yloc>
+    </GUI>
+  </transform>
+
+  <transform_error_handling>
+    <error>
+      <source_transform>Extrair Pesquisador</source_transform>
+      <target_transform>Log Erro Parse</target_transform>
+      <enabled>Y</enabled>
+      <nr_valuename>ErrorCount</nr_valuename>
+      <descriptions_valuename>ErrorDescription</descriptions_valuename>
+      <fields_valuename>ErrorFields</fields_valuename>
+      <codes_valuename>ErrorCodes</codes_valuename>
+      <max_errors/>
+      <max_pct_errors/>
+      <min_pct_rows/>
+    </error>
+  </transform_error_handling>
+</pipeline>
