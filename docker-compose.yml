@@ -26,11 +26,14 @@ services:
     volumes:
       - ./backend:/app
       - ~/.cache/huggingface:/root/.cache/huggingface
+      - ./data/qualis:/app/data/qualis:ro
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-spark}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-spark}
       POSTGRES_DB: ${POSTGRES_DB:-spark}
       POSTGRES_USER: ${POSTGRES_USER:-spark}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      QUALIS_CSV_PATH: ${QUALIS_CSV_PATH:-/app/data/qualis/qualis.csv}
 
 volumes:
   pgdata:
