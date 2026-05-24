@@ -31,11 +31,21 @@
         <default_value></default_value>
         <description>API key gratuita do OpenAlex — lida automaticamente do .env</description>
       </parameter>
+      <parameter>
+        <name>INTERNAL_API_KEY</name>
+        <default_value></default_value>
+        <description>Chave de autenticação do endpoint interno da API SPARK (Bearer token)</description>
+      </parameter>
+      <parameter>
+        <name>API_URL</name>
+        <default_value>http://api:8000</default_value>
+        <description>URL base da API SPARK (interna ao Docker Compose)</description>
+      </parameter>
     </parameters>
   </info>
   <notepads>
     <notepad>
-      <note>Workflow SPK-11 + SPK-12 + SPK-13 + SPK-89
+      <note>Workflow SPK-11 + SPK-12 + SPK-13 + SPK-89 + SPK-93
 Execução em ordem obrigatória:
 1. lattes_pesquisadores.hpl (insere pesquisadores)
 2. lattes_producoes.hpl (insere produções, busca pesquisador_id)
@@ -43,13 +53,16 @@ Execução em ordem obrigatória:
 4. crossref_enriquecimento.hpl (preenche doi + resumo via CrossRef API)
 5. openalex_enriquecimento.hpl (preenche jcr via OpenAlex API por ISSN)
 6. metricas_pesquisadores.hpl (calcula total_producoes, total_a1_a2, indice_h)
-7. Registra log em etl_logs
+7. POST /internal/trigger-embeddings (gera vetores das produções novas)
+8. Registra log em etl_logs
 
 Parâmetros:
-  XML_DIR         = diretório com os XMLs Lattes
-  QUALIS_CSV      = caminho para o CSV qualis_capes.csv
-  ETL_EMAIL       = email para CrossRef Polite Pool (lido do .env)
-  OPENALEX_APIKEY = API key OpenAlex (lida do .env)</note>
+  XML_DIR          = diretório com os XMLs Lattes
+  QUALIS_CSV       = caminho para o CSV qualis_capes.csv
+  ETL_EMAIL        = email para CrossRef Polite Pool (lido do .env)
+  OPENALEX_APIKEY  = API key OpenAlex (lida do .env)
+  INTERNAL_API_KEY = Bearer token do endpoint /internal (lido do .env)
+  API_URL          = URL base da API SPARK (padrão: http://api:8000)</note>
       <xloc>50</xloc>
       <yloc>50</yloc>
       <width>500</width>
@@ -350,6 +363,30 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
     </action>
 
     <action>
+      <name>Acionar Worker Embeddings</name>
+      <description>Chama POST /internal/trigger-embeddings para gerar vetores das produções novas (SPK-93)</description>
+      <type>HTTP</type>
+      <url>${API_URL}/internal/trigger-embeddings</url>
+      <method>POST</method>
+      <headers>
+        <header>
+          <name>Authorization</name>
+          <value>Bearer ${INTERNAL_API_KEY}</value>
+        </header>
+        <header>
+          <name>Content-Type</name>
+          <value>application/json</value>
+        </header>
+      </headers>
+      <body></body>
+      <responseField>embeddings_response</responseField>
+      <GUI>
+        <xloc>1900</xloc>
+        <yloc>200</yloc>
+      </GUI>
+    </action>
+
+    <action>
       <name>Registrar sucesso</name>
       <description>Atualiza o log com status sucesso e timestamp de finalização</description>
       <type>SQL</type>
@@ -479,6 +516,13 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
     </hop>
     <hop>
       <from>Pipeline Metricas</from>
+      <to>Acionar Worker Embeddings</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Acionar Worker Embeddings</from>
       <to>Registrar sucesso</to>
       <enabled>Y</enabled>
       <evaluation>Y</evaluation>
@@ -543,6 +587,13 @@ WHERE id = (SELECT MAX(id) FROM etl_logs WHERE status = 'em_andamento');</sql>
     </hop>
     <hop>
       <from>Pipeline Metricas</from>
+      <to>Registrar falha</to>
+      <enabled>Y</enabled>
+      <evaluation>N</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>Acionar Worker Embeddings</from>
       <to>Registrar falha</to>
       <enabled>Y</enabled>
       <evaluation>N</evaluation>

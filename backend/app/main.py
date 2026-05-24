@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
 
 from app.database import create_pool
-from app.routers import pesquisadores, producoes, search, stats
+from app.routers import internal, pesquisadores, producoes, search, stats
 
 
 @asynccontextmanager
@@ -35,6 +35,7 @@ app.include_router(search.router)
 app.include_router(producoes.router)
 app.include_router(pesquisadores.router)
 app.include_router(stats.router)
+app.include_router(internal.router)
 
 
 @app.get("/health", tags=["health"])

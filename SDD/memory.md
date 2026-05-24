@@ -4,9 +4,9 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 
 ---
 
-## Estado atual: Sprint III — SPK-118 CONCLUÍDA
+## Estado atual: Sprint III — SPK-93 CONCLUÍDA
 
-**Data última atualização:** 2026-05-24 (SPK-118 implementado)
+**Data última atualização:** 2026-05-24 (SPK-93 implementado)
 
 ---
 
@@ -276,9 +276,8 @@ Pesquisador (loop raiz): `/CURRICULO-VITAE` → `@NUMERO-IDENTIFICADOR`, `DADOS-
 | Fase 5 — SPK-89 | Atualização de métricas bibliométricas (`total_producoes`, `indice_h`, `total_a1_a2`) via SQL por pesquisador processado | **CONCLUÍDO** — spec em `SDD/sprint_2/spk89_spec_CONCLUIDA.md` |
 | SPK-92 | API FastAPI: busca textual, semântica e endpoints de suporte (local) | **CONCLUÍDO** — spec em `SDD/sprint_3/spk92_spec_CONCLUIDA.md` |
 | SPK-118 | Dockerfile da API + integração no docker-compose + testes de integração | **CONCLUÍDO** — spec em `SDD/sprint_3/spk118_spec_CONCLUIDA.md` |
+| SPK-93 | Worker de embeddings + endpoints internos (trigger-embeddings, trigger-etl, admin pesquisadores) | **CONCLUÍDO** — spec em `SDD/sprint_3/spk93_spec_CONCLUIDA.md` |
 | SPK-14 | Spike: avaliação de modelos de embedding (Sentence-Transformers vs OpenAI) | Pendente |
-| Fase 6 | Worker de embeddings (`all-MiniLM-L6-v2`) acionado via `POST /internal/trigger-embeddings` | Pendente |
-| Endpoint `/internal/trigger-etl` | FastAPI: recebe XMLs por upload, executa as 6 fases sem Apache Hop | Pendente |
 | Frontend | Next.js 14 com busca, cards de produção, filtros sem reload | Pendente |
 
 ---
@@ -494,4 +493,70 @@ pytest tests/integration/ -v
   - `AND` é implícito no `websearch_to_tsquery` (removido da query)
   - `OR` é nativo do `websearch_to_tsquery` (passado diretamente)
   - `NOT palavra` → `-palavra` (sintaxe do websearch_to_tsquery)
-- Busca semântica retorna lista vazia porque `total_vetores = 0` — worker de embeddings (Fase 6) ainda não implementado; `vetores` table está vazia. Os testes de semântica cobrem apenas estrutura da resposta, não resultados reais.
+- Busca semântica retorna lista vazia porque `total_vetores = 0` — após SPK-93 o worker agora pode ser acionado via `POST /internal/trigger-embeddings` ou CLI.
+
+---
+
+### SPK-93 — CONCLUÍDO (Sprint 3 — Worker de Embeddings + Endpoints Internos)
+
+**Spec:** `SDD/sprint_3/spk93_spec_CONCLUIDA.md`
+
+**Artefatos criados/modificados:**
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `backend/worker/__init__.py` | Marcador de pacote |
+| `backend/worker/embeddings_worker.py` | Worker async: busca produções sem vetor, chama `encode()`, INSERT com `ON CONFLICT DO NOTHING`; modo CLI e modo HTTP |
+| `backend/app/services/etl_pipeline.py` | Pipeline Python de 7 fases: extração XML, Qualis CSV, CrossRef HTTP, OpenAlex HTTP, métricas, embeddings |
+| `backend/app/routers/internal.py` | 5 endpoints com Bearer auth (403 se ausente/inválido) |
+| `backend/app/main.py` | Registrado `internal.router` |
+| `backend/app/schemas.py` | 5 novos modelos Pydantic internos |
+| `backend/requirements.txt` | Adicionado `python-multipart>=0.0.9` |
+| `backend/tests/unit/test_embeddings_worker.py` | 5 testes (com dados, idempotência, vazio, 384 dims, continua após erro) |
+| `backend/tests/unit/test_internal_endpoints.py` | 11 testes (403 sem auth, 403 token errado, 200 com auth, 404 delete inexistente) |
+| `docker-compose.yml` | Adicionado: `INTERNAL_API_KEY`, `QUALIS_CSV_PATH`, volume `./data/qualis:/app/data/qualis:ro` |
+| `.env.example` | Documentados: `INTERNAL_API_KEY`, `QUALIS_CSV_PATH` |
+| `etl/workflows/spark_etl.hwf` | Parâmetros `INTERNAL_API_KEY` e `API_URL` adicionados; ação HTTP "Acionar Worker Embeddings" inserida entre "Pipeline Metricas" e "Registrar sucesso" |
+
+**Endpoints internos:**
+
+| Método | Rota | Autenticação | Descrição |
+|--------|------|--------------|-----------|
+| POST | `/internal/trigger-embeddings` | Bearer | Gera vetores para produções pendentes; retorna `{vetores_gerados: N}` |
+| POST | `/internal/trigger-etl` | Bearer | Recebe XMLs via multipart/form-data; executa 7 fases; retorna `TriggerEtlResponse` |
+| GET | `/internal/pesquisadores` | Bearer | Lista com filtro opcional `?q=`; retorna `{total, resultados}` |
+| POST | `/internal/pesquisadores` | Bearer | UPSERT pesquisador; retorna 201 + item |
+| DELETE | `/internal/pesquisadores/{id}` | Bearer | Delete cascade; 404 se não existe |
+
+**Autenticação:** `Authorization: Bearer ${INTERNAL_API_KEY}` — retorna 403 se ausente ou inválido. Sem INTERNAL_API_KEY configurado, todos os endpoints internos retornam 403.
+
+**Worker — dois modos de invocação:**
+1. **HTTP** (acionado pelo Admin ou Apache Hop): `POST /internal/trigger-embeddings`
+2. **CLI standalone**: `python worker/embeddings_worker.py` (para Engenheiro de Dados)
+
+**etl_pipeline.py — 7 fases:**
+1. Extração XML: UPSERT pesquisadores + produções (4 tipos via `_PROD_CONFIGS`)
+2. Qualis CSV: lê `QUALIS_CSV_PATH`; lookup por ISSN, fallback por título; UPDATE producoes
+3. CrossRef: ramo A (DOI direto) + ramo B (busca por título, score>70); preenche doi + resumo
+4. OpenAlex: deduplicado por ISSN; lê `summary_stats.2yr_mean_citedness`; UPDATE jcr
+5. Métricas: `total_producoes`, `total_a1_a2`, `indice_h` por pesquisador processado
+6. Embeddings: chama `run_worker(pool)` — lazy import para não bloquear startup
+
+**Decisões de design:**
+- Worker usa `sys.path.insert` para funcionar tanto como módulo importado quanto como script standalone
+- Lazy imports (`from worker.embeddings_worker import run_worker` dentro do endpoint) evitam carregar o modelo SentenceTransformer no startup da API
+- Bearer auth usa `HTTPBearer(auto_error=False)` para poder retornar 403 (não 401) quando ausente
+- `DELETE /internal/pesquisadores/{id}` usa cascade via FK do schema (producoes e vetores são deletados junto)
+- Patch target nos testes: `worker.embeddings_worker.encode` (não `app.services.embeddings.encode`) — worker importa `encode` diretamente via `from`
+
+**Testes: 15/15 passando** (`pytest tests/unit/test_embeddings_worker.py tests/unit/test_internal_endpoints.py`)
+
+**Proof of work:** `SDD/sprint_3/spk93_proof_of_work.md` — 16/16 cenários aprovados com API real
+
+**Resultados validados (2026-05-24):**
+- 462 vetores gerados na primeira chamada; segunda → 0 (idempotência confirmada)
+- Busca semântica funcional: query "epidemiologia dengue" → score 0.65 para artigo da Scientific Reports A1
+- `total_vetores: 480` confirmado no `/api/stats` após execução
+
+**Quirk descoberto no SPK-93:**
+18. **`uvicorn 0.48.0` quebrou o entry point CLI**: `ImportError: cannot import name 'main' from 'uvicorn.main'`. Corrigido pinando `uvicorn[standard]>=0.29.0,<0.48.0` no `requirements.txt`.
