@@ -3,10 +3,11 @@ Testes de integração — chamadas HTTP reais para http://localhost:8000.
 Requer o ambiente Docker rodando: docker compose up
 Os testes são somente leitura e independentes de ordem.
 """
+import os
 import pytest
 import httpx
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8001")
 
 
 @pytest.fixture(scope="module")
