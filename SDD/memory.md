@@ -4,9 +4,9 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 
 ---
 
-## Estado atual: Sprint II — SPK-11 + SPK-12 + SPK-13 + SPK-89 CONCLUÍDAS
+## Estado atual: Sprint III — SPK-92 CONCLUÍDA
 
-**Data última atualização:** 2026-05-23 (SPK-89 implementado)
+**Data última atualização:** 2026-05-24 (SPK-92 implementado)
 
 ---
 
@@ -274,10 +274,10 @@ Pesquisador (loop raiz): `/CURRICULO-VITAE` → `@NUMERO-IDENTIFICADOR`, `DADOS-
 | Fase 3 — SPK-12 | Enriquecimento Qualis CAPES | **CONCLUÍDO** (93.1% match) |
 | Fase 3 — SPK-13 | Enriquecimento CrossRef (DOI + resumo) + OpenAlex (JCR) | **CONCLUÍDO** — spec em `SDD/sprint_2/spk13_spec_CONCLUIDA.md` |
 | Fase 5 — SPK-89 | Atualização de métricas bibliométricas (`total_producoes`, `indice_h`, `total_a1_a2`) via SQL por pesquisador processado | **CONCLUÍDO** — spec em `SDD/sprint_2/spk89_spec_CONCLUIDA.md` |
+| SPK-92 | API FastAPI: busca textual, semântica e endpoints de suporte (local) | **CONCLUÍDO** — spec em `SDD/sprint_3/spk92_spec_CONCLUIDA.md` |
 | SPK-14 | Spike: avaliação de modelos de embedding (Sentence-Transformers vs OpenAI) | Pendente |
 | Fase 6 | Worker de embeddings (`all-MiniLM-L6-v2`) acionado via `POST /internal/trigger-embeddings` | Pendente |
 | Endpoint `/internal/trigger-etl` | FastAPI: recebe XMLs por upload, executa as 6 fases sem Apache Hop | Pendente |
-| API | Endpoints FastAPI: `POST /api/search/text`, `POST /api/search/semantic` | Pendente |
 | Frontend | Next.js 14 com busca, cards de produção, filtros sem reload | Pendente |
 
 ---
@@ -386,3 +386,70 @@ UPDATE pesquisadores SET
 WHERE id = ?;
 ```
 Produções sem JCR são excluídas do cálculo do `indice_h`. `total_producoes` conta todos os tipos.
+
+---
+
+### SPK-92 — CONCLUÍDO (Sprint 3 — API FastAPI)
+
+**Spec:** `SDD/sprint_3/spk92_spec_CONCLUIDA.md`
+
+**Estrutura implementada:**
+
+```
+backend/
+├── app/
+│   ├── main.py           — FastAPI app com lifespan (pool asyncpg), CORS, routers
+│   ├── database.py       — create_pool() com register_vector; get_db() dependency
+│   ├── schemas.py        — todos os modelos Pydantic (request + response)
+│   ├��─ routers/
+│   │   ├── search.py     — POST /api/search/text, POST /api/search/semantic
+│   │   ├── producoes.py  — GET /api/producoes/tipos, GET /api/producoes/{id}
+│   │   ├── pesquisadores.py — GET /api/pesquisadores/{id}, /{id}/producoes, /{id}/stats
+│   │   └── stats.py      — GET /api/stats
+│   └── services/
+│       ├── embeddings.py      — SentenceTransformer singleton (local_files_only quando cache presente)
+│       ├── text_search.py     — FTS com websearch_to_tsquery + filtros dinâmicos
+│       └── semantic_search.py — pgvector cosine similarity + filtros dinâmicos
+├── tests/unit/
+│   ├── test_text_search.py        — 6 testes (com dados, vazio, inválido, NULL, paginação)
+│   ├── test_semantic_search.py    — 5 testes (com dados, vazio, inválido, NULL, top-10)
+│   ├── test_embeddings.py         — 6 testes (shape, dtype, normalização, ranqueamento)
+│   └── test_pesquisadores_stats.py — 8 testes (stats, perfil, produções)
+├── requirements.txt
+└── pytest.ini
+```
+
+**Endpoints implementados:**
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/api/search/text` | FTS via tsvector/websearch_to_tsquery; paginação 20; filtros dinâmicos |
+| POST | `/api/search/semantic` | Top-10 via pgvector cosine; similarity_score obrigatório |
+| GET | `/api/stats` | total_producoes, total_pesquisadores, total_vetores, data_ultima_carga |
+| GET | `/api/producoes/tipos` | Lista dinâmica de tipo_producao com contagem |
+| GET | `/api/producoes/{id}` | Detalhe com pesquisador aninhado; 404 se não existe |
+| GET | `/api/pesquisadores/{id}` | Perfil com métricas pré-calculadas; 404 se não existe |
+| GET | `/api/pesquisadores/{id}/producoes` | Lista paginada (20/página); 404 se não existe |
+| GET | `/api/pesquisadores/{id}/stats` | `por_ano` e `por_qualis` para gráficos |
+
+**Comportamentos garantidos:**
+- Campos NULL omitidos nas respostas (`response_model_exclude_none=True`)
+- Busca retorna 200 + lista vazia, nunca 404 para ausência de dados
+- `similarity_score` sempre presente em `/api/search/semantic`
+- Filtro `qualis: ["B1+"]` expandido para `["B1","B2","B3","B4","B5","C"]` no backend
+- Filtro `jcr_nulo: true` traduz para `jcr IS NULL` (inclui eventos, livros, capítulos)
+- Métricas lidas dos campos pré-calculados (`total_producoes`, `indice_h`, `total_a1_a2`)
+- Paginação máxima de 20 itens em todos os endpoints de listagem
+
+**Testes: 25/25 passando** (`python -m pytest tests/unit/ -v`)
+
+**Quirks descobertos no SPK-92:**
+16. **`local_files_only=True` no SentenceTransformer**: Mesmo com modelo em cache local, `SentenceTransformer("all-MiniLM-L6-v2")` ainda faz chamadas de rede para checar atualizações — falha com SSL PKIX (mesma causa do ETL). Solução: detectar o diretório de cache e passar `local_files_only=True` quando presente.
+17. **`truststore.inject_into_ssl()`**: Para download inicial do modelo no Windows sem certificado Let's Encrypt: `pip install truststore` + `python -c "import truststore; truststore.inject_into_ssl(); from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"`.
+
+**Para iniciar o servidor:**
+```bash
+cd backend
+uvicorn app.main:app --reload --port 8000
+# Swagger disponível em http://localhost:8000/docs
+```

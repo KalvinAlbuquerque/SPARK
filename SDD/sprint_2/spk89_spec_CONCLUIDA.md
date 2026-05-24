@@ -26,6 +26,7 @@ Após a carga e o enriquecimento das produções científicas, o pipeline calcul
 Após a execução das Fases 1 a 4 do pipeline (extração, transformação, enriquecimento e carga), a tabela `pesquisadores` permanece com os campos `total_producoes`, `total_a1_a2` e `indice_h` zerados. Esses campos existem justamente para evitar cálculos custosos em tempo de consulta, mas sem um passo dedicado ao final do ETL, nunca são preenchidos.
 
 Como consequência:
+
 - Perfis de pesquisadores exibem sempre zero em todos os indicadores.
 - A API não consegue ordenar ou filtrar pesquisadores por desempenho bibliométrico.
 - O índice H — que depende do campo `jcr` preenchido pelo enriquecimento OpenAlex (SPK-13) — não pode ser calculado enquanto esse passo estiver ausente.
@@ -92,13 +93,13 @@ Executar o pipeline duas vezes consecutivas com os mesmos XMLs produz o mesmo re
 
 ## 6. Success Metrics
 
-| Métrica | Meta |
-|---------|------|
-| `total_producoes`, `total_a1_a2` e `indice_h` preenchidos após execução | 100% dos pesquisadores processados |
-| Pesquisadores fora da execução corrente inalterados | 100% |
-| Idempotência confirmada | 2 execuções consecutivas → mesmo resultado |
-| Pipeline não interrompido por pesquisador sem produções ou sem JCR | 100% dos casos |
-| `indice_h = 0` para pesquisadores sem produções com JCR preenchido | Comportamento correto verificado |
+| Métrica                                                                         | Meta                                          |
+| -------------------------------------------------------------------------------- | --------------------------------------------- |
+| `total_producoes`, `total_a1_a2` e `indice_h` preenchidos após execução | 100% dos pesquisadores processados            |
+| Pesquisadores fora da execução corrente inalterados                            | 100%                                          |
+| Idempotência confirmada                                                         | 2 execuções consecutivas → mesmo resultado |
+| Pipeline não interrompido por pesquisador sem produções ou sem JCR            | 100% dos casos                                |
+| `indice_h = 0` para pesquisadores sem produções com JCR preenchido           | Comportamento correto verificado              |
 
 ---
 
@@ -164,15 +165,13 @@ Leia esta spec e implemente o SPK-89 seguindo o **RoadMap_para_ETL.pdf (Seção 
      )
    WHERE id = ?;
    ```
-
 2. **Alimentar o step com os `pesquisador_id` da execução corrente** — obtidos do fluxo de pesquisadores já processados no workflow (não fazer SELECT * na tabela inteira).
-
 3. **Validar após execução** com os 8 currículos de teste:
+
    - `total_producoes` deve bater com as contagens já conhecidas no `memory.md` (ARTIGO: 247, EVENTO: 161, CAPITULO: 40, LIVRO: 14 — distribuídos entre os 7 pesquisadores com produções)
    - `total_a1_a2` deve bater com os estratos A1/A2 preenchidos pelo SPK-12 (A1: 64, A2: 40)
    - `indice_h` calculado a partir do `jcr` preenchido pelo SPK-13
    - Paulo Jorge Silveira Ferreira deve ter `total_producoes = 0`, `total_a1_a2 = 0`, `indice_h = 0`
-
 4. **Confirmar idempotência**: executar o pipeline duas vezes e verificar que os três campos não mudam na segunda execução.
 
 **Restrições obrigatórias:**
@@ -184,59 +183,3 @@ Leia esta spec e implemente o SPK-89 seguindo o **RoadMap_para_ETL.pdf (Seção 
 Ao concluir, renomeie este arquivo para `spk89_spec_CONCLUIDA.md` e atualize o `SDD/memory.md`.
 
 ---
-
-## Proof of Work
-
-**Data de execução:** 2026-05-23
-
-### Estado antes do ETL
-
-Todos os campos zerados (estado inicial):
-
-```
-          nome_completo          | total_producoes | total_a1_a2 | indice_h
----------------------------------+-----------------+-------------+----------
- Aloisio Santos Nascimento Filho |               0 |           0 |        0
- Eduardo Manuel de Freitas Jorge |               0 |           0 |        0
- Hugo Saba Pereira Cardoso       |               0 |           0 |        0
- José Garcia Vivas Miranda       |               0 |           0 |        0
- Maria Fernanda Rios Grassi      |               0 |           0 |        0
- Mayara Maria de Jesus Almeida   |               0 |           0 |        0
- Paulo Jorge Silveira Ferreira   |               0 |           0 |        0
- Raphael Silva do Rosário        |               0 |           0 |        0
-```
-
-### Resultado após 1ª execução (ETL completo — 122s)
-
-```
-          nome_completo          | total_producoes | total_a1_a2 | indice_h
----------------------------------+-----------------+-------------+----------
- Aloisio Santos Nascimento Filho |              74 |          13 |        3
- Eduardo Manuel de Freitas Jorge |              68 |           5 |        2
- Hugo Saba Pereira Cardoso       |              91 |          13 |        4
- José Garcia Vivas Miranda       |             127 |          45 |        6
- Maria Fernanda Rios Grassi      |              70 |          19 |        4
- Mayara Maria de Jesus Almeida   |              16 |           3 |        0
- Paulo Jorge Silveira Ferreira   |               0 |           0 |        0
- Raphael Silva do Rosário        |              16 |           6 |        2
-```
-
-### Resultado após 2ª execução (idempotência — 117s)
-
-Valores idênticos — idempotência confirmada ✓
-
-### Log do pipeline `metricas_pesquisadores`
-
-```
-Listar Pesquisadores.0  - Finished processing (I=8, O=0, R=0, W=8, U=0, E=0)
-Atualizar Metricas.0    - Finished processing (I=0, O=0, R=8, W=8, U=0, E=0)
-metricas_pesquisadores  - Pipeline duration : 0.167 seconds
-```
-
-**Observações:**
-- `R=8` — 8 pesquisadores selecionados pela janela `data_atualizacao >= NOW() - INTERVAL '2 hours'`
-- `W=8, E=0` — 8 UPDATEs executados sem erros SQL
-- Paulo Jorge Silveira Ferreira: `total_producoes=0, total_a1_a2=0, indice_h=0` — correto (sem produções no XML)
-- Mayara Maria de Jesus Almeida: `indice_h=0` — correto (produções sem JCR suficiente para h≥1)
-- José Garcia Vivas Miranda: `indice_h=6` — maior índice H do conjunto (127 produções, 45 A1/A2)
-- O `Log Erro Metrica` receber as 8 linhas é o quirk cosmético do `distribute=N` em copy mode (já documentado no memory.md) — `E=0` confirma que não houve erro real
