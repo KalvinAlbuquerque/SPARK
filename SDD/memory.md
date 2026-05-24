@@ -4,9 +4,9 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 
 ---
 
-## Estado atual: Sprint III — SPK-92 CONCLUÍDA
+## Estado atual: Sprint III — SPK-118 CONCLUÍDA
 
-**Data última atualização:** 2026-05-24 (SPK-92 implementado)
+**Data última atualização:** 2026-05-24 (SPK-118 implementado)
 
 ---
 
@@ -275,6 +275,7 @@ Pesquisador (loop raiz): `/CURRICULO-VITAE` → `@NUMERO-IDENTIFICADOR`, `DADOS-
 | Fase 3 — SPK-13 | Enriquecimento CrossRef (DOI + resumo) + OpenAlex (JCR) | **CONCLUÍDO** — spec em `SDD/sprint_2/spk13_spec_CONCLUIDA.md` |
 | Fase 5 — SPK-89 | Atualização de métricas bibliométricas (`total_producoes`, `indice_h`, `total_a1_a2`) via SQL por pesquisador processado | **CONCLUÍDO** — spec em `SDD/sprint_2/spk89_spec_CONCLUIDA.md` |
 | SPK-92 | API FastAPI: busca textual, semântica e endpoints de suporte (local) | **CONCLUÍDO** — spec em `SDD/sprint_3/spk92_spec_CONCLUIDA.md` |
+| SPK-118 | Dockerfile da API + integração no docker-compose + testes de integração | **CONCLUÍDO** — spec em `SDD/sprint_3/spk118_spec_CONCLUIDA.md` |
 | SPK-14 | Spike: avaliação de modelos de embedding (Sentence-Transformers vs OpenAI) | Pendente |
 | Fase 6 | Worker de embeddings (`all-MiniLM-L6-v2`) acionado via `POST /internal/trigger-embeddings` | Pendente |
 | Endpoint `/internal/trigger-etl` | FastAPI: recebe XMLs por upload, executa as 6 fases sem Apache Hop | Pendente |
@@ -453,3 +454,37 @@ cd backend
 uvicorn app.main:app --reload --port 8000
 # Swagger disponível em http://localhost:8000/docs
 ```
+
+---
+
+### SPK-118 — CONCLUÍDO (Sprint 3 — Docker + Testes de Integração)
+
+**Spec:** `SDD/sprint_3/spk118_spec_CONCLUIDA.md`
+
+**Artefatos criados:**
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `backend/Dockerfile` | Imagem Python 3.11-slim; instala deps de `requirements.txt`; `CMD uvicorn --reload` para hot-reload |
+| `docker-compose.yml` | Serviço `api` adicionado; `depends_on db: condition: service_healthy`; volume `./backend:/app` (hot-reload) + `~/.cache/huggingface:/root/.cache/huggingface` (modelo em cache) |
+| `backend/tests/integration/__init__.py` | Marcador de pacote |
+| `backend/tests/integration/test_api.py` | 32 testes de integração via `httpx.Client` — somente leitura, ordem-independentes |
+
+**Como subir o ambiente:**
+```bash
+# Copiar .env.example para .env e preencher POSTGRES_PASSWORD
+docker compose up --build
+# Swagger: http://localhost:8000/docs
+```
+
+**Como executar os testes de integração (com Docker rodando):**
+```bash
+cd backend
+pytest tests/integration/ -v
+```
+
+**Decisões de design:**
+- `TRANSFORMERS_OFFLINE=1` e `HF_HUB_OFFLINE=1` no container — impede chamadas de rede ao HuggingFace; modelo vem do volume montado do host (`~/.cache/huggingface`)
+- `DATABASE_URL` dentro do container aponta para `db` (nome do serviço), não `localhost`
+- Testes de integração obtêm IDs válidos dinamicamente via busca textual — não hardcoded
+- Todos os 32 testes são somente leitura: zero escrita no banco durante os testes
