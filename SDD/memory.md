@@ -468,7 +468,9 @@ uvicorn app.main:app --reload --port 8000
 | `backend/Dockerfile` | Imagem Python 3.11-slim; instala deps de `requirements.txt`; `CMD uvicorn --reload` para hot-reload |
 | `docker-compose.yml` | Serviço `api` adicionado; `depends_on db: condition: service_healthy`; volume `./backend:/app` (hot-reload) + `~/.cache/huggingface:/root/.cache/huggingface` (modelo em cache) |
 | `backend/tests/integration/__init__.py` | Marcador de pacote |
-| `backend/tests/integration/test_api.py` | 32 testes de integração via `httpx.Client` — somente leitura, ordem-independentes |
+| `backend/tests/integration/test_api.py` | 39 testes de integração via `httpx.Client` — somente leitura, ordem-independentes |
+| `backend/tests/integration/generate_proof.py` | Script que gera `SDD/sprint_3/spk118_proof_of_work.md` com request/response/assertions reais por endpoint |
+| `SDD/sprint_3/spk118_proof_of_work.md` | Proof of work gerado com 18 cenários (18/18 PASS) |
 
 **Como subir o ambiente:**
 ```bash
@@ -487,4 +489,9 @@ pytest tests/integration/ -v
 - `TRANSFORMERS_OFFLINE=1` e `HF_HUB_OFFLINE=1` no container — impede chamadas de rede ao HuggingFace; modelo vem do volume montado do host (`~/.cache/huggingface`)
 - `DATABASE_URL` dentro do container aponta para `db` (nome do serviço), não `localhost`
 - Testes de integração obtêm IDs válidos dinamicamente via busca textual — não hardcoded
-- Todos os 32 testes são somente leitura: zero escrita no banco durante os testes
+- Todos os 39 testes são somente leitura: zero escrita no banco durante os testes
+- Operadores booleanos AND/OR/NOT implementados em `text_search.py::normalize_query()`:
+  - `AND` é implícito no `websearch_to_tsquery` (removido da query)
+  - `OR` é nativo do `websearch_to_tsquery` (passado diretamente)
+  - `NOT palavra` → `-palavra` (sintaxe do websearch_to_tsquery)
+- Busca semântica retorna lista vazia porque `total_vetores = 0` — worker de embeddings (Fase 6) ainda não implementado; `vetores` table está vazia. Os testes de semântica cobrem apenas estrutura da resposta, não resultados reais.

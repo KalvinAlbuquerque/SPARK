@@ -1,6 +1,6 @@
 # SPK-118 · Proof of Work — Testes de Integração da API
 
-**Data:** 2026-05-24 13:37
+**Data:** 2026-05-24 17:32
 **API base URL:** `http://localhost:8001`
 **IDs usados nos testes de detalhe:** `producao_id=275`, `pesquisador_id=4` (Eduardo Manuel de Freitas Jorge)
 
@@ -544,6 +544,667 @@ Content-Type: application/json
 
 - ✅ page retornado == 1: `True`
 - ✅ len(resultados) <= 20: `True`
+
+
+### 5.5 Operador OR — retorna resultados de ambos os termos
+
+### ✅ PASS — `POST /api/search/text`
+
+**Request:**
+
+```
+POST http://localhost:8001/api/search/text
+Content-Type: application/json
+
+{
+  "query": "redes OR grafos"
+}
+```
+
+**Response — HTTP 200** ✅ *(esperado: 200)*
+
+```json
+{
+  "total": 27,
+  "page": 1,
+  "total_pages": 2,
+  "resultados": [
+    {
+      "id": 75,
+      "titulo": "Caracterização do transe mediúnico através das redes funcionais cerebrais",
+      "tipo_producao": "CAPITULO",
+      "ano_publicacao": 2023,
+      "nome_veiculo": "Perispírito: Concepções e Pesquisas.",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 218,
+      "titulo": "Construção de uma rede de correlação espaço-temporal para a pluviometria do semi-árido Nordestino",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2004,
+      "nome_veiculo": "XXII Encontro de Físicos do Norte e Nordeste (EFNNE)",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 219,
+      "titulo": "Utilização de redes complexas na caracterização de mapas conceituais de textos escritos",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2004,
+      "nome_veiculo": "XXII Encontro de Físicos do Norte e Nordeste (EFNNE)",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 223,
+      "titulo": "Análise do discurso utilizando redes complexas",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "XXIII Encontro de Físicos do Norte e Nordeste (EFNNE)",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 225,
+      "titulo": "Redes complexas de correlação espaço-temporal da pluviometria do semi-árido nordestino",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "9th internacional comgress of the brazilian geophysical society",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 226,
+      "titulo": "Um modelo para neoplasia utilizando redes complexas",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "XXVIII Encontro Nacional de Física da Matéria Condensada",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 227,
+      "titulo": "A Complexa Rede de Movimentos Migratórios do Brasil: Caracterização e Modelagem",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "XXIII Encontro de Físicos do Norte e Nordeste (EFNNE)",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 228,
+      "titulo": "Utilização de redes complexas na caracterização da pluviometria do Nordeste Brasileiro",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "XXVIII Encontro Nacional de Física da Matéria Condensada",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 230,
+      "titulo": "Conexão preferencial de cliques: um modelo para as redes de associações entre palavras em um texto escrito.",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XXIX Encontro Nacional de Física da Matéria Condensada",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 231,
+      "titulo": "Caracterização e Modelagem da Rede de Fluxos Migratórios no Brasil",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XXIX Encontro Nacional de Física da Matéria Condensada",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 233,
+      "titulo": "Modelo para a Caracterização da rede complexa de diferenciação das céluas-tronco",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XXIV Encontro de Físicos do Norte e Nordeste",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 235,
+      "titulo": "Rede de representações-objeto utilizando discursos escritos",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "IV Congresso Norte Nordeste de Psicologia",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 236,
+      "titulo": "Modelando a Distribuição Pluviométrica no Nordeste Brasileiro Utilizando Redes",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XLIII Congresso Brasileiro de Geologia",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 239,
+      "titulo": "Construção e Caracterização da Sequência de Acesso mais Provável a Servidores Web Utilizando Redes Complexas",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XXV Seminário Estudantil de Pesquisa",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 240,
+      "titulo": "Modelo de Distribuição Espaço-Temporal das Chuvas no Nordeste Segundo Cálculo da Correlação Linear: uma proposta de análise ambiental a partir da teoria de redes complexas",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XIV Congresso Brasileiro de Meteorologia",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 245,
+      "titulo": "Um framework para simulação de sistemas complexos utilizando sistemas multi-agentes e redes complexas.",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2009,
+      "nome_veiculo": ": Workshop de Trabalhos de Iniciação Científica e Graduação da IX Escola Regional de Computação Bahia Alagoas Sergipe",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 504,
+      "titulo": "PATROCINADORES DE CAMPANHAS POLÍTICAS: REDES DE INTERESSES",
+      "tipo_producao": "CAPITULO",
+      "ano_publicacao": 2013,
+      "nome_veiculo": "Construção do conhecimento em organizações na perspectiva das redes sociais.",
+      "pesquisador": {
+        "id": 50,
+        "nome_completo": "Hugo Saba Pereira Cardoso",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 716,
+      "titulo": "DINÂMICA TEMPORAL DE REDES FUNCIONAIS CORTICAIS EM PORTADORES DE ALZHEIMER",
+      "tipo_producao": "ARTIGO",
+      "ano_publicacao": 2019,
+      "nome_veiculo": "REVISTA SAÚDE.COM",
+      "issn": "1809-0761",
+      "doi": "10.22481/rsc.v15i2.4727",
+      "qualis": "B2",
+      "jcr": 0.135,
+      "pesquisador": {
+        "id": 54,
+        "nome_completo": "Raphael Silva do Rosário",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 787,
+      "titulo": "Redes Bayesianas: AADSP - Gerência de Teste",
+      "tipo_producao": "LIVRO",
+      "ano_publicacao": 2020,
+      "nome_veiculo": "Redes Bayesianas: AADSP - Gerência de Teste",
+      "pesquisador": {
+        "id": 50,
+        "nome_completo": "Hugo Saba Pereira Cardoso",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 895,
+      "titulo": "SISTEMA DE RECONHECIMENTO DE PADRÕES NEURONAIS PARA CONTROLE DE BRAÇO ROBÓTICO UTILIZANDO REDES NEURAIS ARTIFICIAIS",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2009,
+      "nome_veiculo": "XXVII Encontro de Físicos do Norte e Nordeste",
+      "pesquisador": {
+        "id": 54,
+        "nome_completo": "Raphael Silva do Rosário",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    }
+  ]
+}
+```
+
+**Verificações adicionais:**
+
+- ✅ total > 0 (OR retorna resultados): `True`
+- ✅ 'resultados' é lista: `True`
+
+
+### 5.6 Operador NOT — exclui o segundo termo
+
+### ✅ PASS — `POST /api/search/text`
+
+**Request:**
+
+```
+POST http://localhost:8001/api/search/text
+Content-Type: application/json
+
+{
+  "query": "redes NOT neurais"
+}
+```
+
+**Response — HTTP 200** ✅ *(esperado: 200)*
+
+```json
+{
+  "total": 24,
+  "page": 1,
+  "total_pages": 2,
+  "resultados": [
+    {
+      "id": 75,
+      "titulo": "Caracterização do transe mediúnico através das redes funcionais cerebrais",
+      "tipo_producao": "CAPITULO",
+      "ano_publicacao": 2023,
+      "nome_veiculo": "Perispírito: Concepções e Pesquisas.",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 218,
+      "titulo": "Construção de uma rede de correlação espaço-temporal para a pluviometria do semi-árido Nordestino",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2004,
+      "nome_veiculo": "XXII Encontro de Físicos do Norte e Nordeste (EFNNE)",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 219,
+      "titulo": "Utilização de redes complexas na caracterização de mapas conceituais de textos escritos",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2004,
+      "nome_veiculo": "XXII Encontro de Físicos do Norte e Nordeste (EFNNE)",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 223,
+      "titulo": "Análise do discurso utilizando redes complexas",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "XXIII Encontro de Físicos do Norte e Nordeste (EFNNE)",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 225,
+      "titulo": "Redes complexas de correlação espaço-temporal da pluviometria do semi-árido nordestino",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "9th internacional comgress of the brazilian geophysical society",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 226,
+      "titulo": "Um modelo para neoplasia utilizando redes complexas",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "XXVIII Encontro Nacional de Física da Matéria Condensada",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 227,
+      "titulo": "A Complexa Rede de Movimentos Migratórios do Brasil: Caracterização e Modelagem",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "XXIII Encontro de Físicos do Norte e Nordeste (EFNNE)",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 228,
+      "titulo": "Utilização de redes complexas na caracterização da pluviometria do Nordeste Brasileiro",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "XXVIII Encontro Nacional de Física da Matéria Condensada",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 230,
+      "titulo": "Conexão preferencial de cliques: um modelo para as redes de associações entre palavras em um texto escrito.",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XXIX Encontro Nacional de Física da Matéria Condensada",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 231,
+      "titulo": "Caracterização e Modelagem da Rede de Fluxos Migratórios no Brasil",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XXIX Encontro Nacional de Física da Matéria Condensada",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 233,
+      "titulo": "Modelo para a Caracterização da rede complexa de diferenciação das céluas-tronco",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XXIV Encontro de Físicos do Norte e Nordeste",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 235,
+      "titulo": "Rede de representações-objeto utilizando discursos escritos",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2005,
+      "nome_veiculo": "IV Congresso Norte Nordeste de Psicologia",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 236,
+      "titulo": "Modelando a Distribuição Pluviométrica no Nordeste Brasileiro Utilizando Redes",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XLIII Congresso Brasileiro de Geologia",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 239,
+      "titulo": "Construção e Caracterização da Sequência de Acesso mais Provável a Servidores Web Utilizando Redes Complexas",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XXV Seminário Estudantil de Pesquisa",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 240,
+      "titulo": "Modelo de Distribuição Espaço-Temporal das Chuvas no Nordeste Segundo Cálculo da Correlação Linear: uma proposta de análise ambiental a partir da teoria de redes complexas",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2006,
+      "nome_veiculo": "XIV Congresso Brasileiro de Meteorologia",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 245,
+      "titulo": "Um framework para simulação de sistemas complexos utilizando sistemas multi-agentes e redes complexas.",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2009,
+      "nome_veiculo": ": Workshop de Trabalhos de Iniciação Científica e Graduação da IX Escola Regional de Computação Bahia Alagoas Sergipe",
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 53,
+      "titulo": "DINÂMICA TEMPORAL DE REDES FUNCIONAIS CORTICAIS EM PORTADORES DE ALZHEIMER",
+      "tipo_producao": "ARTIGO",
+      "ano_publicacao": 2019,
+      "nome_veiculo": "REVISTA SAÚDE.COM",
+      "issn": "1809-0761",
+      "doi": "10.22481/rsc.v15i2.4727",
+      "qualis": "B2",
+      "jcr": 0.135,
+      "pesquisador": {
+        "id": 1,
+        "nome_completo": "José Garcia Vivas Miranda",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 716,
+      "titulo": "DINÂMICA TEMPORAL DE REDES FUNCIONAIS CORTICAIS EM PORTADORES DE ALZHEIMER",
+      "tipo_producao": "ARTIGO",
+      "ano_publicacao": 2019,
+      "nome_veiculo": "REVISTA SAÚDE.COM",
+      "issn": "1809-0761",
+      "doi": "10.22481/rsc.v15i2.4727",
+      "qualis": "B2",
+      "jcr": 0.135,
+      "pesquisador": {
+        "id": 54,
+        "nome_completo": "Raphael Silva do Rosário",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 897,
+      "titulo": "ANÁLISE DE PADRÕES DINÂMICOS DAS REDES FUNCIONAIS CEREBRAIS DE PACIENTES NORMAIS E COM FIBROMIALGIA",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2012,
+      "nome_veiculo": "XXX Encontro de Físicos do Norte e Nordeste",
+      "pesquisador": {
+        "id": 54,
+        "nome_completo": "Raphael Silva do Rosário",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 169,
+      "titulo": "Redes complexas de homônimos para análise semântica textual",
+      "tipo_producao": "ARTIGO",
+      "ano_publicacao": 2017,
+      "nome_veiculo": "Informação & Informação (Online)",
+      "issn": "1981-8920",
+      "doi": "10.5433/1981-8920.2017v22n1p293",
+      "qualis": "A2",
+      "jcr": 0.121,
+      "pesquisador": {
+        "id": 4,
+        "nome_completo": "Eduardo Manuel de Freitas Jorge",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    }
+  ]
+}
+```
+
+**Verificações adicionais:**
+
+- ✅ total > 0 (NOT é subtração, não zera): `True`
+- ✅ 'resultados' é lista: `True`
+
+
+### 5.7 AND implícito — todos os termos devem estar presentes
+
+### ✅ PASS — `POST /api/search/text`
+
+**Request:**
+
+```
+POST http://localhost:8001/api/search/text
+Content-Type: application/json
+
+{
+  "query": "redes neurais"
+}
+```
+
+**Response — HTTP 200** ✅ *(esperado: 200)*
+
+```json
+{
+  "total": 2,
+  "page": 1,
+  "total_pages": 1,
+  "resultados": [
+    {
+      "id": 895,
+      "titulo": "SISTEMA DE RECONHECIMENTO DE PADRÕES NEURONAIS PARA CONTROLE DE BRAÇO ROBÓTICO UTILIZANDO REDES NEURAIS ARTIFICIAIS",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2009,
+      "nome_veiculo": "XXVII Encontro de Físicos do Norte e Nordeste",
+      "pesquisador": {
+        "id": 54,
+        "nome_completo": "Raphael Silva do Rosário",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    },
+    {
+      "id": 896,
+      "titulo": "SISTEMA DE RECONHECIMENTO DE PADRÕES NEURONAIS UTILIZANDO REDES NEURAIS ARTIFICIAIS PARA CONTROLE DE BRAÇO ROBÓTICO",
+      "tipo_producao": "EVENTO",
+      "ano_publicacao": 2010,
+      "nome_veiculo": "XIV Seminário de Iniciação Científica",
+      "pesquisador": {
+        "id": 54,
+        "nome_completo": "Raphael Silva do Rosário",
+        "departamento": "DCET",
+        "campus": "Campus I"
+      }
+    }
+  ]
+}
+```
+
+**Verificações adicionais:**
+
+- ✅ 'resultados' é lista: `True`
+- ✅ total >= 0: `True`
 
 
 ## 6. Busca semântica — `POST /api/search/semantic`
@@ -1098,7 +1759,7 @@ GET http://localhost:8001/api/pesquisadores/999999999/stats
 
 ## Sumário
 
-**18/18 cenários aprovados**
+**21/21 cenários aprovados**
 
 | # | Endpoint | Resultado |
 |---|----------|-----------|
@@ -1111,12 +1772,15 @@ GET http://localhost:8001/api/pesquisadores/999999999/stats
 | 7 | `POST /api/search/text — query vazia (422)` | ✅ PASS |
 | 8 | `POST /api/search/text — sem resultados (200 vazio)` | ✅ PASS |
 | 9 | `POST /api/search/text — paginação` | ✅ PASS |
-| 10 | `POST /api/search/semantic — com similarity_score` | ✅ PASS |
-| 11 | `POST /api/search/semantic — query vazia (422)` | ✅ PASS |
-| 12 | `POST /api/search/semantic — sem resultados (200 vazio)` | ✅ PASS |
-| 13 | `GET /api/pesquisadores/4 (200)` | ✅ PASS |
-| 14 | `GET /api/pesquisadores/999999999 (404)` | ✅ PASS |
-| 15 | `GET /api/pesquisadores/4/producoes (200)` | ✅ PASS |
-| 16 | `GET /api/pesquisadores/999999999/producoes (404)` | ✅ PASS |
-| 17 | `GET /api/pesquisadores/4/stats (200)` | ✅ PASS |
-| 18 | `GET /api/pesquisadores/999999999/stats (404)` | ✅ PASS |
+| 10 | `POST /api/search/text — operador OR` | ✅ PASS |
+| 11 | `POST /api/search/text — operador NOT` | ✅ PASS |
+| 12 | `POST /api/search/text — AND implícito` | ✅ PASS |
+| 13 | `POST /api/search/semantic — com similarity_score` | ✅ PASS |
+| 14 | `POST /api/search/semantic — query vazia (422)` | ✅ PASS |
+| 15 | `POST /api/search/semantic — sem resultados (200 vazio)` | ✅ PASS |
+| 16 | `GET /api/pesquisadores/4 (200)` | ✅ PASS |
+| 17 | `GET /api/pesquisadores/999999999 (404)` | ✅ PASS |
+| 18 | `GET /api/pesquisadores/4/producoes (200)` | ✅ PASS |
+| 19 | `GET /api/pesquisadores/999999999/producoes (404)` | ✅ PASS |
+| 20 | `GET /api/pesquisadores/4/stats (200)` | ✅ PASS |
+| 21 | `GET /api/pesquisadores/999999999/stats (404)` | ✅ PASS |

@@ -159,6 +159,27 @@ def test_search_text_sem_campos_null_nos_cards(client):
             assert value is not None, f"Campo NULL encontrado no card: {card}"
 
 
+def test_search_text_operador_or(client):
+    """OR nativo do websearch_to_tsquery: retorna resultados de ambos os termos."""
+    data = client.post("/api/search/text", json={"query": "redes OR grafos"}).json()
+    assert data["total"] > 0, "Operador OR deve retornar resultados com termos presentes no banco"
+
+
+def test_search_text_operador_not(client):
+    """NOT mapeado via normalize_query: exclui o segundo termo."""
+    data_sem_not = client.post("/api/search/text", json={"query": "redes"}).json()
+    data_com_not = client.post("/api/search/text", json={"query": "redes NOT neurais"}).json()
+    assert data_com_not["total"] > 0, "NOT deve retornar resultados (subtração, não zero)"
+    assert data_com_not["total"] <= data_sem_not["total"], "NOT deve reduzir ou manter o total de resultados"
+
+
+def test_search_text_operador_and_implicito(client):
+    """AND é implícito em websearch_to_tsquery: todos os termos devem estar presentes."""
+    data_geral = client.post("/api/search/text", json={"query": "redes"}).json()
+    data_restrito = client.post("/api/search/text", json={"query": "redes neurais"}).json()
+    assert data_restrito["total"] <= data_geral["total"], "AND implícito deve restringir ou manter o total"
+
+
 # ── POST /api/search/semantic ─────────────────────────────────────────────────
 
 def test_search_semantic_200(client):

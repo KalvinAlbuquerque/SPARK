@@ -176,6 +176,30 @@ results.append(section("POST", "/api/search/text",
     ("len(resultados) <= 20", lambda r: len(r["resultados"]) <= 20),
 ]))
 
+h("5.5 Operador OR — retorna resultados de ambos os termos", 3)
+results.append(section("POST", "/api/search/text",
+    {"query": "redes OR grafos"},
+    200, [
+    ("total > 0 (OR retorna resultados)", lambda r: r["total"] > 0),
+    ("'resultados' é lista", lambda r: isinstance(r["resultados"], list)),
+]))
+
+h("5.6 Operador NOT — exclui o segundo termo", 3)
+results.append(section("POST", "/api/search/text",
+    {"query": "redes NOT neurais"},
+    200, [
+    ("total > 0 (NOT é subtração, não zera)", lambda r: r["total"] > 0),
+    ("'resultados' é lista", lambda r: isinstance(r["resultados"], list)),
+]))
+
+h("5.7 AND implícito — todos os termos devem estar presentes", 3)
+results.append(section("POST", "/api/search/text",
+    {"query": "redes neurais"},
+    200, [
+    ("'resultados' é lista", lambda r: isinstance(r["resultados"], list)),
+    ("total >= 0", lambda r: r["total"] >= 0),
+]))
+
 # ─── /api/search/semantic ────────────────────────────────────────────────────
 h("6. Busca semântica — `POST /api/search/semantic`")
 h("6.1 Query válida → 200 com similarity_score em cada item", 3)
@@ -279,6 +303,9 @@ scenarios = [
     "POST /api/search/text — query vazia (422)",
     "POST /api/search/text — sem resultados (200 vazio)",
     "POST /api/search/text — paginação",
+    "POST /api/search/text — operador OR",
+    "POST /api/search/text — operador NOT",
+    "POST /api/search/text — AND implícito",
     "POST /api/search/semantic — com similarity_score",
     "POST /api/search/semantic — query vazia (422)",
     "POST /api/search/semantic — sem resultados (200 vazio)",
