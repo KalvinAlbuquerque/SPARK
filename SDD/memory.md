@@ -41,6 +41,7 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 
 **SPK-38 — UPSERT e validação (CONCLUÍDO — executado e validado)**
 - UPSERT pesquisadores: `ON CONFLICT (lattes_id) DO UPDATE SET ...`
+  - `departamento` e `campus` usam `COALESCE(EXCLUDED.campo, pesquisadores.campo)` — se o XML vier sem esses atributos, o valor anterior no banco é preservado em vez de ser sobrescrito por NULL
 - UPSERT produções: `ON CONFLICT (pesquisador_id, titulo, ano_publicacao) DO UPDATE SET doi=COALESCE(...), resumo=COALESCE(...), qualis=COALESCE(...), jcr=COALESCE(...)` — preserva campos já enriquecidos em reprocessamentos
 - **Idempotência confirmada:** 2 execuções consecutivas → mesmos 8 pesquisadores, 462 produções, sem duplicatas
 
@@ -121,8 +122,8 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 |--------|--------------|------------|
 | `lattes_id` | Sim | Do XML |
 | `nome_completo` | Sim | Do XML |
-| `departamento` | Sim | Campo adicionado manualmente no XML |
-| `campus` | Sim | Campo adicionado manualmente no XML |
+| `departamento` | Sim (quando presente no XML) | COALESCE preserva valor anterior se o XML vier sem o atributo |
+| `campus` | Sim (quando presente no XML) | COALESCE preserva valor anterior se o XML vier sem o atributo |
 | `resumo` | Sim (quando existe) | NULL se XML não tiver o campo |
 | `data_atualizacao` | Sim | NOW() no UPSERT |
 | `total_producoes` | **Não** (fica 0) | Métrica calculada — sprint futura |

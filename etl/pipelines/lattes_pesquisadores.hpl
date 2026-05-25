@@ -241,8 +241,8 @@ UPSERT via ON CONFLICT (lattes_id).</note>
 VALUES (?, ?, ?, ?, ?, NOW())
 ON CONFLICT (lattes_id) DO UPDATE SET
   nome_completo    = EXCLUDED.nome_completo,
-  departamento     = EXCLUDED.departamento,
-  campus           = EXCLUDED.campus,
+  departamento     = COALESCE(EXCLUDED.departamento, pesquisadores.departamento),
+  campus           = COALESCE(EXCLUDED.campus,       pesquisadores.campus),
   resumo           = EXCLUDED.resumo,
   data_atualizacao = NOW();</sql>
     <arguments>

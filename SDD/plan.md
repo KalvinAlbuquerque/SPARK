@@ -61,19 +61,6 @@ O SPARK é uma plataforma de busca de produções científicas da UNEB que orque
 
 ## Project Structure
 
-### Documentação do projeto
-
-```
-SDD/
-├── constitution.md       # Princípios imutáveis do projeto
-├── plan.md               # Este arquivo
-├── data-model.md         # Esquema de banco (ER + descrição das tabelas)
-└── contracts/
-    ├── search-text.md    # Contrato POST /api/search/text
-    ├── search-semantic.md # Contrato POST /api/search/semantic
-    └── trigger-etl.md    # Contrato POST /internal/trigger-etl
-```
-
 ### Código-fonte (raiz do repositório)
 
 ```
@@ -111,11 +98,6 @@ SDD/
 │   │   └── api.ts                # Funções de chamada à FastAPI
 │   └── tests/
 │
-├── etl/
-│   ├── pipelines/                # Arquivos .hop do pipeline Apache Hop
-│   ├── worker/
-│   │   └── embeddings_worker.py  # Mesmo worker do backend, acionado pós-ETL
-│   └── README.md                 # Instruções de instalação e execução
 │
 ├── docker-compose.yml            # Ambiente de desenvolvimento local
 ├── .env.example                  # Variáveis de ambiente documentadas

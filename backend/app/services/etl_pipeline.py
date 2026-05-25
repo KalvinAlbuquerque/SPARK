@@ -125,8 +125,8 @@ async def _fase_extracao(
         VALUES ($1, $2, $3, $4, $5, NOW())
         ON CONFLICT (lattes_id) DO UPDATE SET
             nome_completo    = EXCLUDED.nome_completo,
-            departamento     = EXCLUDED.departamento,
-            campus           = EXCLUDED.campus,
+            departamento     = COALESCE(EXCLUDED.departamento, pesquisadores.departamento),
+            campus           = COALESCE(EXCLUDED.campus,       pesquisadores.campus),
             resumo           = EXCLUDED.resumo,
             data_atualizacao = NOW()
         RETURNING id

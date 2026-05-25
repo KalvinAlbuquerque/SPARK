@@ -6,13 +6,13 @@ Pipeline Apache Hop que extrai dados dos currículos Lattes (XML), carrega nas t
 
 ## Pré-requisitos
 
-| Requisito               | Versão mínima | Versão validada |
-| ----------------------- | ------------- | --------------- |
-| Java (JDK)              | 11            | 21.0.9          |
-| Apache Hop              | 2.x           | 2.15.0          |
-| Docker + Docker Compose | qualquer      | Docker 27.x     |
-| PostgreSQL              | 15            | 15 (pgvector/pgvector:pg15) |
-| PostgreSQL driver JDBC  | incluído no Hop | — |
+| Requisito               | Versão mínima  | Versão validada            |
+| ----------------------- | ---------------- | --------------------------- |
+| Java (JDK)              | 11               | 21.0.9                      |
+| Apache Hop              | 2.x              | 2.15.0                      |
+| Docker + Docker Compose | qualquer         | Docker 27.x                 |
+| PostgreSQL              | 15               | 15 (pgvector/pgvector:pg15) |
+| PostgreSQL driver JDBC  | incluído no Hop | —                          |
 
 ---
 
@@ -61,12 +61,12 @@ Copy-Item .env.example .env
 
 Variáveis lidas do `.env` relevantes para o ETL:
 
-| Variável | Descrição | Obrigatório |
-|---|---|---|
-| `POSTGRES_PASSWORD` | Senha do banco PostgreSQL | Sim (para setup) |
-| `XML_DIR` | Diretório com os XMLs Lattes | Não (padrão: `data/xml`) |
-| `ETL_EMAIL` | E-mail para CrossRef Polite Pool | Recomendado (acesso mais rápido) |
-| `OPENALEX_APIKEY` | API key gratuita do OpenAlex | Sim para SPK-13 (crie em openalex.org) |
+| Variável             | Descrição                      | Obrigatório                           |
+| --------------------- | -------------------------------- | -------------------------------------- |
+| `POSTGRES_PASSWORD` | Senha do banco PostgreSQL        | Sim (para setup)                       |
+| `XML_DIR`           | Diretório com os XMLs Lattes    | Não (padrão:`data/xml`)            |
+| `ETL_EMAIL`         | E-mail para CrossRef Polite Pool | Recomendado (acesso mais rápido)      |
+| `OPENALEX_APIKEY`   | API key gratuita do OpenAlex     | Sim para SPK-13 (crie em openalex.org) |
 
 > Variáveis já exportadas no terminal **não são sobrescritas** pelo `.env`.
 
@@ -133,6 +133,8 @@ Cada XML deve ter os atributos `DEPARTAMENTO` e `CAMPUS` inseridos manualmente n
 
 Os XMLs em `data/xml/` já possuem esses campos preenchidos e podem ser usados como referência.
 
+> **Reprocessamento seguro:** se um XML for reprocessado sem os atributos `DEPARTAMENTO` ou `CAMPUS`, o UPSERT usa `COALESCE` e preserva o valor já salvo no banco — o campo não é sobrescrito por `NULL`.
+
 ### 3.3 Colocar os XMLs no diretório
 
 Coloque todos os arquivos `.xml` em um diretório (ex: `data/xml/`) e configure a variável `XML_DIR` apontando para ele.
@@ -157,10 +159,10 @@ O repositório já contém o arquivo `data/qualis/qualis_capes.csv` gerado a par
 
 Execute o script de setup **uma vez** — ele criptografa a senha, grava `spark_db.json` no formato correto do Hop 2.x e registra o projeto `spark` sem abrir a GUI.
 
-| Sistema | Script | Uso |
-|---------|--------|-----|
-| Windows | `scripts/setup.ps1` | PowerShell |
-| Linux/macOS | `scripts/setup.sh` | bash |
+| Sistema     | Script                | Uso        |
+| ----------- | --------------------- | ---------- |
+| Windows     | `scripts/setup.ps1` | PowerShell |
+| Linux/macOS | `scripts/setup.sh`  | bash       |
 
 ### Modo automatico (sem prompt)
 
@@ -210,6 +212,7 @@ HOP_HOME=/opt/apache-hop DB_HOST=localhost DB_PORT=5432 DB_NAME=spark DB_USER=sp
 ```
 
 O script (em ambas as versoes) faz:
+
 1. Obtem a senha via variavel de ambiente, parametro ou prompt interativo
 2. Criptografa a senha com `hop-encrypt` (bat ou sh)
 3. Grava `etl/metadata/rdbms/spark_db.json` no formato aninhado do Hop 2.x
@@ -221,10 +224,10 @@ O script (em ambas as versoes) faz:
 
 ### Via script (recomendado — sem GUI)
 
-| Sistema | Script | Uso |
-|---------|--------|-----|
-| Windows | `scripts/run-etl.ps1` | PowerShell |
-| Linux/macOS | `scripts/run-etl.sh` | bash |
+| Sistema     | Script                  | Uso        |
+| ----------- | ----------------------- | ---------- |
+| Windows     | `scripts/run-etl.ps1` | PowerShell |
+| Linux/macOS | `scripts/run-etl.sh`  | bash       |
 
 **Windows (PowerShell):**
 
@@ -320,12 +323,12 @@ FROM etl_logs ORDER BY iniciado_em DESC LIMIT 5;
 
 **Resultado esperado com os 8 XMLs de `data/xml/`:**
 
-| Tipo | Qtd |
-|------|-----|
-| ARTIGO | 247 |
-| EVENTO | 161 |
-| CAPITULO | 40 |
-| LIVRO | 14 |
+| Tipo            | Qtd           |
+| --------------- | ------------- |
+| ARTIGO          | 247           |
+| EVENTO          | 161           |
+| CAPITULO        | 40            |
+| LIVRO           | 14            |
 | **Total** | **462** |
 
 ---
@@ -384,27 +387,27 @@ etl/
 
 ### Pesquisadores
 
-| Campo no banco | Fonte no XML |
-|----------------|-------------|
-| `lattes_id` | `CURRICULO-VITAE/@NUMERO-IDENTIFICADOR` |
-| `nome_completo` | `DADOS-GERAIS/@NOME-COMPLETO` |
-| `departamento` | `DADOS-GERAIS/@DEPARTAMENTO` (adicionado manualmente — ver seção 3.2) |
-| `campus` | `DADOS-GERAIS/@CAMPUS` (adicionado manualmente — ver seção 3.2) |
-| `resumo` | `DADOS-GERAIS/RESUMO-CV/@TEXTO-RESUMO-CV-RH` |
+| Campo no banco    | Fonte no XML                                                               |
+| ----------------- | -------------------------------------------------------------------------- |
+| `lattes_id`     | `CURRICULO-VITAE/@NUMERO-IDENTIFICADOR`                                  |
+| `nome_completo` | `DADOS-GERAIS/@NOME-COMPLETO`                                            |
+| `departamento`  | `DADOS-GERAIS/@DEPARTAMENTO` (adicionado manualmente — ver seção 3.2) |
+| `campus`        | `DADOS-GERAIS/@CAMPUS` (adicionado manualmente — ver seção 3.2)       |
+| `resumo`        | `DADOS-GERAIS/RESUMO-CV/@TEXTO-RESUMO-CV-RH`                             |
 
 Campos **não preenchidos pelo ETL** (calculados em sprint futura): `total_producoes`, `indice_h`, `total_a1_a2`.
 
 ### Produções
 
-| Campo no banco | Fonte no XML |
-|----------------|-------------|
-| `titulo` | `TITULO-DO-ARTIGO` / `TITULO-DO-TRABALHO` / `TITULO-DO-LIVRO` / `TITULO-DO-CAPITULO-DO-LIVRO` |
-| `tipo_producao` | Constante por fluxo: `ARTIGO`, `EVENTO`, `LIVRO`, `CAPITULO` |
-| `ano_publicacao` | `ANO-DO-ARTIGO` / `ANO-DO-TRABALHO` / `ANO` |
-| `nome_veiculo` | Nome do periódico, evento ou livro pai |
-| `issn` | `@ISSN` (quando disponível) |
-| `doi` | `@DOI` (quando disponível) |
-| `texto_busca` | Preenchido automaticamente por trigger do banco |
+| Campo no banco     | Fonte no XML                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| `titulo`         | `TITULO-DO-ARTIGO` / `TITULO-DO-TRABALHO` / `TITULO-DO-LIVRO` / `TITULO-DO-CAPITULO-DO-LIVRO` |
+| `tipo_producao`  | Constante por fluxo:`ARTIGO`, `EVENTO`, `LIVRO`, `CAPITULO`                                   |
+| `ano_publicacao` | `ANO-DO-ARTIGO` / `ANO-DO-TRABALHO` / `ANO`                                                     |
+| `nome_veiculo`   | Nome do periódico, evento ou livro pai                                                               |
+| `issn`           | `@ISSN` (quando disponível)                                                                        |
+| `doi`            | `@DOI` (quando disponível)                                                                         |
+| `texto_busca`    | Preenchido automaticamente por trigger do banco                                                       |
 
 Campo `qualis` é preenchido pelo pipeline `qualis_enriquecimento.hpl` (SPK-12). Campos `resumo` e `doi` (quando ausente no XML) são preenchidos por `crossref_enriquecimento.hpl` (SPK-13). Campo `jcr` é preenchido por `openalex_enriquecimento.hpl` (SPK-13).
 
@@ -431,6 +434,7 @@ Campo `qualis` é preenchido pelo pipeline `qualis_enriquecimento.hpl` (SPK-12).
 ### SPK-13 (crossref_enriquecimento + openalex_enriquecimento)
 
 **crossref_enriquecimento.hpl** (subetapa 5.2):
+
 - Dois ramos: artigos com DOI (busca direta `/works/{doi}`) e sem DOI (busca por título com score > 70)
 - Header `User-Agent: SPARK-ETL/1.0 (mailto:{ETL_EMAIL})` obrigatório para o Polite Pool CrossRef
 - Abstract com tags HTML removidas antes de gravar em `resumo`
@@ -438,8 +442,8 @@ Campo `qualis` é preenchido pelo pipeline `qualis_enriquecimento.hpl` (SPK-12).
 - Logs: `sem_match_doi` (score ≤ 70) e `sem_resumo` (DOI encontrado mas sem abstract)
 
 **openalex_enriquecimento.hpl** (subetapa 5.3):
+
 - Deduplicação por ISSN antes das chamadas — 1 chamada API por ISSN único
-- Campo `2yr_mean_citedness` do OpenAlex usado como equivalente ao JIF da Clarivate
 - Um UPDATE por ISSN atualiza todos os artigos do mesmo periódico de uma vez
 - UPSERT: `UPDATE … SET jcr = COALESCE(?, jcr) WHERE issn = ?`
 - Logs: `sem_match_jcr` (ISSN não indexado no OpenAlex ou campo ausente)
