@@ -55,14 +55,17 @@ def _attr(elem: ET.Element, path: str) -> str:
 def _norm_issn(raw: str) -> Optional[str]:
     if not raw:
         return None
-    s = raw.replace("-", "").strip()
+    # Remove tudo que não é dígito nem X (idêntico ao Hop: /[^0-9Xx]/g)
+    s = re.sub(r"[^0-9Xx]", "", raw)
     if len(s) == 8:
         return f"{s[:4]}-{s[4:]}"
-    return raw.strip() or None
+    return None
 
 
 def _norm_title(raw: str) -> str:
-    return re.sub(r"[\x00-\x1f\x7f]", "", raw).strip()
+    # Remove controles e colapsa espaços múltiplos (idêntico ao Hop: .trim().replace(/\s+/g,' '))
+    s = re.sub(r"[\x00-\x1f\x7f]", "", raw)
+    return re.sub(r"\s+", " ", s).strip()
 
 
 # ── Configuração dos tipos de produção ────────────────────────────────────────
@@ -124,7 +127,7 @@ async def _fase_extracao(
             nome_completo    = EXCLUDED.nome_completo,
             departamento     = EXCLUDED.departamento,
             campus           = EXCLUDED.campus,
-            resumo           = COALESCE(EXCLUDED.resumo, pesquisadores.resumo),
+            resumo           = EXCLUDED.resumo,
             data_atualizacao = NOW()
         RETURNING id
     """
@@ -134,7 +137,7 @@ async def _fase_extracao(
             (pesquisador_id, titulo, tipo_producao, ano_publicacao, nome_veiculo, issn, doi)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (pesquisador_id, titulo, ano_publicacao) DO UPDATE SET
-            nome_veiculo = COALESCE(EXCLUDED.nome_veiculo, producoes.nome_veiculo),
+            nome_veiculo = EXCLUDED.nome_veiculo,
             issn         = COALESCE(EXCLUDED.issn, producoes.issn),
             doi          = COALESCE(EXCLUDED.doi, producoes.doi)
     """
@@ -213,7 +216,7 @@ def _load_qualis(csv_path: str) -> Tuple[Dict[str, str], Dict[str, str]]:
         for row in rows:
             issn = _norm_issn(row.get("ISSN", "").strip())
             estrato = row.get("Estrato", "").strip()
-            titulo = (row.get("Título") or row.get("Titulo", "")).strip().lower()
+            titulo = (row.get("Título") or row.get("Titulo", "")).strip()
             if issn and issn not in issn_map:
                 issn_map[issn] = estrato
             if titulo and titulo not in titulo_map:
@@ -243,7 +246,7 @@ async def _fase_qualis(
         FROM producoes
         WHERE tipo_producao = 'ARTIGO' AND qualis IS NULL
     """
-    sql_update = "UPDATE producoes SET qualis = $1 WHERE id = $2"
+    sql_update = "UPDATE producoes SET qualis = COALESCE($1, qualis) WHERE id = $2"
 
     async with pool.acquire() as conn:
         rows = await conn.fetch(sql_fetch)
@@ -254,7 +257,7 @@ async def _fase_qualis(
         if issn:
             estrato = issn_map.get(issn)
         if not estrato and row["nome_veiculo"]:
-            estrato = titulo_map.get(row["nome_veiculo"].strip().lower())
+            estrato = titulo_map.get(row["nome_veiculo"].strip())
         if estrato:
             async with pool.acquire() as conn:
                 await conn.execute(sql_update, estrato, row["id"])
@@ -278,7 +281,6 @@ async def _fase_crossref(
         SELECT id, titulo, doi
         FROM producoes
         WHERE tipo_producao = 'ARTIGO'
-          AND (doi IS NULL OR resumo IS NULL)
     """
     sql_update = "UPDATE producoes SET doi = COALESCE($1, doi), resumo = COALESCE($2, resumo) WHERE id = $3"
 
@@ -290,7 +292,7 @@ async def _fase_crossref(
         new_resumo: Optional[str] = None
 
         try:
-            if row["doi"]:
+            if row["doi"] is not None:
                 # Ramo A: busca por DOI direto
                 url = f"https://api.crossref.org/works/{row['doi']}?mailto={etl_email}"
                 resp = await client.get(url, headers=headers, timeout=15)
@@ -337,7 +339,7 @@ async def _fase_openalex(
     sql_fetch = """
         SELECT DISTINCT issn
         FROM producoes
-        WHERE issn IS NOT NULL AND issn != '' AND jcr IS NULL
+        WHERE issn IS NOT NULL AND issn != ''
     """
     sql_update = "UPDATE producoes SET jcr = COALESCE($1, jcr) WHERE issn = $2"
 

@@ -1,6 +1,6 @@
 # SPK-93 · Proof of Work — Worker de Embeddings e Endpoints Internos
 
-**Data:** 2026-05-24 20:35
+**Data:** 2026-05-24 21:11
 **API base URL:** `http://localhost:8001`
 
 > Endpoints internos exigem `Authorization: Bearer <INTERNAL_API_KEY>`. Chave omitida nos logs por segurança.
@@ -125,7 +125,7 @@ Authorization: Bearer <INTERNAL_API_KEY>
       "departamento": "DCET",
       "campus": "Campus I",
       "total_producoes": 34,
-      "data_atualizacao": "2026-05-24T23:32:14.286313"
+      "data_atualizacao": "2026-05-25T00:08:08.957215"
     },
     {
       "id": 2,
@@ -219,13 +219,13 @@ Content-Type: application/json
 
 ```json
 {
-  "id": 236,
+  "id": 248,
   "lattes_id": "0000000000000001",
   "nome_completo": "Pesquisador Teste SPK-93",
   "departamento": "DCET",
   "campus": "Campus I",
   "total_producoes": 0,
-  "data_atualizacao": "2026-05-24T23:35:39.325571"
+  "data_atualizacao": "2026-05-25T00:11:40.901297"
 }
 ```
 
@@ -262,13 +262,13 @@ Content-Type: application/json
 
 ```json
 {
-  "id": 236,
+  "id": 248,
   "lattes_id": "0000000000000001",
   "nome_completo": "Pesquisador Teste SPK-93 v2",
   "departamento": "DCET",
   "campus": "Campus I",
   "total_producoes": 0,
-  "data_atualizacao": "2026-05-24T23:35:39.325571"
+  "data_atualizacao": "2026-05-25T00:11:40.901297"
 }
 ```
 
@@ -280,14 +280,14 @@ Content-Type: application/json
 
 ## 4. Deletar pesquisador — `DELETE /internal/pesquisadores/{id}`
 
-### ✅ PASS — `DELETE /internal/pesquisadores/236`
+### ✅ PASS — `DELETE /internal/pesquisadores/248`
 
-*Delete do pesquisador criado no passo 3 (id=236) → 204*
+*Delete do pesquisador criado no passo 3 (id=248) → 204*
 
 **Request:**
 
 ```
-DELETE http://localhost:8001/internal/pesquisadores/236
+DELETE http://localhost:8001/internal/pesquisadores/248
 Authorization: Bearer <INTERNAL_API_KEY>
 ```
 
@@ -465,14 +465,12 @@ files[0]: 4940207771377721.xml (296,854 bytes)
 {
   "pesquisadores": 1,
   "producoes": 34,
-  "qualis_match": 0,
+  "qualis_match": 5,
   "doi_fill": 0,
-  "resumo_fill": 0,
-  "jcr_fill": 0,
+  "resumo_fill": 138,
+  "jcr_fill": 144,
   "vetores_gerados": 0,
-  "erros": [
-    "QUALIS_CSV_PATH não encontrado: '/app/data/qualis/qualis.csv' — fase Qualis ignorada"
-  ]
+  "erros": []
 }
 ```
 
@@ -517,7 +515,7 @@ Content-Type: application/json
       "issn": "2045-2322",
       "doi": "10.1038/s41598-021-91306-z",
       "qualis": "A1",
-      "jcr": 4.308,
+      "jcr": 4.309,
       "pesquisador": {
         "id": 50,
         "nome_completo": "Hugo Saba Pereira Cardoso",
@@ -534,7 +532,7 @@ Content-Type: application/json
       "nome_veiculo": "INTERNATIONAL JOURNAL OF DEVELOPMENT RESEARCH",
       "issn": "2230-9926",
       "qualis": "C",
-      "jcr": 0.072,
+      "jcr": 0.077,
       "pesquisador": {
         "id": 50,
         "nome_completo": "Hugo Saba Pereira Cardoso",
@@ -552,7 +550,7 @@ Content-Type: application/json
       "issn": "1674-4527",
       "doi": "10.1088/1674-4527/accbb1",
       "qualis": "B1",
-      "jcr": 1.475,
+      "jcr": 1.477,
       "pesquisador": {
         "id": 1,
         "nome_completo": "José Garcia Vivas Miranda",
@@ -736,7 +734,7 @@ GET http://localhost:8001/api/stats
 | 4 | `GET /internal/pesquisadores?q=Hugo — filtro por nome` | ✅ PASS |
 | 5 | `POST /internal/pesquisadores — criar (201)` | ✅ PASS |
 | 6 | `POST /internal/pesquisadores — UPSERT idempotente (201)` | ✅ PASS |
-| 7 | `DELETE /internal/pesquisadores/236 — 204` | ✅ PASS |
+| 7 | `DELETE /internal/pesquisadores/248 — 204` | ✅ PASS |
 | 8 | `GET /internal/pesquisadores?q= — confirmar deleção` | ✅ PASS |
 | 9 | `DELETE /internal/pesquisadores/999999999 — 404` | ✅ PASS |
 | 10 | `POST /internal/trigger-embeddings — gera vetores` | ✅ PASS |
