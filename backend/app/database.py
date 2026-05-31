@@ -7,7 +7,9 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://spark:changeme@localhost:
 
 
 async def create_pool() -> asyncpg.Pool:
-    return await asyncpg.create_pool(DATABASE_URL, init=register_vector, min_size=2, max_size=10)
+    is_local = "localhost" in DATABASE_URL or "127.0.0.1" in DATABASE_URL
+    ssl = None if is_local else "require"
+    return await asyncpg.create_pool(DATABASE_URL, init=register_vector, min_size=2, max_size=10, ssl=ssl)
 
 
 async def get_db(request: Request) -> asyncpg.Pool:
