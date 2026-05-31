@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -6,12 +7,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
-from app.database import create_pool
+from app.database import create_pool, DATABASE_URL
 from app.routers import internal, pesquisadores, producoes, search, stats
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Log sanitized URL so we can confirm which DB is being targeted
+    safe_url = DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL
+    print(f"[startup] connecting to: {safe_url}", flush=True)
     app.state.pool = await create_pool()
     yield
     await app.state.pool.close()
