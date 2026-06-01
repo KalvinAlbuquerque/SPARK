@@ -6,7 +6,7 @@ import {
   Search, ListFilter, FileText, UserRound, Settings2,
   ArrowLeft, ArrowRight, ChevronLeft, ChevronRight,
   Type, Sparkles, LogIn, LogOut, Shield, ShieldCheck,
-  BarChart3, Info, X, ExternalLink, Upload,
+  BarChart3, Info, X, ExternalLink, Upload, Wand2, RefreshCw,
 } from 'lucide-react';
 import {
   api,
@@ -57,6 +57,9 @@ export default function BuscaPage() {
   /* Detail state */
   const [detalhe, setDetalhe] = useState<ProducaoDetalhe | null>(null);
   const [detalheLoading, setDetalheLoading] = useState(false);
+  const [capaUrl, setCapaUrl] = useState<string | null>(null);
+  const [capaLoading, setCapaLoading] = useState(false);
+  const [capaError, setCapaError] = useState<string | null>(null);
 
   /* Profile state */
   const [perfil, setPerfil] = useState<PesquisadorProfile | null>(null);
@@ -134,6 +137,8 @@ export default function BuscaPage() {
   async function loadDetalhe(id: number) {
     setDetalheLoading(true);
     setScreen('detalhes');
+    setCapaUrl(null);
+    setCapaError(null);
     try {
       const d = await api.getProducao(id);
       setDetalhe(d);
@@ -141,6 +146,21 @@ export default function BuscaPage() {
       setDetalhe(null);
     } finally {
       setDetalheLoading(false);
+    }
+  }
+
+  /* ── Generate AI cover ── */
+  async function handleGerarCapa() {
+    if (!detalhe) return;
+    setCapaLoading(true);
+    setCapaError(null);
+    try {
+      const res = await api.gerarCapa(detalhe.titulo, detalhe.resumo);
+      setCapaUrl(res.capa_url);
+    } catch {
+      setCapaError('Não foi possível gerar a capa. Verifique a chave GEMINI_API_KEY.');
+    } finally {
+      setCapaLoading(false);
     }
   }
 
@@ -576,6 +596,39 @@ export default function BuscaPage() {
                 </div>
               ) : (
                 <>
+                  {/* ── AI Cover ── */}
+                  <div className={`detail-cover ${capaLoading ? 'loading' : ''}`}>
+                    {capaUrl ? (
+                      <>
+                        <img className="detail-cover-img" src={capaUrl} alt="Capa gerada por IA" />
+                        <div className="detail-cover-overlay" />
+                        <button className="detail-cover-regen btn btn-ghost" onClick={handleGerarCapa} disabled={capaLoading}>
+                          <RefreshCw size={12} />
+                          regenerar
+                        </button>
+                      </>
+                    ) : capaLoading ? (
+                      <div className="detail-cover-placeholder">
+                        <div className="spinner" />
+                        <span>gerando capa com IA...</span>
+                      </div>
+                    ) : (
+                      <div className="detail-cover-placeholder">
+                        <Wand2 size={28} style={{ opacity: 0.3 }} />
+                        <span style={{ fontSize: 13, color: 'var(--text-3)' }}>nenhuma capa gerada</span>
+                        <button className="btn btn-primary detail-cover-gen-btn" onClick={handleGerarCapa}>
+                          <Wand2 size={13} />
+                          gerar capa com IA
+                        </button>
+                        {capaError && (
+                          <span style={{ fontSize: 11, color: 'var(--err-fg)', maxWidth: 360, textAlign: 'center', marginTop: 4 }}>
+                            {capaError}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="detail-hero">
                     <div className="detail-venue">
                       {detalhe.nome_veiculo ?? '—'} {detalhe.ano_publicacao ? `· ${detalhe.ano_publicacao}` : ''}

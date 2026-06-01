@@ -13,7 +13,12 @@
       "Bash(Format-Table -AutoSize)",
       "Bash(npx tsc *)",
       "Bash(grep -r \"INTERNAL_API_KEY\" .env.example)",
-      "Bash(grep -r \"INTERNAL_API_KEY\" backend/.env.example)"
+      "Bash(grep -r \"INTERNAL_API_KEY\" backend/.env.example)",
+      "mcp__claude_ai_Atlassian_Rovo__getAccessibleAtlassianResources",
+      "mcp__claude_ai_Atlassian_Rovo__searchJiraIssuesUsingJql",
+      "mcp__claude_ai_Atlassian_Rovo__getTransitionsForJiraIssue",
+      "mcp__claude_ai_Atlassian_Rovo__transitionJiraIssue",
+      "mcp__claude_ai_Atlassian_Rovo__getJiraIssue"
     ]
   }
 }

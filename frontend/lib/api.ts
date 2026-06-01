@@ -158,6 +158,16 @@ async function proxyPost<T>(path: string, body: FormData): Promise<T> {
   return res.json();
 }
 
+async function proxyPostJSON<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
 export const api = {
   searchText: (query: string, filters: SearchFilters = {}, page = 1) =>
     post<TextSearchResult>('/api/search/text', { query, filters, page }),
@@ -187,4 +197,7 @@ export const api = {
 
   triggerEtl: (formData: FormData) =>
     proxyPost<TriggerEtlResponse>('/api/internal/trigger-etl', formData),
+
+  gerarCapa: (titulo: string, resumo?: string) =>
+    proxyPostJSON<{ capa_url: string }>('/api/gerar-capa', { titulo, resumo }),
 };
