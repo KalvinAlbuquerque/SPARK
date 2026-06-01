@@ -11,7 +11,15 @@ export async function POST(req: NextRequest) {
   }
 
   if (!GEMINI_KEY) {
-    return NextResponse.json({ error: 'GEMINI_API_KEY não configurada no servidor' }, { status: 500 });
+    return NextResponse.json({
+      error: 'GEMINI_API_KEY não configurada no servidor',
+      debug: {
+        keyPresent: false,
+        keyLength: process.env.GEMINI_API_KEY?.length ?? 0,
+        keyPrefix: process.env.GEMINI_API_KEY?.slice(0, 4) ?? 'none',
+        geminiVars: Object.keys(process.env).filter(k => k.toLowerCase().includes('gemini')),
+      },
+    }, { status: 500 });
   }
 
   const prompt = buildPrompt(titulo, resumo);
