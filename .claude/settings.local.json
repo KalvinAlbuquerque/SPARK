@@ -11,7 +11,9 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\kalvi\\\\codes\\\\SPARK\" -Force)",
       "Bash(Select-Object Name, PSIsContainer)",
       "Bash(Format-Table -AutoSize)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(grep -r \"INTERNAL_API_KEY\" .env.example)",
+      "Bash(grep -r \"INTERNAL_API_KEY\" backend/.env.example)"
     ]
   }
 }

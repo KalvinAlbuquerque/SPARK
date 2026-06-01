@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Search, ListFilter, FileText, UserRound, Settings2,
   ArrowLeft, ArrowRight, ChevronLeft, ChevronRight,
   Type, Sparkles, LogIn, LogOut, Shield, ShieldCheck,
-  BarChart3, Info, X, ExternalLink,
+  BarChart3, Info, X, ExternalLink, Upload,
 } from 'lucide-react';
 import {
   api,
   ProducaoCard, ProducaoDetalhe, PesquisadorProfile,
   PesquisadorProducaoItem, PesquisadorStats,
-  SearchFilters, GlobalStats,
+  SearchFilters, GlobalStats, TriggerEtlResponse, PesquisadorAdminItem,
 } from '../../lib/api';
 
 /* ─── Types ─── */
@@ -70,12 +70,23 @@ export default function BuscaPage() {
 
   /* Admin state */
   const [stats, setStats] = useState<GlobalStats | null>(null);
+  const [adminTab, setAdminTab] = useState<'pesquisadores' | 'etl'>('pesquisadores');
+  const [adminSearchQ, setAdminSearchQ] = useState('');
+  const [etlFiles, setEtlFiles] = useState<FileList | null>(null);
+  const [etlLoading, setEtlLoading] = useState(false);
+  const [etlResult, setEtlResult] = useState<TriggerEtlResponse | null>(null);
+  const [etlError, setEtlError] = useState<string | null>(null);
   const [loginEmail, setLoginEmail] = useState('admin@spark.uneb.br');
   const [loginPass, setLoginPass] = useState('spark2026');
   const [loginError, setLoginError] = useState(false);
 
   /* Refs */
   const homeInputRef = useRef<HTMLInputElement>(null);
+
+  /* Load global stats on mount */
+  useEffect(() => {
+    api.getStats().then(setStats).catch(() => {});
+  }, []);
 
   /* ── Navigation ── */
   function goTo(s: Screen) {
@@ -172,6 +183,25 @@ export default function BuscaPage() {
       setStats(s);
     } catch {
       setStats(null);
+    }
+  }
+
+  /* ── ETL upload ── */
+  async function handleEtlUpload() {
+    if (!etlFiles || etlFiles.length === 0) return;
+    setEtlLoading(true);
+    setEtlResult(null);
+    setEtlError(null);
+    try {
+      const fd = new FormData();
+      Array.from(etlFiles).forEach(f => fd.append('files', f));
+      const result = await api.triggerEtl(fd);
+      setEtlResult(result);
+      api.getStats().then(setStats).catch(() => {});
+    } catch {
+      setEtlError('Erro ao processar. Verifique se o servidor está acessível e os XMLs são válidos.');
+    } finally {
+      setEtlLoading(false);
     }
   }
 
@@ -361,26 +391,30 @@ export default function BuscaPage() {
                     <span>base de dados · UNEB</span>
                     <span className="live"><span className="ldot"></span>indexada</span>
                   </div>
-                  <div className="home-side-stat">918</div>
+                  <div className="home-side-stat">{stats?.total_producoes ?? '—'}</div>
                   <div className="home-side-stat-sub">produções científicas indexadas</div>
                   <div className="home-side-feed" style={{ marginTop: 16 }}>
                     <div className="home-side-feed-item">
                       <div className="av" style={{ background: 'var(--primary-50)', color: 'var(--primary-600)' }}>
                         <UserRound size={10} />
                       </div>
-                      <span>8 pesquisadores cadastrados</span>
+                      <span>{stats?.total_pesquisadores ?? '—'} pesquisadores cadastrados</span>
                     </div>
                     <div className="home-side-feed-item">
                       <div className="av" style={{ background: 'var(--primary-50)', color: 'var(--primary-600)' }}>
                         <Sparkles size={10} />
                       </div>
-                      <span>444+ embeddings vetoriais gerados</span>
+                      <span>{stats?.total_vetores ?? '—'} embeddings vetoriais gerados</span>
                     </div>
                     <div className="home-side-feed-item">
                       <div className="av" style={{ background: 'var(--ok-50)', color: 'var(--ok-fg)' }}>
                         <Search size={10} />
                       </div>
-                      <span>busca semântica em menos de 5s</span>
+                      <span>
+                        {stats?.data_ultima_carga
+                          ? `atualizado ${new Date(stats.data_ultima_carga).toLocaleDateString('pt-BR')}`
+                          : 'busca semântica em menos de 5s'}
+                      </span>
                     </div>
                   </div>
                 </aside>
@@ -890,17 +924,27 @@ export default function BuscaPage() {
               )}
 
               <div className="admin-tabs">
-                <button className="admin-tab active">
+                <button className={`admin-tab ${adminTab === 'pesquisadores' ? 'active' : ''}`} onClick={() => setAdminTab('pesquisadores')}>
                   <UserRound size={14} />
                   pesquisadores
                 </button>
+                <button className={`admin-tab ${adminTab === 'etl' ? 'active' : ''}`} onClick={() => setAdminTab('etl')}>
+                  <Upload size={14} />
+                  importar XMLs
+                </button>
               </div>
 
-              <div className="admin-section active">
+              {/* Tab: pesquisadores */}
+              <div className={`admin-section ${adminTab === 'pesquisadores' ? 'active' : ''}`}>
                 <div className="table-toolbar">
                   <div className="table-search">
                     <Search size={14} />
-                    <input type="text" placeholder="buscar por nome..." />
+                    <input
+                      type="text"
+                      placeholder="buscar por nome..."
+                      value={adminSearchQ}
+                      onChange={e => setAdminSearchQ(e.target.value)}
+                    />
                   </div>
                 </div>
 
@@ -911,12 +955,83 @@ export default function BuscaPage() {
                         <th>nome</th>
                         <th>departamento</th>
                         <th>campus</th>
+                        <th>produções</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <AdminResearcherRows />
+                      <AdminResearcherRows q={adminSearchQ} />
                     </tbody>
                   </table>
+                </div>
+              </div>
+
+              {/* Tab: ETL */}
+              <div className={`admin-section ${adminTab === 'etl' ? 'active' : ''}`}>
+                <div className="etl-upload-card">
+                  <div className="etl-upload-title">importar currículos Lattes</div>
+                  <div className="etl-upload-sub">
+                    Selecione um ou mais arquivos XML exportados do CNPq. O pipeline executa extração,
+                    enriquecimento (Qualis, CrossRef, OpenAlex) e geração de embeddings automaticamente.
+                  </div>
+
+                  <div className="etl-file-row">
+                    <label className={`etl-file-label ${etlFiles && etlFiles.length > 0 ? 'has-files' : ''}`}>
+                      <Upload size={14} />
+                      {etlFiles && etlFiles.length > 0
+                        ? `${etlFiles.length} arquivo${etlFiles.length > 1 ? 's' : ''} selecionado${etlFiles.length > 1 ? 's' : ''}`
+                        : 'escolher XMLs'}
+                      <input
+                        type="file"
+                        accept=".xml"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={e => { setEtlFiles(e.target.files); setEtlResult(null); setEtlError(null); }}
+                      />
+                    </label>
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleEtlUpload}
+                      disabled={!etlFiles || etlFiles.length === 0 || etlLoading}
+                    >
+                      <Upload size={14} />
+                      {etlLoading ? 'processando...' : 'executar ETL'}
+                    </button>
+                  </div>
+
+                  {etlError && (
+                    <div className="login-error" style={{ marginTop: 14 }}>{etlError}</div>
+                  )}
+
+                  {etlResult && (
+                    <div className="etl-result">
+                      <div className="etl-result-grid">
+                        <div className="etl-result-cell">
+                          <div className="etl-result-n">{etlResult.pesquisadores}</div>
+                          <div className="etl-result-l">pesquisadores</div>
+                        </div>
+                        <div className="etl-result-cell">
+                          <div className="etl-result-n">{etlResult.producoes}</div>
+                          <div className="etl-result-l">produções</div>
+                        </div>
+                        <div className="etl-result-cell">
+                          <div className="etl-result-n">{etlResult.vetores_gerados}</div>
+                          <div className="etl-result-l">embeddings</div>
+                        </div>
+                        <div className="etl-result-cell">
+                          <div className="etl-result-n">{etlResult.qualis_match}</div>
+                          <div className="etl-result-l">qualis match</div>
+                        </div>
+                      </div>
+                      {etlResult.erros.length > 0 && (
+                        <div>
+                          <div className="etl-result-l" style={{ marginBottom: 6 }}>avisos</div>
+                          {etlResult.erros.map((e, i) => (
+                            <div key={i} className="login-error" style={{ marginBottom: 4, fontSize: 12 }}>{e}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -974,20 +1089,33 @@ function QualisBars({ data, total }: { data: { qualis: string; total: number }[]
   );
 }
 
-function AdminResearcherRows() {
-  const [rows, setRows] = useState<{ id: number; nome_completo: string; departamento?: string; campus?: string; total_producoes: number }[]>([]);
+function AdminResearcherRows({ q }: { q: string }) {
+  const [rows, setRows] = useState<PesquisadorAdminItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useState(() => {
-    api.getStats().then(() => {
-      // We'd need a list endpoint; for now show a placeholder
-    }).catch(() => {});
-  });
+  useEffect(() => {
+    setLoading(true);
+    api.listInternalPesquisadores(q || undefined)
+      .then(r => setRows(r.resultados))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, [q]);
+
+  if (loading) {
+    return (
+      <tr>
+        <td colSpan={4} style={{ textAlign: 'center', padding: 28 }}>
+          <div className="spinner" style={{ margin: '0 auto', marginBottom: 0 }} />
+        </td>
+      </tr>
+    );
+  }
 
   if (!rows.length) {
     return (
       <tr>
-        <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-3)', padding: 24 }}>
-          Dados carregados via busca — pesquise para ver os pesquisadores.
+        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-3)', padding: 24 }}>
+          Nenhum pesquisador encontrado.
         </td>
       </tr>
     );
@@ -1000,6 +1128,7 @@ function AdminResearcherRows() {
           <td>{r.nome_completo}</td>
           <td>{r.departamento ?? '—'}</td>
           <td>{r.campus ?? '—'}</td>
+          <td className="mono">{r.total_producoes}</td>
         </tr>
       ))}
     </>

@@ -407,6 +407,20 @@ body { font-family: var(--font-sans); background: var(--paper); color: var(--tex
 .data-table .mono { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-3); }
 .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
 
+/* ETL Upload */
+.etl-upload-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px 28px; max-width: 680px; }
+.etl-upload-title { font-size: 15px; font-weight: 500; color: var(--text-1); margin-bottom: 6px; }
+.etl-upload-sub { font-size: 13px; color: var(--text-3); line-height: 1.6; margin-bottom: 20px; max-width: 58ch; }
+.etl-file-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.etl-file-label { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: var(--r-md); border: 1px dashed var(--border-md); color: var(--text-2); font-size: 13px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.etl-file-label:hover { border-color: var(--primary-400); color: var(--text-1); }
+.etl-file-label.has-files { border-color: var(--ok-fg); color: var(--ok-fg); border-style: solid; }
+.etl-result { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+.etl-result-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.etl-result-cell { background: var(--surface-2); border-radius: var(--r-md); padding: 14px 16px; }
+.etl-result-n { font-family: var(--font-serif); font-size: 24px; letter-spacing: -1px; font-weight: 400; color: var(--ok-fg); line-height: 1; margin-bottom: 5px; }
+.etl-result-l { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; }
+
 /* ── Login overlay ── */
 .login-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(10,12,22,0.92); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; }
 .login-card { position: relative; background: var(--surface); border: 1px solid var(--border-md); border-radius: var(--r-xl); padding: 48px 40px; width: 100%; max-width: 400px; box-shadow: var(--shadow-lg); }

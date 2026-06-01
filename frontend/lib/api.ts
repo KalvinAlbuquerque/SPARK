@@ -104,6 +104,32 @@ export interface PesquisadorProducoesResponse {
   resultados: PesquisadorProducaoItem[];
 }
 
+export interface PesquisadorAdminItem {
+  id: number;
+  lattes_id: string;
+  nome_completo: string;
+  departamento?: string;
+  campus?: string;
+  total_producoes: number;
+  data_atualizacao?: string;
+}
+
+export interface PesquisadorAdminListResponse {
+  total: number;
+  resultados: PesquisadorAdminItem[];
+}
+
+export interface TriggerEtlResponse {
+  pesquisadores: number;
+  producoes: number;
+  qualis_match: number;
+  doi_fill: number;
+  resumo_fill: number;
+  jcr_fill: number;
+  vetores_gerados: number;
+  erros: string[];
+}
+
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
@@ -116,6 +142,18 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+async function proxyGet<T>(path: string): Promise<T> {
+  const res = await fetch(path, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+async function proxyPost<T>(path: string, body: FormData): Promise<T> {
+  const res = await fetch(path, { method: 'POST', body });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json();
 }
@@ -141,4 +179,12 @@ export const api = {
 
   getStats: () =>
     get<GlobalStats>('/api/stats'),
+
+  listInternalPesquisadores: (q?: string) =>
+    proxyGet<PesquisadorAdminListResponse>(
+      `/api/internal/pesquisadores${q ? `?q=${encodeURIComponent(q)}` : ''}`
+    ),
+
+  triggerEtl: (formData: FormData) =>
+    proxyPost<TriggerEtlResponse>('/api/internal/trigger-etl', formData),
 };
