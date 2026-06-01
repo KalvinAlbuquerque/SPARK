@@ -233,6 +233,7 @@ body { font-family: var(--font-sans); background: var(--paper); color: var(--tex
 /* Result list */
 .result-list { display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
 .result-row { background: var(--surface); padding: 20px 22px; cursor: pointer; transition: background 0.15s; display: grid; grid-template-columns: 70px 1fr 220px; gap: 22px; align-items: start; }
+.result-row.no-sim { grid-template-columns: 1fr 220px; }
 .result-row:hover { background: var(--surface-2); }
 .result-row.featured { background: linear-gradient(135deg, var(--surface) 0%, rgba(124,111,255,0.07) 100%); }
 .result-row-sim { font-family: var(--font-serif); font-size: 28px; font-weight: 400; letter-spacing: -1px; color: var(--primary-300); line-height: 1; }
@@ -355,6 +356,26 @@ body { font-family: var(--font-sans); background: var(--paper); color: var(--tex
 .panel-title { font-size: 15px; font-weight: 500; color: var(--text-1); margin-bottom: 4px; }
 .panel-sub { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-3); margin-bottom: 16px; }
 
+/* Profile photo (CNPq Lattes) */
+.profile-photo { border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.profile-photo.lg { width: 88px; height: 88px; border: 2px solid rgba(255,255,255,0.2); }
+
+/* Tab: sobre */
+.sobre-card { max-width: 760px; }
+.sobre-header { display: flex; align-items: flex-start; gap: 22px; margin-bottom: 28px; }
+.sobre-name { font-size: 20px; font-weight: 500; color: var(--text-1); letter-spacing: -0.4px; margin-bottom: 5px; }
+.sobre-role { font-size: 13px; color: var(--text-3); margin-bottom: 6px; }
+.sobre-updated { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); margin-bottom: 10px; }
+.sobre-lattes-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--primary-400); text-decoration: none; transition: color 0.12s; }
+.sobre-lattes-link:hover { color: var(--primary-300); }
+.sobre-stats-row { display: flex; gap: 12px; margin-bottom: 28px; }
+.sobre-stat { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 16px 20px; }
+.sobre-stat-n { font-family: var(--font-serif); font-size: 28px; letter-spacing: -1px; font-weight: 400; color: var(--text-1); line-height: 1; margin-bottom: 5px; }
+.sobre-stat-l { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; }
+.sobre-bio-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px 28px; }
+.sobre-bio-label { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-3); margin-bottom: 14px; }
+.sobre-bio-text { font-size: 15px; line-height: 1.78; color: var(--text-2); }
+
 /* ════════════════════════════════════════════
    TELA 5 — ADMIN
    ════════════════════════════════════════════ */
@@ -415,6 +436,7 @@ body { font-family: var(--font-sans); background: var(--paper); color: var(--tex
   .home-page, .results-page, .detail-page, .admin-page, .profile-content, .profile-tabs { padding-left: 22px; padding-right: 22px; }
   .home-hero { grid-template-columns: 1fr; }
   .result-row { grid-template-columns: 60px 1fr; }
+  .result-row.no-sim { grid-template-columns: 1fr; }
   .result-row-aside { display: none; }
   .detail-grid { grid-template-columns: 1fr; }
   .topbar-search { display: none; }

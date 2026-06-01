@@ -66,6 +66,7 @@ export default function BuscaPage() {
   const [perfilTotalPages, setPerfilTotalPages] = useState(1);
   const [perfilTab, setPerfilTab] = useState<'prod' | 'ind' | 'sobre'>('prod');
   const [perfilLoading, setPerfilLoading] = useState(false);
+  const [perfilPhotoError, setPerfilPhotoError] = useState(false);
 
   /* Admin state */
   const [stats, setStats] = useState<GlobalStats | null>(null);
@@ -137,6 +138,7 @@ export default function BuscaPage() {
     setPerfilLoading(true);
     setScreen('perfil');
     setPerfilTab('prod');
+    setPerfilPhotoError(false);
     try {
       const [profile, prods, statsData] = await Promise.all([
         api.getPesquisador(id),
@@ -468,7 +470,7 @@ export default function BuscaPage() {
                       {results.map(r => (
                         <article
                           key={r.id}
-                          className={`result-row ${r.similarity_score && r.similarity_score > 0.85 ? 'featured' : ''}`}
+                          className={`result-row ${r.similarity_score && r.similarity_score > 0.85 ? 'featured' : ''} ${!r.similarity_score ? 'no-sim' : ''}`}
                           style={{ cursor: 'pointer' }}
                           onClick={() => loadDetalhe(r.id)}
                         >
@@ -676,7 +678,16 @@ export default function BuscaPage() {
                     </button>
 
                     <div className="profile-head">
-                      <div className="avatar lg">{initials(perfil.nome_completo)}</div>
+                      {!perfilPhotoError ? (
+                        <img
+                          className="profile-photo lg"
+                          src={`https://servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id=${perfil.lattes_id}`}
+                          alt={perfil.nome_completo}
+                          onError={() => setPerfilPhotoError(true)}
+                        />
+                      ) : (
+                        <div className="avatar lg">{initials(perfil.nome_completo)}</div>
+                      )}
                       <div>
                         <h1 className="profile-name">{perfil.nome_completo}</h1>
                         <div className="profile-role">
@@ -765,14 +776,64 @@ export default function BuscaPage() {
 
                     {/* Tab: sobre */}
                     <div className={`profile-pane ${perfilTab === 'sobre' ? 'active' : ''}`}>
-                      <div className="panel">
-                        <div className="panel-title">resumo do currículo</div>
-                        {perfil.data_atualizacao && (
-                          <div className="panel-sub">extraído do lattes em {new Date(perfil.data_atualizacao).toLocaleDateString('pt-BR')}</div>
-                        )}
-                        <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-2)', maxWidth: '62ch' }}>
-                          {perfil.resumo ?? 'Resumo não disponível.'}
-                        </p>
+                      <div className="sobre-card">
+                        <div className="sobre-header">
+                          <div style={{ flexShrink: 0 }}>
+                            {!perfilPhotoError ? (
+                              <img
+                                className="profile-photo lg"
+                                src={`https://servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id=${perfil.lattes_id}`}
+                                alt={perfil.nome_completo}
+                                onError={() => setPerfilPhotoError(true)}
+                              />
+                            ) : (
+                              <div className="avatar lg">{initials(perfil.nome_completo)}</div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="sobre-name">{perfil.nome_completo}</div>
+                            <div className="sobre-role">
+                              UNEB{perfil.departamento ? ` · ${perfil.departamento}` : ''}
+                              {perfil.campus ? ` · ${perfil.campus}` : ''}
+                            </div>
+                            {perfil.data_atualizacao && (
+                              <div className="sobre-updated">
+                                currículo extraído do lattes em {new Date(perfil.data_atualizacao).toLocaleDateString('pt-BR')}
+                              </div>
+                            )}
+                            <a
+                              href={`http://lattes.cnpq.br/${perfil.lattes_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="sobre-lattes-link"
+                            >
+                              <ExternalLink size={11} />
+                              ver currículo lattes
+                            </a>
+                          </div>
+                        </div>
+
+                        <div className="sobre-stats-row">
+                          <div className="sobre-stat">
+                            <div className="sobre-stat-n">{perfil.total_producoes}</div>
+                            <div className="sobre-stat-l">produções</div>
+                          </div>
+                          <div className="sobre-stat">
+                            <div className="sobre-stat-n">h{perfil.indice_h}</div>
+                            <div className="sobre-stat-l">índice H</div>
+                          </div>
+                          <div className="sobre-stat">
+                            <div className="sobre-stat-n">{perfil.total_a1_a2}</div>
+                            <div className="sobre-stat-l">A1 + A2</div>
+                          </div>
+                        </div>
+
+                        <div className="sobre-bio-section">
+                          <div className="sobre-bio-label">resumo do currículo</div>
+                          <div className="sobre-bio-text">
+                            {perfil.resumo ?? 'Resumo não disponível para este pesquisador.'}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

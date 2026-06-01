@@ -4,9 +4,9 @@ Arquivo de estado da implementação. Atualizado a cada sprint para que qualquer
 
 ---
 
-## Estado atual: Sprint III — SPK-93 CONCLUÍDA
+## Estado atual: Sprint IV — Frontend CONCLUÍDO · Deploy Vercel
 
-**Data última atualização:** 2026-05-24 (SPK-93 implementado)
+**Data última atualização:** 2026-05-31 (Frontend em produção no Vercel)
 
 ---
 
@@ -279,7 +279,7 @@ Pesquisador (loop raiz): `/CURRICULO-VITAE` → `@NUMERO-IDENTIFICADOR`, `DADOS-
 | SPK-118 | Dockerfile da API + integração no docker-compose + testes de integração | **CONCLUÍDO** — spec em `SDD/sprint_3/spk118_spec_CONCLUIDA.md` |
 | SPK-93 | Worker de embeddings + endpoints internos (trigger-embeddings, trigger-etl, admin pesquisadores) | **CONCLUÍDO** — spec em `SDD/sprint_3/spk93_spec_CONCLUIDA.md` |
 | SPK-14 | Spike: avaliação de modelos de embedding (Sentence-Transformers vs OpenAI) | Pendente |
-| Frontend | Next.js 14 com busca, cards de produção, filtros sem reload | Pendente |
+| Frontend | Next.js 15 · landing page, 5 telas (busca/resultados/detalhes/perfil/admin), deploy Vercel | **CONCLUÍDO** |
 
 ---
 
@@ -561,3 +561,39 @@ pytest tests/integration/ -v
 
 **Quirk descoberto no SPK-93:**
 18. **`uvicorn 0.48.0` quebrou o entry point CLI**: `ImportError: cannot import name 'main' from 'uvicorn.main'`. Corrigido pinando `uvicorn[standard]>=0.29.0,<0.48.0` no `requirements.txt`.
+
+---
+
+### Frontend — CONCLUÍDO (Next.js 15 · Vercel · 2026-05-31)
+
+**Backend:** `https://spark-production-1903.up.railway.app` (Railway)
+**Env var Vercel:** `NEXT_PUBLIC_API_URL` apontando para o URL acima
+**Deploy:** Vercel — Root Directory: `frontend`
+
+**Artefatos:**
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `frontend/app/layout.tsx` | Root layout; `lang="pt-BR"`; importa globals.css |
+| `frontend/app/globals.css` | Dark-mode completo: tokens CSS, landing page, app shell, perfil, admin |
+| `frontend/app/page.tsx` | Landing page: hero, stats (918/8/444+/<5s), "como funciona" 4-steps, feat bento, footer |
+| `frontend/app/busca/page.tsx` | SPA de 5 telas: busca, resultados, detalhes, perfil, admin |
+| `frontend/lib/api.ts` | Cliente HTTP completo com todos os endpoints e interfaces TypeScript |
+| `frontend/next.config.ts` | `transpilePackages: ['lucide-react']` — fix Turbopack optional-chaining |
+
+**Telas implementadas:**
+
+1. **Busca** — input com modos FTS e semântico, hero com stats ao vivo, dica de operadores AND/OR/NOT
+2. **Resultados** — lista paginada (20/pág no FTS, top-10 no semântico), destaque visual sim > 0.85, painel de filtros lateral
+3. **Detalhes** — título, resumo, Qualis/JCR, metadados bibliográficos, card do pesquisador com métricas
+4. **Perfil** — cover gradient com foto Lattes (CNPq, fallback initials), tabs: produções / indicadores (gráficos bar) / sobre (bio + stat cards)
+5. **Admin** — login (admin@spark.uneb.br / spark2026), tiles de stats globais, tabela de pesquisadores
+
+**Quirks do frontend:**
+
+19. **`lucide-react@1.17.0` + Turbopack**: usa optional chaining (`?.`); Turbopack não transpila `node_modules`. Fix: `transpilePackages: ['lucide-react']` em `next.config.ts`. Em produção (Vercel/build) não ocorre.
+20. **Vercel monorepo**: Deploy exige `Root Directory: frontend` no UI do Vercel antes do primeiro deploy. Sem isso, Vercel detecta `import` na raiz do repo e falha.
+21. **FTS vs semântica**: FTS funcional em 918 produções; semântica limitada aos vetores gerados (~681+). Worker retoma de onde parou via `ON CONFLICT DO NOTHING` — segunda execução do script gera apenas os pendentes.
+22. **Foto Lattes (CNPq)**: `<img src="https://servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id={lattes_id}">` com `onError` → fallback initials. CORS não afeta `<img>`.
+23. **Admin sem lista de pesquisadores**: Não existe `GET /api/pesquisadores` — apenas endpoints individuais. Tabela mostra aviso orientando pesquisa.
+24. **result-row.no-sim**: Grid do result-row é `70px 1fr 220px`. Sem similarity_score (modo FTS), o primeiro item ficava em 70px. Fix: classe `no-sim` aplica `grid-template-columns: 1fr 220px`.

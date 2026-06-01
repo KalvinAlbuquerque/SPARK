@@ -10,7 +10,8 @@
       "PowerShell(Stop-Process *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\kalvi\\\\codes\\\\SPARK\" -Force)",
       "Bash(Select-Object Name, PSIsContainer)",
-      "Bash(Format-Table -AutoSize)"
+      "Bash(Format-Table -AutoSize)",
+      "Bash(npx tsc *)"
     ]
   }
 }
