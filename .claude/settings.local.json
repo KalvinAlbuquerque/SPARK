@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir *)"
+      "Bash(dir *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(npx create-next-app@latest *)",
+      "Bash(npm install *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Stop-Process *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\kalvi\\\\codes\\\\SPARK\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(Format-Table -AutoSize)"
     ]
   }
 }
