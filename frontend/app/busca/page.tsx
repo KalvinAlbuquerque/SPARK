@@ -60,6 +60,11 @@ export default function BuscaPage() {
   activeFiltersRef.current = activeFilters;
   const [facetas, setFacetas] = useState<SearchFacetas | null>(null);
 
+  /* Autocomplete state */
+  const [sugestoes, setSugestoes] = useState<string[]>([]);
+  const [showSugestoes, setShowSugestoes] = useState(false);
+  const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   /* Detail state */
   const [detalhe, setDetalhe] = useState<ProducaoDetalhe | null>(null);
   const [detalheLoading, setDetalheLoading] = useState(false);
@@ -185,6 +190,31 @@ export default function BuscaPage() {
     (activeFilters.qualis?.length ?? 0) +
     (activeFilters.tipos?.length ?? 0) +
     (activeFilters.anos?.length ?? 0);
+
+  /* ── Autocomplete ── */
+  function handleQueryChange(val: string) {
+    setQuery(val);
+    if (suggestTimer.current) clearTimeout(suggestTimer.current);
+    if (val.trim().length < 2) { setSugestoes([]); setShowSugestoes(false); return; }
+    suggestTimer.current = setTimeout(async () => {
+      try {
+        const res = await api.suggest(val);
+        setSugestoes(res.sugestoes);
+        setShowSugestoes(res.sugestoes.length > 0);
+      } catch { setSugestoes([]); setShowSugestoes(false); }
+    }, 250);
+  }
+
+  function selectSugestao(s: string) {
+    setQuery(s);
+    setSugestoes([]);
+    setShowSugestoes(false);
+    newSearch(s, mode);
+  }
+
+  function dismissSugestoes() {
+    setTimeout(() => setShowSugestoes(false), 150);
+  }
 
   /* ── Load production detail ── */
   async function loadDetalhe(id: number) {
@@ -437,9 +467,24 @@ export default function BuscaPage() {
                 type="text"
                 placeholder="buscar produções, autores, periódicos..."
                 value={query}
-                onChange={e => setQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && newSearch(query, mode)}
+                onChange={e => handleQueryChange(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { setShowSugestoes(false); newSearch(query, mode); }
+                  if (e.key === 'Escape') setShowSugestoes(false);
+                }}
+                onFocus={() => sugestoes.length > 0 && setShowSugestoes(true)}
+                onBlur={dismissSugestoes}
               />
+              {showSugestoes && sugestoes.length > 0 && (
+                <div className="suggest-dropdown">
+                  {sugestoes.map((s, i) => (
+                    <div key={i} className="suggest-item" onMouseDown={() => selectSugestao(s)}>
+                      <Search size={11} />
+                      <span className="suggest-item-text">{s}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </header>
 
@@ -500,13 +545,28 @@ export default function BuscaPage() {
                   type="text"
                   placeholder="tente: aprendizado de máquina aplicado em saúde pública..."
                   value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && newSearch(query, mode)}
+                  onChange={e => handleQueryChange(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { setShowSugestoes(false); newSearch(query, mode); }
+                    if (e.key === 'Escape') setShowSugestoes(false);
+                  }}
+                  onFocus={() => sugestoes.length > 0 && setShowSugestoes(true)}
+                  onBlur={dismissSugestoes}
                 />
-                <button className="btn btn-primary" onClick={() => newSearch(query, mode)}>
+                <button className="btn btn-primary" onClick={() => { setShowSugestoes(false); newSearch(query, mode); }}>
                   buscar
                   <ArrowRight size={14} />
                 </button>
+                {showSugestoes && sugestoes.length > 0 && (
+                  <div className="suggest-dropdown">
+                    {sugestoes.map((s, i) => (
+                      <div key={i} className="suggest-item" onMouseDown={() => selectSugestao(s)}>
+                        <Search size={12} />
+                        <span className="suggest-item-text">{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="search-meta-row">

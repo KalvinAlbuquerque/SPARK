@@ -133,6 +133,10 @@ export interface PesquisadorAdminListResponse {
   resultados: PesquisadorAdminItem[];
 }
 
+export interface SuggestResponse {
+  sugestoes: string[];
+}
+
 export interface TriggerEtlResponse {
   pesquisadores: number;
   producoes: number;
@@ -214,4 +218,7 @@ export const api = {
 
   gerarCapa: (titulo: string, resumo?: string) =>
     proxyPostJSON<{ capa_url: string }>('/api/gerar-capa', { titulo, resumo }),
+
+  suggest: (q: string) =>
+    get<SuggestResponse>(`/api/search/suggest?q=${encodeURIComponent(q)}`),
 };

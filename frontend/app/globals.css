@@ -188,11 +188,20 @@ body { font-family: var(--font-sans); background: var(--paper); color: var(--tex
 .home-side-feed-item .av { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .home-side-feed-item span { color: var(--text-2); }
 
-.search-mega { background: var(--surface); border: 1.5px solid var(--border-md); border-radius: var(--r-2xl); padding: 8px 8px 8px 22px; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 12px; transition: all 0.2s; margin-bottom: 18px; }
+.search-mega { position: relative; background: var(--surface); border: 1.5px solid var(--border-md); border-radius: var(--r-2xl); padding: 8px 8px 8px 22px; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 12px; transition: all 0.2s; margin-bottom: 18px; }
 .search-mega:focus-within { border-color: var(--primary-400); box-shadow: 0 0 0 4px rgba(124,111,255,0.15), 0 8px 30px rgba(124,111,255,0.1); }
 .search-mega input { flex: 1; border: none; background: transparent; font-size: 17px; font-family: var(--font-sans); color: var(--text-1); outline: none; padding: 14px 0; }
 .search-mega input::placeholder { color: var(--text-3); }
 .lead-icon { color: var(--text-3); flex-shrink: 0; }
+
+/* Autocomplete dropdown */
+.topbar-search { position: relative; }
+.suggest-dropdown { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border-md); border-radius: var(--r-lg); box-shadow: var(--shadow-md); z-index: 300; overflow: hidden; }
+.suggest-item { display: flex; align-items: center; gap: 10px; padding: 10px 18px; font-size: 14px; color: var(--text-2); cursor: pointer; transition: background 0.1s; }
+.suggest-item:hover, .suggest-item.active { background: var(--ink-50); color: var(--text-1); }
+.suggest-item-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-search .suggest-dropdown { top: calc(100% + 4px); }
+.topbar-search .suggest-item { font-size: 13px; padding: 8px 12px; }
 
 .search-meta-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 56px; }
 .mode-toggle { display: inline-flex; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; }

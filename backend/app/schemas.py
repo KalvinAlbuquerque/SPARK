@@ -75,6 +75,10 @@ class ProducaoCard(BaseModel):
     similarity_score: Optional[float] = None
 
 
+class SuggestResponse(BaseModel):
+    sugestoes: List[str]
+
+
 class SearchTextResponse(BaseModel):
     total: int
     page: int
