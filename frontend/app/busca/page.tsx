@@ -768,7 +768,7 @@ export default function BuscaPage() {
                       {!perfilPhotoError ? (
                         <img
                           className="profile-photo lg"
-                          src={`https://servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id=${perfil.lattes_id}`}
+                          src={`/api/foto-pesquisador/${perfil.lattes_id}`}
                           alt={perfil.nome_completo}
                           onError={() => setPerfilPhotoError(true)}
                         />
@@ -869,7 +869,7 @@ export default function BuscaPage() {
                             {!perfilPhotoError ? (
                               <img
                                 className="profile-photo lg"
-                                src={`https://servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id=${perfil.lattes_id}`}
+                                src={`/api/foto-pesquisador/${perfil.lattes_id}`}
                                 alt={perfil.nome_completo}
                                 onError={() => setPerfilPhotoError(true)}
                               />
