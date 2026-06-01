@@ -280,6 +280,7 @@ Pesquisador (loop raiz): `/CURRICULO-VITAE` → `@NUMERO-IDENTIFICADOR`, `DADOS-
 | SPK-93 | Worker de embeddings + endpoints internos (trigger-embeddings, trigger-etl, admin pesquisadores) | **CONCLUÍDO** — spec em `SDD/sprint_3/spk93_spec_CONCLUIDA.md` |
 | SPK-14 | Spike: avaliação de modelos de embedding (Sentence-Transformers vs OpenAI) | Pendente |
 | Frontend | Next.js 15 · landing page, 5 telas (busca/resultados/detalhes/perfil/admin), deploy Vercel | **CONCLUÍDO** |
+| Filtros de busca | Facetas funcionais no painel de resultados: Qualis CAPES, tipo de produção, ano de publicação com quantitativos | **CONCLUÍDO** — 2026-06-01 |
 
 ---
 
@@ -597,3 +598,26 @@ pytest tests/integration/ -v
 22. **Foto Lattes (CNPq)**: `<img src="https://servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id={lattes_id}">` com `onError` → fallback initials. CORS não afeta `<img>`.
 23. **Admin sem lista de pesquisadores**: Não existe `GET /api/pesquisadores` — apenas endpoints individuais. Tabela mostra aviso orientando pesquisa.
 24. **result-row.no-sim**: Grid do result-row é `70px 1fr 220px`. Sem similarity_score (modo FTS), o primeiro item ficava em 70px. Fix: classe `no-sim` aplica `grid-template-columns: 1fr 220px`.
+25. **Geração de capa por IA (Pollinations AI)**: Botão "Gerar Capa com IA" na tela de detalhes de produção.
+26. **Filtros de busca com facetas**: Painel de filtros na tela de resultados. Backend retorna `facetas: { qualis, tipos, anos }` em cada resposta de busca. FTS usa CTE extra para contar todos os resultados da query (não só a página). Semântica computa facetas das top-10 cards. Filtro `anos` (lista de anos específicos) adicionado ao `SearchFilters` do backend. Frontend: `activeFilters` state + `activeFiltersRef` ref, funções `toggleQualis/toggleTipo/toggleAno/clearFilters`, `newSearch` wrapper que reseta filtros para nova query, checkboxes com counts ao lado. Desabilitados durante loading. Chama `POST /api/gerar-capa` (Next.js Route Handler server-side) que encaminha para `https://image.pollinations.ai/prompt/{prompt}?width=1280&height=720&nologo=true&seed={Date.now()}`. Retorna base64 via `data:image/jpeg;base64,...`. Sem API key — Pollinations é gratuito e sem autenticação. `seed=Date.now()` garante imagens diferentes a cada "Regenerar". Imagem persiste apenas em memória de sessão (sem banco). Atenção: Imagen 3 (`imagen-3.0-generate-002`) e `gemini-2.0-flash-preview-image-generation` NÃO funcionam com chave `AIza...` do Google AI Studio sem configuração extra de billing/Vertex AI.
+
+---
+
+### Geração de Capa por IA — Artefatos (Sprint Extra)
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `frontend/app/api/gerar-capa/route.ts` | Route Handler server-side — chama Pollinations AI, converte resposta para base64, retorna `{ capa_url }` |
+| `frontend/lib/api.ts` | `proxyPostJSON()` helper + `api.gerarCapa(titulo, resumo?)` |
+| `frontend/app/busca/page.tsx` | Estado `capaUrl/capaLoading/capaError`, `handleGerarCapa()`, bloco visual `.detail-cover` acima do `detail-hero` |
+| `frontend/app/globals.css` | `.detail-cover`, `.detail-cover-img`, `.detail-cover-overlay`, `.detail-cover-placeholder`, `.detail-cover-regen`, shimmer animation |
+
+**Prompt engineering:**
+```
+Scientific journal cover art for academic research paper: "{titulo}". 
+Topic: {resumo[0:200]}. 
+Dramatic photorealistic scientific visualization, vibrant bold colors, 
+deep blues, electric purples, golden accents, abstract data patterns, 
+cinematic lighting, 4K quality, editorial design. 
+No text, no letters, no words in the image.
+```

@@ -67,6 +67,7 @@ export interface PesquisadorProducaoItem {
 export interface SearchFilters {
   ano_min?: number;
   ano_max?: number;
+  anos?: number[];
   qualis?: string[];
   jcr_min?: number;
   jcr_max?: number;
@@ -74,15 +75,28 @@ export interface SearchFilters {
   tipos?: string[];
 }
 
+export interface FacetItem {
+  valor: string;
+  total: number;
+}
+
+export interface SearchFacetas {
+  qualis: FacetItem[];
+  tipos: FacetItem[];
+  anos: FacetItem[];
+}
+
 export interface TextSearchResult {
   total: number;
   page: number;
   total_pages: number;
   resultados: ProducaoCard[];
+  facetas?: SearchFacetas;
 }
 
 export interface SemanticSearchResult {
   resultados: ProducaoCard[];
+  facetas?: SearchFacetas;
 }
 
 export interface PesquisadorStats {

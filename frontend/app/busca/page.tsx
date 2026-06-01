@@ -12,7 +12,7 @@ import {
   api,
   ProducaoCard, ProducaoDetalhe, PesquisadorProfile,
   PesquisadorProducaoItem, PesquisadorStats,
-  SearchFilters, GlobalStats, TriggerEtlResponse, PesquisadorAdminItem,
+  SearchFilters, SearchFacetas, GlobalStats, TriggerEtlResponse, PesquisadorAdminItem,
 } from '../../lib/api';
 
 /* ─── Types ─── */
@@ -53,6 +53,12 @@ export default function BuscaPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchedQuery, setSearchedQuery] = useState('');
+
+  /* Filter state */
+  const [activeFilters, setActiveFilters] = useState<SearchFilters>({});
+  const activeFiltersRef = useRef<SearchFilters>({});
+  activeFiltersRef.current = activeFilters;
+  const [facetas, setFacetas] = useState<SearchFacetas | null>(null);
 
   /* Detail state */
   const [detalhe, setDetalhe] = useState<ProducaoDetalhe | null>(null);
@@ -106,32 +112,79 @@ export default function BuscaPage() {
   }
 
   /* ── Search ── */
-  async function doSearch(q: string, m: SearchMode, p = 1) {
+  async function doSearch(q: string, m: SearchMode, p = 1, overrideFilters?: SearchFilters) {
     if (!q.trim()) return;
+    const filters = overrideFilters ?? activeFiltersRef.current;
     setLoading(true);
     setScreen('resultados');
     setSearchedQuery(q);
     setPage(p);
     try {
-      const filters: SearchFilters = {};
       if (m === 'text') {
         const res = await api.searchText(q, filters, p);
         setResults(res.resultados);
         setTotal(res.total);
         setTotalPages(res.total_pages);
+        setFacetas(res.facetas ?? null);
       } else {
         const res = await api.searchSemantic(q, filters);
         setResults(res.resultados);
         setTotal(res.resultados.length);
         setTotalPages(1);
+        setFacetas(res.facetas ?? null);
       }
     } catch {
       setResults([]);
       setTotal(0);
+      setFacetas(null);
     } finally {
       setLoading(false);
     }
   }
+
+  /* ── New search (resets filters) ── */
+  function newSearch(q: string, m: SearchMode) {
+    const empty: SearchFilters = {};
+    setActiveFilters(empty);
+    activeFiltersRef.current = empty;
+    doSearch(q, m, 1, empty);
+  }
+
+  /* ── Filter toggles ── */
+  function toggleQualis(q: string) {
+    const current = activeFilters.qualis ?? [];
+    const updated = current.includes(q) ? current.filter(x => x !== q) : [...current, q];
+    const nf = { ...activeFilters, qualis: updated.length ? updated : undefined };
+    setActiveFilters(nf);
+    doSearch(searchedQuery, mode, 1, nf);
+  }
+
+  function toggleTipo(t: string) {
+    const current = activeFilters.tipos ?? [];
+    const updated = current.includes(t) ? current.filter(x => x !== t) : [...current, t];
+    const nf = { ...activeFilters, tipos: updated.length ? updated : undefined };
+    setActiveFilters(nf);
+    doSearch(searchedQuery, mode, 1, nf);
+  }
+
+  function toggleAno(a: number) {
+    const current = activeFilters.anos ?? [];
+    const updated = current.includes(a) ? current.filter(x => x !== a) : [...current, a];
+    const nf = { ...activeFilters, anos: updated.length ? updated : undefined };
+    setActiveFilters(nf);
+    doSearch(searchedQuery, mode, 1, nf);
+  }
+
+  function clearFilters() {
+    const empty: SearchFilters = {};
+    setActiveFilters(empty);
+    doSearch(searchedQuery, mode, 1, empty);
+  }
+
+  const activeFilterCount =
+    (activeFilters.qualis?.length ?? 0) +
+    (activeFilters.tipos?.length ?? 0) +
+    (activeFilters.anos?.length ?? 0);
 
   /* ── Load production detail ── */
   async function loadDetalhe(id: number) {
@@ -385,7 +438,7 @@ export default function BuscaPage() {
                 placeholder="buscar produções, autores, periódicos..."
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && doSearch(query, mode)}
+                onKeyDown={e => e.key === 'Enter' && newSearch(query, mode)}
               />
             </div>
           </header>
@@ -448,9 +501,9 @@ export default function BuscaPage() {
                   placeholder="tente: aprendizado de máquina aplicado em saúde pública..."
                   value={query}
                   onChange={e => setQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && doSearch(query, mode)}
+                  onKeyDown={e => e.key === 'Enter' && newSearch(query, mode)}
                 />
-                <button className="btn btn-primary" onClick={() => doSearch(query, mode)}>
+                <button className="btn btn-primary" onClick={() => newSearch(query, mode)}>
                   buscar
                   <ArrowRight size={14} />
                 </button>
@@ -561,11 +614,17 @@ export default function BuscaPage() {
                   )}
                 </div>
 
-                {/* Filter panel — cosmetic for now */}
+                {/* Filter panel */}
                 <aside className="filter-panel">
                   <div className="filter-panel-head">
-                    <span>refinar</span>
+                    <span>
+                      refinar{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
+                    </span>
+                    {activeFilterCount > 0 && (
+                      <button onClick={clearFilters}>limpar</button>
+                    )}
                   </div>
+
                   <div className="filter-group">
                     <div className="filter-label">tipo de busca</div>
                     <label className="filter-option">
@@ -575,6 +634,75 @@ export default function BuscaPage() {
                       <input type="radio" name="mode" checked={mode === 'sem'} onChange={() => { setMode('sem'); doSearch(searchedQuery, 'sem'); }} /> semântica
                     </label>
                   </div>
+
+                  {facetas && (
+                    <>
+                      {facetas.tipos.length > 0 && (
+                        <div className="filter-group">
+                          <div className="filter-label">tipo de produção</div>
+                          {facetas.tipos.map(f => (
+                            <label key={f.valor} className="filter-option">
+                              <input
+                                type="checkbox"
+                                checked={(activeFilters.tipos ?? []).includes(f.valor)}
+                                onChange={() => toggleTipo(f.valor)}
+                                disabled={loading}
+                              />
+                              {f.valor.charAt(0) + f.valor.slice(1).toLowerCase()}
+                              <span className="filter-count">{f.total}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {facetas.qualis.length > 0 && (
+                        <div className="filter-group">
+                          <div className="filter-label">qualis capes</div>
+                          {facetas.qualis.map(f => (
+                            <label key={f.valor} className="filter-option">
+                              <input
+                                type="checkbox"
+                                checked={(activeFilters.qualis ?? []).includes(f.valor)}
+                                onChange={() => toggleQualis(f.valor)}
+                                disabled={loading}
+                              />
+                              {qualisBadge(f.valor)}
+                              <span className="filter-count">{f.total}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {facetas.anos.length > 0 && (
+                        <div className="filter-group">
+                          <div className="filter-label">ano de publicação</div>
+                          {facetas.anos.slice(0, 12).map(f => (
+                            <label key={f.valor} className="filter-option">
+                              <input
+                                type="checkbox"
+                                checked={(activeFilters.anos ?? []).includes(parseInt(f.valor))}
+                                onChange={() => toggleAno(parseInt(f.valor))}
+                                disabled={loading}
+                              />
+                              {f.valor}
+                              <span className="filter-count">{f.total}</span>
+                            </label>
+                          ))}
+                          {facetas.anos.length > 12 && (
+                            <div style={{ fontSize: 11, color: 'var(--text-3)', paddingTop: 4 }}>
+                              +{facetas.anos.length - 12} anos
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {!facetas && !loading && (
+                    <div style={{ fontSize: 12, color: 'var(--text-3)', paddingTop: 4 }}>
+                      Faça uma busca para ver os filtros disponíveis.
+                    </div>
+                  )}
                 </aside>
               </div>
             </div>

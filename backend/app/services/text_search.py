@@ -7,8 +7,10 @@ from typing import Any
 import asyncpg
 
 from app.schemas import (
+    FacetItem,
     PesquisadorSummary,
     ProducaoCard,
+    SearchFacetas,
     SearchFilters,
     SearchTextResponse,
 )
@@ -86,6 +88,12 @@ def _build_filters(filters: SearchFilters, params: list[Any], idx: int) -> tuple
     elif filters.jcr_nulo:
         conditions.append("p.jcr IS NULL")
 
+    if filters.anos:
+        ph = ", ".join(f"${idx + i}" for i in range(len(filters.anos)))
+        conditions.append(f"p.ano_publicacao IN ({ph})")
+        params.extend(filters.anos)
+        idx += len(filters.anos)
+
     if filters.pesquisador_id is not None:
         conditions.append(f"p.pesquisador_id = ${idx}")
         params.append(filters.pesquisador_id)
@@ -93,6 +101,28 @@ def _build_filters(filters: SearchFilters, params: list[Any], idx: int) -> tuple
 
     sql = (" AND " + " AND ".join(conditions)) if conditions else ""
     return sql, idx
+
+
+_QUALIS_ORDER = ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4", "B5", "C"]
+
+
+def build_facetas_from_rows(facet_rows: list) -> SearchFacetas:
+    qualis: list[FacetItem] = []
+    tipos: list[FacetItem] = []
+    anos: list[FacetItem] = []
+    for row in facet_rows:
+        item = FacetItem(valor=row["val"], total=row["cnt"])
+        dim = row["dim"]
+        if dim == "qualis":
+            qualis.append(item)
+        elif dim == "tipo":
+            tipos.append(item)
+        else:
+            anos.append(item)
+    qualis.sort(key=lambda x: _QUALIS_ORDER.index(x.valor) if x.valor in _QUALIS_ORDER else 99)
+    tipos.sort(key=lambda x: x.valor)
+    anos.sort(key=lambda x: x.valor, reverse=True)
+    return SearchFacetas(qualis=qualis, tipos=tipos, anos=anos[:15])
 
 
 def _row_to_card(row: Any) -> ProducaoCard:
@@ -124,10 +154,10 @@ async def search_text(
     normalized = normalize_query(query)
     offset = (page - 1) * PAGE_SIZE
 
-    params: list[Any] = [normalized]
-    filter_sql, next_idx = _build_filters(filters, params, 2)
-    params.append(PAGE_SIZE)
-    params.append(offset)
+    base_params: list[Any] = [normalized]
+    filter_sql, next_idx = _build_filters(filters, base_params, 2)
+
+    main_params = list(base_params) + [PAGE_SIZE, offset]
     limit_ph = f"${next_idx}"
     offset_ph = f"${next_idx + 1}"
 
@@ -146,18 +176,39 @@ async def search_text(
         LIMIT {limit_ph} OFFSET {offset_ph}
     """
 
+    facet_sql = f"""
+        WITH base AS (
+            SELECT p.qualis, p.tipo_producao, p.ano_publicacao
+            FROM producoes p
+            JOIN pesquisadores pe ON pe.id = p.pesquisador_id
+            WHERE p.texto_busca @@ websearch_to_tsquery('portuguese', $1)
+            {filter_sql}
+        )
+        SELECT 'qualis' AS dim, qualis AS val, COUNT(*)::int AS cnt
+            FROM base WHERE qualis IS NOT NULL GROUP BY qualis
+        UNION ALL
+        SELECT 'tipo' AS dim, tipo_producao AS val, COUNT(*)::int AS cnt
+            FROM base GROUP BY tipo_producao
+        UNION ALL
+        SELECT 'ano' AS dim, CAST(ano_publicacao AS TEXT) AS val, COUNT(*)::int AS cnt
+            FROM base WHERE ano_publicacao IS NOT NULL GROUP BY ano_publicacao
+    """
+
     async with pool.acquire() as conn:
         try:
-            rows = await conn.fetch(sql, *params)
+            rows = await conn.fetch(sql, *main_params)
+            facet_rows = await conn.fetch(facet_sql, *base_params)
         except Exception:
-            rows = []
+            rows, facet_rows = [], []
 
     total = int(rows[0]["total_count"]) if rows else 0
     total_pages = math.ceil(total / PAGE_SIZE) if total > 0 else 0
+    facetas = build_facetas_from_rows(facet_rows)
 
     return SearchTextResponse(
         total=total,
         page=page,
         total_pages=total_pages,
         resultados=[_row_to_card(r) for r in rows],
+        facetas=facetas,
     )

@@ -30,12 +30,24 @@ class PesquisadorNested(BaseModel):
 class SearchFilters(BaseModel):
     ano_min: Optional[int] = None
     ano_max: Optional[int] = None
+    anos: Optional[List[int]] = None
     qualis: Optional[List[str]] = None
     jcr_min: Optional[float] = None
     jcr_max: Optional[float] = None
     jcr_nulo: bool = False
     tipos: Optional[List[str]] = None
     pesquisador_id: Optional[int] = None
+
+
+class FacetItem(BaseModel):
+    valor: str
+    total: int
+
+
+class SearchFacetas(BaseModel):
+    qualis: List[FacetItem]
+    tipos: List[FacetItem]
+    anos: List[FacetItem]
 
 
 class SearchTextRequest(BaseModel):
@@ -68,10 +80,12 @@ class SearchTextResponse(BaseModel):
     page: int
     total_pages: int
     resultados: List[ProducaoCard]
+    facetas: Optional[SearchFacetas] = None
 
 
 class SearchSemanticResponse(BaseModel):
     resultados: List[ProducaoCard]
+    facetas: Optional[SearchFacetas] = None
 
 
 # ── Producoes ─────────────────────────────────────────────────────────────────

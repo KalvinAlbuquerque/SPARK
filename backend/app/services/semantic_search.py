@@ -1,20 +1,36 @@
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 
 import asyncpg
 import numpy as np
 
 from app.schemas import (
+    FacetItem,
     PesquisadorSummary,
     ProducaoCard,
+    SearchFacetas,
     SearchFilters,
     SearchSemanticResponse,
 )
 from app.services.embeddings import encode
-from app.services.text_search import _build_filters
+from app.services.text_search import _QUALIS_ORDER, _build_filters
 
 TOP_K = 10
+
+
+def _facetas_from_cards(cards: list[ProducaoCard]) -> SearchFacetas:
+    qualis_counts = Counter(c.qualis for c in cards if c.qualis)
+    tipo_counts = Counter(c.tipo_producao for c in cards)
+    ano_counts = Counter(str(c.ano_publicacao) for c in cards if c.ano_publicacao)
+    qualis = sorted(
+        [FacetItem(valor=k, total=v) for k, v in qualis_counts.items()],
+        key=lambda x: _QUALIS_ORDER.index(x.valor) if x.valor in _QUALIS_ORDER else 99,
+    )
+    tipos = sorted([FacetItem(valor=k, total=v) for k, v in tipo_counts.items()], key=lambda x: x.valor)
+    anos = sorted([FacetItem(valor=k, total=v) for k, v in ano_counts.items()], key=lambda x: x.valor, reverse=True)
+    return SearchFacetas(qualis=qualis, tipos=tipos, anos=anos)
 
 
 def _row_to_card(row: Any) -> ProducaoCard:
@@ -71,4 +87,5 @@ async def search_semantic(
         except Exception:
             rows = []
 
-    return SearchSemanticResponse(resultados=[_row_to_card(r) for r in rows])
+    cards = [_row_to_card(r) for r in rows]
+    return SearchSemanticResponse(resultados=cards, facetas=_facetas_from_cards(cards))
