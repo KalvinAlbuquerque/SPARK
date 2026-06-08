@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'spark — busca inteligente da produção científica',
+  title: 'SPARK — Busca inteligente da produção científica',
   description: 'Busca textual e semântica da produção científica da UNEB',
 };
 
