@@ -40,7 +40,7 @@ export default function LandingPage() {
           <div>
             <span className="l-eyebrow">SEARCH PLATFORM AND RESEARCH KNOWLEDGE</span>
             <h1 className="l-title">
-              a faísca que <span className="ser">acende</span> a produção científica.
+              A faísca que <span className="ser">acende</span> a produção científica.
             </h1>
             <p className="l-sub">
               Spark orquestra a extração de currículos Lattes em XML, popula um banco relacional e
@@ -121,7 +121,7 @@ export default function LandingPage() {
           <div className="l-section-head">
             <div>
               <div className="l-section-eyebrow">Como funciona</div>
-              <h2 className="l-section-title">da sua <span className="ser">pergunta</span> ao artigo, em segundos.</h2>
+              <h2 className="l-section-title">Da sua <span className="ser">pergunta</span> ao artigo, em segundos.</h2>
             </div>
             <p className="l-section-sub right" style={{ maxWidth: '38ch' }}>
               Você pesquisa, o SPARK entende e ranqueia os resultados mais relevantes na produção
@@ -174,7 +174,7 @@ export default function LandingPage() {
           <div className="l-section-head">
             <div>
               <div className="l-section-eyebrow">Recursos</div>
-              <h2 className="l-section-title">quatro recursos<br />para <span className="ser">descobrir</span> produções.</h2>
+              <h2 className="l-section-title">Quatro recursos<br />para <span className="ser">descobrir</span> produções.</h2>
             </div>
           </div>
 
@@ -223,7 +223,7 @@ export default function LandingPage() {
 
         {/* CTA STRIP */}
         <section className="l-cta-strip">
-          <h2>pronto para <span className="ser">acender</span> sua próxima descoberta?</h2>
+          <h2>Pronto para <span className="ser">acender</span> sua próxima descoberta?</h2>
           <p>Acesse o protótipo agora — dados reais da base UNEB, acesso público.</p>
           <div className="l-cta-row" style={{ justifyContent: 'center' }}>
             <Link className="btn btn-bright btn-lg" href="/busca">
