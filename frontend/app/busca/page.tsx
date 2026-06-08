@@ -517,31 +517,33 @@ export default function BuscaPage() {
               {meta.title}
             </div>
             <div className="topbar-crumbs">{meta.crumb}</div>
-            <div className="topbar-search">
-              <Search size={14} />
-              <input
-                type="text"
-                placeholder="buscar produções, autores, periódicos..."
-                value={query}
-                onChange={e => handleQueryChange(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') { setShowSugestoes(false); newSearch(query, mode); }
-                  if (e.key === 'Escape') setShowSugestoes(false);
-                }}
-                onFocus={() => sugestoes.length > 0 && setShowSugestoes(true)}
-                onBlur={dismissSugestoes}
-              />
-              {showSugestoes && sugestoes.length > 0 && (
-                <div className="suggest-dropdown">
-                  {sugestoes.map((s, i) => (
-                    <div key={i} className="suggest-item" onMouseDown={() => selectSugestao(s)}>
-                      <Search size={11} />
-                      <span className="suggest-item-text">{s}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            {screen !== 'busca' && (
+              <div className="topbar-search">
+                <Search size={14} />
+                <input
+                  type="text"
+                  placeholder="buscar produções, autores, periódicos..."
+                  value={query}
+                  onChange={e => handleQueryChange(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { setShowSugestoes(false); newSearch(query, mode); }
+                    if (e.key === 'Escape') setShowSugestoes(false);
+                  }}
+                  onFocus={() => sugestoes.length > 0 && setShowSugestoes(true)}
+                  onBlur={dismissSugestoes}
+                />
+                {showSugestoes && sugestoes.length > 0 && (
+                  <div className="suggest-dropdown">
+                    {sugestoes.map((s, i) => (
+                      <div key={i} className="suggest-item" onMouseDown={() => selectSugestao(s)}>
+                        <Search size={11} />
+                        <span className="suggest-item-text">{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </header>
 
           {/* ════ TELA 1 · BUSCA ════ */}

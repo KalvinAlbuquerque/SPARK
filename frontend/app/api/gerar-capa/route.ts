@@ -9,19 +9,11 @@ export async function POST(req: NextRequest) {
 
   const prompt = buildPrompt(titulo, resumo);
   const encoded = encodeURIComponent(prompt);
-  const imageUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1280&height=720&nologo=true&seed=${Date.now()}`;
+  // Retorna a URL diretamente — o browser carrega a imagem sem passar pelo servidor,
+  // evitando o bloqueio de requests server-side da Pollinations (402).
+  const capa_url = `https://image.pollinations.ai/prompt/${encoded}?width=1280&height=720&nologo=true&seed=${Date.now()}`;
 
-  const res = await fetch(imageUrl);
-
-  if (!res.ok) {
-    return NextResponse.json({ error: `Pollinations API: ${res.status}` }, { status: res.status });
-  }
-
-  const buffer = await res.arrayBuffer();
-  const b64 = Buffer.from(buffer).toString('base64');
-  const mime = res.headers.get('content-type') ?? 'image/jpeg';
-
-  return NextResponse.json({ capa_url: `data:${mime};base64,${b64}` });
+  return NextResponse.json({ capa_url });
 }
 
 function buildPrompt(titulo: string, resumo?: string): string {
