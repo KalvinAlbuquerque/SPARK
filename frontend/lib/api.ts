@@ -269,9 +269,6 @@ export const api = {
   triggerEtl: (formData: FormData) =>
     proxyPost<TriggerEtlResponse>('/api/internal/trigger-etl', formData),
 
-  gerarCapa: (titulo: string, resumo?: string, variant = 0) =>
-    proxyPostJSON<{ capa_url: string }>('/api/gerar-capa', { titulo, resumo, variant }),
-
   suggest: (q: string) =>
     get<SuggestResponse>(`/api/search/suggest?q=${encodeURIComponent(q)}`),
 };
