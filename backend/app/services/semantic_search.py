@@ -18,6 +18,7 @@ from app.services.embeddings import encode
 from app.services.text_search import _QUALIS_ORDER, _build_filters
 
 TOP_K = 10
+TOP_K_INNER = TOP_K * 5  # fetch more to account for duplicates before dedup
 
 
 def _facetas_from_cards(cards: list[ProducaoCard]) -> SearchFacetas:
@@ -63,21 +64,40 @@ async def search_semantic(
 
     params: list[Any] = [embedding]
     filter_sql, next_idx = _build_filters(filters, params, 2)
+    params.append(TOP_K_INNER)
+    inner_limit_ph = f"${next_idx}"
     params.append(TOP_K)
-    limit_ph = f"${next_idx}"
+    limit_ph = f"${next_idx + 1}"
 
     sql = f"""
-        SELECT
-            p.id, p.titulo, p.tipo_producao, p.ano_publicacao, p.nome_veiculo,
-            p.issn, p.doi, p.qualis, p.jcr,
-            pe.id AS pesquisador_id, pe.nome_completo, pe.departamento, pe.campus,
-            GREATEST(0.0, 1.0 - (v.embedding <=> $1)) AS similarity_score
-        FROM vetores v
-        JOIN producoes p ON p.id = v.producao_id
-        JOIN pesquisadores pe ON pe.id = p.pesquisador_id
-        WHERE TRUE
-        {filter_sql}
-        ORDER BY v.embedding <=> $1
+        WITH candidates AS (
+            SELECT
+                p.id, p.titulo, p.tipo_producao, p.ano_publicacao, p.nome_veiculo,
+                p.issn, p.doi, p.qualis, p.jcr,
+                pe.id AS pesquisador_id, pe.nome_completo, pe.departamento, pe.campus,
+                GREATEST(0.0, 1.0 - (v.embedding <=> $1)) AS similarity_score
+            FROM vetores v
+            JOIN producoes p ON p.id = v.producao_id
+            JOIN pesquisadores pe ON pe.id = p.pesquisador_id
+            WHERE TRUE
+            {filter_sql}
+            ORDER BY v.embedding <=> $1
+            LIMIT {inner_limit_ph}
+        ),
+        ranked AS (
+            SELECT *,
+                ROW_NUMBER() OVER (
+                    PARTITION BY LOWER(titulo), COALESCE(ano_publicacao, 0)
+                    ORDER BY similarity_score DESC, id
+                ) AS rn
+            FROM candidates
+        )
+        SELECT id, titulo, tipo_producao, ano_publicacao, nome_veiculo,
+               issn, doi, qualis, jcr, pesquisador_id, nome_completo,
+               departamento, campus, similarity_score
+        FROM ranked
+        WHERE rn = 1
+        ORDER BY similarity_score DESC
         LIMIT {limit_ph}
     """
 

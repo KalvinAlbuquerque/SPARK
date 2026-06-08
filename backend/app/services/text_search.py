@@ -162,27 +162,40 @@ async def search_text(
     offset_ph = f"${next_idx + 1}"
 
     sql = f"""
-        SELECT
-            p.id, p.titulo, p.tipo_producao, p.ano_publicacao, p.nome_veiculo,
-            p.issn, p.doi, p.qualis, p.jcr,
-            pe.id AS pesquisador_id, pe.nome_completo, pe.departamento, pe.campus,
-            ts_rank(p.texto_busca, websearch_to_tsquery('portuguese', $1)) AS rank,
-            COUNT(*) OVER() AS total_count
-        FROM producoes p
-        JOIN pesquisadores pe ON pe.id = p.pesquisador_id
-        WHERE p.texto_busca @@ websearch_to_tsquery('portuguese', $1)
-        {filter_sql}
+        WITH ranked AS (
+            SELECT
+                p.id, p.titulo, p.tipo_producao, p.ano_publicacao, p.nome_veiculo,
+                p.issn, p.doi, p.qualis, p.jcr,
+                pe.id AS pesquisador_id, pe.nome_completo, pe.departamento, pe.campus,
+                ts_rank(p.texto_busca, websearch_to_tsquery('portuguese', $1)) AS rank,
+                ROW_NUMBER() OVER (
+                    PARTITION BY LOWER(p.titulo), COALESCE(p.ano_publicacao, 0)
+                    ORDER BY ts_rank(p.texto_busca, websearch_to_tsquery('portuguese', $1)) DESC, p.id
+                ) AS rn
+            FROM producoes p
+            JOIN pesquisadores pe ON pe.id = p.pesquisador_id
+            WHERE p.texto_busca @@ websearch_to_tsquery('portuguese', $1)
+            {filter_sql}
+        ),
+        unique_results AS (
+            SELECT *, COUNT(*) OVER() AS total_count
+            FROM ranked
+            WHERE rn = 1
+        )
+        SELECT * FROM unique_results
         ORDER BY rank DESC
         LIMIT {limit_ph} OFFSET {offset_ph}
     """
 
     facet_sql = f"""
         WITH base AS (
-            SELECT p.qualis, p.tipo_producao, p.ano_publicacao
+            SELECT DISTINCT ON (LOWER(p.titulo), COALESCE(p.ano_publicacao, 0))
+                p.qualis, p.tipo_producao, p.ano_publicacao
             FROM producoes p
             JOIN pesquisadores pe ON pe.id = p.pesquisador_id
             WHERE p.texto_busca @@ websearch_to_tsquery('portuguese', $1)
             {filter_sql}
+            ORDER BY LOWER(p.titulo), COALESCE(p.ano_publicacao, 0), p.id
         )
         SELECT 'qualis' AS dim, qualis AS val, COUNT(*)::int AS cnt
             FROM base WHERE qualis IS NOT NULL GROUP BY qualis
