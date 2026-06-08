@@ -18,16 +18,16 @@ export default function LandingPage() {
           <span className="brand-word">spark<span className="brand-dot">.</span></span>
         </Link>
         <nav className="l-nav">
-          <a href="#como-funciona">como funciona</a>
-          <a href="#recursos">recursos</a>
+          <a href="#como-funciona">Como funciona</a>
+          <a href="#recursos">Recursos</a>
         </nav>
         <div className="l-topbar-right">
           <Link className="btn btn-dark" href="/busca">
             <Search size={14} />
-            entrar
+            Entrar
           </Link>
           <Link className="btn btn-bright" href="/busca">
-            abrir spark
+            Abrir spark
             <ArrowRight size={14} />
           </Link>
         </div>
@@ -50,10 +50,10 @@ export default function LandingPage() {
             <div className="l-cta-row">
               <Link className="btn btn-bright btn-lg" href="/busca">
                 <Search size={14} />
-                começar a buscar
+                Começar a buscar
               </Link>
               <a className="btn btn-dark btn-lg" href="#como-funciona">
-                como funciona
+                Como funciona
                 <ArrowDown size={14} />
               </a>
             </div>
@@ -99,19 +99,19 @@ export default function LandingPage() {
           <div className="l-stats-row">
             <div className="l-stat">
               <div className="l-stat-n">918</div>
-              <div className="l-stat-l">produções indexadas</div>
+              <div className="l-stat-l">Produções indexadas</div>
             </div>
             <div className="l-stat">
               <div className="l-stat-n">8</div>
-              <div className="l-stat-l">pesquisadores</div>
+              <div className="l-stat-l">Pesquisadores</div>
             </div>
             <div className="l-stat">
               <div className="l-stat-n">444+</div>
-              <div className="l-stat-l">embeddings gerados</div>
+              <div className="l-stat-l">Embeddings gerados</div>
             </div>
             <div className="l-stat">
               <div className="l-stat-n">&lt;5s</div>
-              <div className="l-stat-l">busca semântica</div>
+              <div className="l-stat-l">Busca semântica</div>
             </div>
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function LandingPage() {
         <section className="l-section" id="como-funciona">
           <div className="l-section-head">
             <div>
-              <div className="l-section-eyebrow">como funciona</div>
+              <div className="l-section-eyebrow">Como funciona</div>
               <h2 className="l-section-title">da sua <span className="ser">pergunta</span> ao artigo, em segundos.</h2>
             </div>
             <p className="l-section-sub right" style={{ maxWidth: '38ch' }}>
@@ -173,7 +173,7 @@ export default function LandingPage() {
         <section className="l-section" id="recursos">
           <div className="l-section-head">
             <div>
-              <div className="l-section-eyebrow">recursos</div>
+              <div className="l-section-eyebrow">Recursos</div>
               <h2 className="l-section-title">quatro recursos<br />para <span className="ser">descobrir</span> produções.</h2>
             </div>
           </div>
@@ -181,7 +181,7 @@ export default function LandingPage() {
           <div className="feat-bento">
             <article className="feat-cell feat-hero span-3">
               <div className="feat-icon"><Sparkles size={24} /></div>
-              <div className="feat-title">busca <span className="ser">semântica</span> em linguagem natural</div>
+              <div className="feat-title">Busca <span className="ser">semântica</span> em linguagem natural</div>
               <p className="feat-desc">
                 Consultas convertidas em vetores via Sentence-Transformers; similaridade de cosseno
                 via pgvector. Top-10 retornados em menos de 5 segundos.
@@ -196,7 +196,7 @@ export default function LandingPage() {
 
             <article className="feat-cell span-3">
               <div className="feat-icon"><TextSearch size={24} /></div>
-              <div className="feat-title">busca textual com <span className="ser">FTS</span></div>
+              <div className="feat-title">Busca textual com <span className="ser">FTS</span></div>
               <p className="feat-desc">
                 Full-Text Search via tsvector do PostgreSQL. Operadores AND, OR e NOT.
                 Resultados paginados em até 30 segundos.
@@ -205,7 +205,7 @@ export default function LandingPage() {
 
             <article className="feat-cell span-2">
               <div className="feat-icon"><Award size={24} /></div>
-              <div className="feat-title">métricas bibliométricas</div>
+              <div className="feat-title">Métricas bibliométricas</div>
               <p className="feat-desc">
                 Filtre por Qualis CAPES, fator de impacto JCR, ano, área e tipo.
               </p>
@@ -213,7 +213,7 @@ export default function LandingPage() {
 
             <article className="feat-cell span-2">
               <div className="feat-icon"><UserRound size={24} /></div>
-              <div className="feat-title">perfil do <span className="ser">pesquisador</span></div>
+              <div className="feat-title">Perfil do <span className="ser">pesquisador</span></div>
               <p className="feat-desc">
                 Veja a trajetória completa: produções, distribuição por Qualis, índice H e linha do tempo de publicações.
               </p>
@@ -227,7 +227,7 @@ export default function LandingPage() {
           <p>Acesse o protótipo agora — dados reais da base UNEB, acesso público.</p>
           <div className="l-cta-row" style={{ justifyContent: 'center' }}>
             <Link className="btn btn-bright btn-lg" href="/busca">
-              abrir spark
+              Abrir spark
               <ArrowRight size={14} />
             </Link>
           </div>
@@ -246,27 +246,27 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="l-footer-col">
-              <div className="l-footer-col-title">projeto</div>
-              <a href="#como-funciona">como funciona</a>
-              <a href="#recursos">recursos</a>
-              <Link href="/busca">aplicação</Link>
+              <div className="l-footer-col-title">Projeto</div>
+              <a href="#como-funciona">Como funciona</a>
+              <a href="#recursos">Recursos</a>
+              <Link href="/busca">Aplicação</Link>
             </div>
             <div className="l-footer-col">
-              <div className="l-footer-col-title">docs</div>
-              <a href="#">api swagger</a>
-              <a href="#">pipeline hop</a>
-              <a href="#">modelo de dados</a>
+              <div className="l-footer-col-title">Docs</div>
+              <a href="#">API Swagger</a>
+              <a href="#">Pipeline Hop</a>
+              <a href="#">Modelo de dados</a>
             </div>
             <div className="l-footer-col">
-              <div className="l-footer-col-title">uneb</div>
-              <a href="#">pós-graduação</a>
-              <a href="#">lattes/cnpq</a>
-              <a href="#">capes / qualis</a>
+              <div className="l-footer-col-title">UNEB</div>
+              <a href="#">Pós-graduação</a>
+              <a href="#">Lattes/CNPq</a>
+              <a href="#">CAPES / Qualis</a>
             </div>
           </div>
           <div className="l-footer-bottom">
-            <span>© 2026 · projeto spark</span>
-            <span>v1.0.0 — protótipo</span>
+            <span>© 2026 · Projeto SPARK</span>
+            <span>v1.0.0 — Protótipo</span>
           </div>
         </footer>
 
