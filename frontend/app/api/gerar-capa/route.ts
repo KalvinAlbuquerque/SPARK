@@ -1,5 +1,83 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const GEMINI_TEXT_URL =
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GEMINI_IMG_URL =
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent';
+
+// Passo 1: pede ao Gemini texto uma descrição visual em inglês
+async function toVisualDescription(
+  titulo: string,
+  resumo: string | undefined,
+  apiKey: string,
+): Promise<string> {
+  const context = resumo ? `\nAbstract (excerpt): "${resumo.slice(0, 300)}"` : '';
+  const res = await fetch(`${GEMINI_TEXT_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{
+          text:
+            `You are creating a scientific journal cover image.\n` +
+            `Given this Brazilian academic paper, describe in English the SPECIFIC scientific imagery ` +
+            `that would visually represent this research. Be concrete: name organisms, equipment, ` +
+            `phenomena, data charts, or environments directly related to the subject.\n\n` +
+            `Title: "${titulo}"${context}\n\n` +
+            `Reply with ONE short paragraph in English describing what to show visually. No style, no colors.`,
+        }],
+      }],
+      generationConfig: { maxOutputTokens: 120, temperature: 0.4 },
+    }),
+    signal: AbortSignal.timeout(12000),
+  });
+
+  if (!res.ok) return titulo;
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? titulo;
+}
+
+// Passo 2: gera a imagem com a descrição visual
+async function generateImage(
+  visualDesc: string,
+  apiKey: string,
+): Promise<string | null> {
+  const prompt =
+    `${visualDesc}\n\n` +
+    `Style: dramatic lighting, dark background, high detail, magazine cover quality. ` +
+    `Absolutely NO text, letters, words or numbers anywhere in the image.`;
+
+  const res = await fetch(`${GEMINI_IMG_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  const parts: { inlineData?: { data: string; mimeType: string } }[] =
+    data.candidates?.[0]?.content?.parts ?? [];
+  const img = parts.find(p => p.inlineData);
+  if (!img?.inlineData) return null;
+
+  const { data: b64, mimeType } = img.inlineData;
+  return `data:${mimeType};base64,${b64}`;
+}
+
+// Fallback: picsum com seed determinístico
+function picsumUrl(titulo: string, variant: number): string {
+  let seed = (variant * 999983) >>> 0;
+  for (let i = 0; i < titulo.length; i++) {
+    seed = Math.imul(seed * 31 + titulo.charCodeAt(i), 1) >>> 0;
+  }
+  return `https://picsum.photos/seed/${seed}/1280/720`;
+}
+
 export async function POST(req: NextRequest) {
   const { titulo, resumo, variant = 0 } = await req.json();
 
@@ -9,60 +87,22 @@ export async function POST(req: NextRequest) {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: 'GEMINI_API_KEY não configurada' }, { status: 500 });
+    return NextResponse.json({ capa_url: picsumUrl(titulo, variant) });
   }
-
-  const prompt = buildPrompt(titulo, resumo);
 
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
-        }),
-        signal: AbortSignal.timeout(30000),
-      }
-    );
+    // Passo 1: traduz o título em descrição visual em inglês
+    const visualDesc = await toVisualDescription(titulo, resumo, apiKey);
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Gemini ${res.status}: ${errText}`);
+    // Passo 2: gera a imagem
+    const capa_url = await generateImage(visualDesc, apiKey);
+
+    if (capa_url) {
+      return NextResponse.json({ capa_url });
     }
-
-    const data = await res.json();
-    const parts: { inlineData?: { data: string; mimeType: string } }[] =
-      data.candidates?.[0]?.content?.parts ?? [];
-    const imagePart = parts.find(p => p.inlineData);
-
-    if (imagePart?.inlineData) {
-      const { data: b64, mimeType } = imagePart.inlineData;
-      return NextResponse.json({ capa_url: `data:${mimeType};base64,${b64}` });
-    }
-
-    throw new Error('Gemini não retornou imagem');
   } catch {
-    // Fallback: picsum com seed do título
-    let seed = (variant * 999983) >>> 0;
-    for (let i = 0; i < titulo.length; i++) {
-      seed = Math.imul(seed * 31 + titulo.charCodeAt(i), 1) >>> 0;
-    }
-    return NextResponse.json({ capa_url: `https://picsum.photos/seed/${seed}/1280/720` });
+    // fallthrough
   }
-}
 
-function buildPrompt(titulo: string, resumo?: string): string {
-  const context = resumo ? resumo.slice(0, 300) : '';
-  return `Create a photorealistic scientific illustration for a research paper.
-
-Title: "${titulo}"${context ? `\nAbstract excerpt: "${context}"` : ''}
-
-Instructions:
-- The image must visually represent the SPECIFIC topic of this research (not generic science)
-- Show concrete objects, phenomena or scenarios directly related to the subject
-- Style: dramatic lighting, high detail, dark background, magazine cover quality
-- Absolutely NO text, letters, words or numbers anywhere in the image`;
+  return NextResponse.json({ capa_url: picsumUrl(titulo, variant) });
 }
