@@ -364,11 +364,11 @@ export default function BuscaPage() {
 
   /* ── Topbar info ── */
   const screenMeta: Record<Screen, { title: string; crumb: string; icon: React.ReactNode }> = {
-    busca:      { title: 'busca',         crumb: 'spark / busca',       icon: <Search size={16} /> },
-    resultados: { title: 'resultados',    crumb: 'spark / resultados',   icon: <ListFilter size={16} /> },
-    detalhes:   { title: 'produção',      crumb: 'spark / produção',     icon: <FileText size={16} /> },
-    perfil:     { title: 'pesquisador',   crumb: 'spark / pesquisador',  icon: <UserRound size={16} /> },
-    admin:      { title: 'painel admin',  crumb: 'spark / admin',        icon: <Settings2 size={16} /> },
+    busca:      { title: 'Busca',         crumb: 'spark / busca',       icon: <Search size={16} /> },
+    resultados: { title: 'Resultados',    crumb: 'spark / resultados',   icon: <ListFilter size={16} /> },
+    detalhes:   { title: 'Produção',      crumb: 'spark / produção',     icon: <FileText size={16} /> },
+    perfil:     { title: 'Pesquisador',   crumb: 'spark / pesquisador',  icon: <UserRound size={16} /> },
+    admin:      { title: 'Painel Admin',  crumb: 'spark / admin',        icon: <Settings2 size={16} /> },
   };
 
   const meta = screenMeta[screen];
@@ -417,10 +417,10 @@ export default function BuscaPage() {
 
             <div className="login-role-tag">
               <Shield size={11} />
-              acesso restrito · admin
+              Acesso restrito · Admin
             </div>
 
-            <div className="login-title">entrar no painel</div>
+            <div className="login-title">Entrar no painel</div>
             <div className="login-sub">Acesse com as credenciais de administrador para gerenciar pesquisadores e orquestrar o ETL.</div>
 
             {loginError && (
@@ -430,17 +430,17 @@ export default function BuscaPage() {
             )}
 
             <div className="login-field">
-              <label>e-mail</label>
+              <label>E-mail</label>
               <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="admin@spark.uneb.br" />
             </div>
             <div className="login-field">
-              <label>senha</label>
+              <label>Senha</label>
               <input type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} placeholder="••••••••" />
             </div>
 
             <button className="btn btn-primary" style={{ width: '100%', marginTop: 8 }} onClick={handleLogin}>
               <LogIn size={14} />
-              entrar
+              Entrar
             </button>
 
             <div className="login-hint">
@@ -466,23 +466,23 @@ export default function BuscaPage() {
           <div className="rail-nav">
             <button className={`rail-item ${screen === 'busca' ? 'active' : ''}`} onClick={() => goTo('busca')}>
               <Search size={20} />
-              <span className="rail-item-tip">busca</span>
+              <span className="rail-item-tip">Busca</span>
             </button>
             <button className={`rail-item ${screen === 'resultados' ? 'active' : ''}`} onClick={() => goTo('resultados')}>
               <ListFilter size={20} />
-              <span className="rail-item-tip">resultados</span>
+              <span className="rail-item-tip">Resultados</span>
             </button>
             <button className={`rail-item ${screen === 'detalhes' ? 'active' : ''}`} onClick={() => goTo('detalhes')}>
               <FileText size={20} />
-              <span className="rail-item-tip">produção</span>
+              <span className="rail-item-tip">Produção</span>
             </button>
             <button className={`rail-item ${screen === 'perfil' ? 'active' : ''}`} onClick={() => goTo('perfil')}>
               <UserRound size={20} />
-              <span className="rail-item-tip">pesquisador</span>
+              <span className="rail-item-tip">Pesquisador</span>
             </button>
             <button className={`rail-item ${screen === 'admin' ? 'active' : ''}`} onClick={() => goTo('admin')}>
               <Settings2 size={20} />
-              <span className="rail-item-tip">admin</span>
+              <span className="rail-item-tip">Admin</span>
             </button>
           </div>
         </nav>
@@ -502,7 +502,7 @@ export default function BuscaPage() {
                 <Search size={14} />
                 <input
                   type="text"
-                  placeholder="buscar produções, autores, periódicos..."
+                  placeholder="Buscar produções, autores, periódicos..."
                   value={query}
                   onChange={e => handleQueryChange(e.target.value)}
                   onKeyDown={e => {
@@ -592,7 +592,7 @@ export default function BuscaPage() {
                   onBlur={dismissSugestoes}
                 />
                 <button className="btn btn-primary" onClick={() => { setShowSugestoes(false); newSearch(query, mode); }}>
-                  buscar
+                  Buscar
                   <ArrowRight size={14} />
                 </button>
                 {showSugestoes && sugestoes.length > 0 && (
@@ -611,18 +611,18 @@ export default function BuscaPage() {
                 <div className="mode-toggle">
                   <button className={`mode-btn ${mode === 'text' ? 'active' : ''}`} onClick={() => setMode('text')}>
                     <Type size={12} />
-                    textual · FTS
+                    Textual · FTS
                   </button>
                   <button className={`mode-btn ${mode === 'sem' ? 'active' : ''}`} onClick={() => setMode('sem')}>
                     <Sparkles size={12} />
-                    semântica · embeddings
+                    Semântica · Embeddings
                   </button>
                 </div>
               </div>
 
               <div style={{ marginTop: '-38px', marginBottom: 48, fontSize: 12, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
                 <Info size={12} style={{ verticalAlign: 'middle', marginRight: 5 }} />
-                no modo textual, use operadores:
+                No modo textual, use operadores:
                 {' '}<span style={{ background: 'var(--ink-50)', padding: '2px 7px', borderRadius: 4, margin: '0 3px' }}>AND</span>
                 <span style={{ background: 'var(--ink-50)', padding: '2px 7px', borderRadius: 4, margin: '0 3px' }}>OR</span>
                 <span style={{ background: 'var(--ink-50)', padding: '2px 7px', borderRadius: 4, margin: '0 3px' }}>NOT</span>
@@ -639,7 +639,7 @@ export default function BuscaPage() {
                   <div>
                     <h1 className="results-title">resultados para <em>&ldquo;{searchedQuery}&rdquo;</em></h1>
                     <div className="results-title-sub">
-                      {loading ? 'buscando...' : mode === 'text'
+                      {loading ? 'Buscando...' : mode === 'text'
                         ? `${total} produções · 20 por página · ordenadas por relevância`
                         : `${total} produções · top-${results.length} semânticos`}
                     </div>
@@ -647,10 +647,10 @@ export default function BuscaPage() {
                   <div className="results-controls">
                     <div className="mode-toggle">
                       <button className={`mode-btn ${mode === 'text' ? 'active' : ''}`} onClick={() => { setMode('text'); doSearch(searchedQuery, 'text'); }}>
-                        <Type size={12} />textual
+                        <Type size={12} />Textual
                       </button>
                       <button className={`mode-btn ${mode === 'sem' ? 'active' : ''}`} onClick={() => { setMode('sem'); doSearch(searchedQuery, 'sem'); }}>
-                        <Sparkles size={12} />semântica
+                        <Sparkles size={12} />Semântica
                       </button>
                     </div>
                   </div>
@@ -662,7 +662,7 @@ export default function BuscaPage() {
                   {loading ? (
                     <div className="empty-state">
                       <div className="spinner" />
-                      buscando produções...
+                      Buscando produções...
                     </div>
                   ) : results.length === 0 ? (
                     <div className="empty-state">
@@ -682,7 +682,7 @@ export default function BuscaPage() {
                           {r.similarity_score && (
                             <div>
                               <div className="result-row-sim">{r.similarity_score.toFixed(2)}</div>
-                              <div className="result-row-sim-lbl">match</div>
+                              <div className="result-row-sim-lbl">Match</div>
                             </div>
                           )}
                           <div className="result-row-body">
@@ -721,20 +721,20 @@ export default function BuscaPage() {
                 <aside className="filter-panel">
                   <div className="filter-panel-head">
                     <span>
-                      refinar{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
+                      Refinar{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
                     </span>
                     {activeFilterCount > 0 && (
-                      <button onClick={clearFilters}>limpar</button>
+                      <button onClick={clearFilters}>Limpar</button>
                     )}
                   </div>
 
                   <div className="filter-group">
-                    <div className="filter-label">tipo de busca</div>
+                    <div className="filter-label">Tipo de busca</div>
                     <label className="filter-option">
-                      <input type="radio" name="mode" checked={mode === 'text'} onChange={() => { setMode('text'); doSearch(searchedQuery, 'text'); }} /> textual (FTS)
+                      <input type="radio" name="mode" checked={mode === 'text'} onChange={() => { setMode('text'); doSearch(searchedQuery, 'text'); }} /> Textual (FTS)
                     </label>
                     <label className="filter-option">
-                      <input type="radio" name="mode" checked={mode === 'sem'} onChange={() => { setMode('sem'); doSearch(searchedQuery, 'sem'); }} /> semântica
+                      <input type="radio" name="mode" checked={mode === 'sem'} onChange={() => { setMode('sem'); doSearch(searchedQuery, 'sem'); }} /> Semântica
                     </label>
                   </div>
 
@@ -742,7 +742,7 @@ export default function BuscaPage() {
                     <>
                       {facetas.tipos.length > 0 && (
                         <div className="filter-group">
-                          <div className="filter-label">tipo de produção</div>
+                          <div className="filter-label">Tipo de produção</div>
                           {facetas.tipos.map(f => (
                             <label key={f.valor} className="filter-option">
                               <input
@@ -760,7 +760,7 @@ export default function BuscaPage() {
 
                       {facetas.qualis.length > 0 && (
                         <div className="filter-group">
-                          <div className="filter-label">qualis capes</div>
+                          <div className="filter-label">Qualis CAPES</div>
                           {facetas.qualis.map(f => (
                             <label key={f.valor} className="filter-option">
                               <input
@@ -778,7 +778,7 @@ export default function BuscaPage() {
 
                       {facetas.anos.length > 0 && (
                         <div className="filter-group">
-                          <div className="filter-label">ano de publicação</div>
+                          <div className="filter-label">Ano de publicação</div>
                           {facetas.anos.slice(0, 12).map(f => (
                             <label key={f.valor} className="filter-option">
                               <input
@@ -816,11 +816,11 @@ export default function BuscaPage() {
             <div className="detail-page">
               <button className="back-link" onClick={() => setScreen('resultados')}>
                 <ArrowLeft size={14} />
-                voltar aos resultados
+                Voltar aos resultados
               </button>
 
               {detalheLoading ? (
-                <div className="empty-state"><div className="spinner" />carregando produção...</div>
+                <div className="empty-state"><div className="spinner" />Carregando produção...</div>
               ) : !detalhe ? (
                 <div className="empty-state">
                   <div className="empty-state-title">Selecione uma produção nos resultados.</div>
@@ -851,7 +851,7 @@ export default function BuscaPage() {
                   <div className="detail-grid">
                     <div>
                       <div className="detail-section">
-                        <div className="detail-section-title">resumo</div>
+                        <div className="detail-section-title">Resumo</div>
                         {detalhe.resumo
                           ? <div className="detail-abstract">{detalhe.resumo}</div>
                           : <div className="detail-abstract" style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>Resumo não disponível para esta produção.</div>
@@ -859,11 +859,11 @@ export default function BuscaPage() {
                       </div>
 
                       <div className="detail-section">
-                        <div className="detail-section-title">metadados bibliográficos</div>
+                        <div className="detail-section-title">Metadados bibliográficos</div>
                         <div className="meta-table">
                           {detalhe.nome_veiculo && (
                             <div className="meta-row">
-                              <span className="meta-lbl">periódico</span>
+                              <span className="meta-lbl">Periódico</span>
                               <span className="meta-val">{detalhe.nome_veiculo}</span>
                             </div>
                           )}
@@ -885,7 +885,7 @@ export default function BuscaPage() {
                             </div>
                           )}
                           <div className="meta-row">
-                            <span className="meta-lbl">tipo de produção</span>
+                            <span className="meta-lbl">Tipo de produção</span>
                             <span className="meta-val">{detalhe.tipo_producao}</span>
                           </div>
                           {detalhe.qualis && (
@@ -896,13 +896,13 @@ export default function BuscaPage() {
                           )}
                           {detalhe.jcr && (
                             <div className="meta-row">
-                              <span className="meta-lbl">fator de impacto</span>
+                              <span className="meta-lbl">Fator de impacto</span>
                               <span className="meta-val mono">{detalhe.jcr.toFixed(1)}</span>
                             </div>
                           )}
                           {detalhe.ano_publicacao && (
                             <div className="meta-row">
-                              <span className="meta-lbl">ano de publicação</span>
+                              <span className="meta-lbl">Ano de publicação</span>
                               <span className="meta-val">{detalhe.ano_publicacao}</span>
                             </div>
                           )}
@@ -913,7 +913,7 @@ export default function BuscaPage() {
                     <aside>
                       <div className="aside-card">
                         <div className="aside-card-title">
-                          {detalhe.pesquisadores && detalhe.pesquisadores.length > 1 ? 'autores (UNEB)' : 'pesquisador principal'}
+                          {detalhe.pesquisadores && detalhe.pesquisadores.length > 1 ? 'Autores (UNEB)' : 'Pesquisador principal'}
                         </div>
 
                         {(detalhe.pesquisadores && detalhe.pesquisadores.length > 0
@@ -929,7 +929,7 @@ export default function BuscaPage() {
                                 {p.campus ? ` · ${p.campus}` : ''}
                               </div>
                               <span className="aside-author-link">
-                                ver perfil <ArrowRight size={11} />
+                                Ver perfil <ArrowRight size={11} />
                               </span>
                             </div>
                           </div>
@@ -937,11 +937,11 @@ export default function BuscaPage() {
 
                         <div style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 12 }}>
                           <div className="aside-kv">
-                            <span className="aside-kv-lbl">produções totais</span>
+                            <span className="aside-kv-lbl">Produções totais</span>
                             <span className="aside-kv-val">{detalhe.pesquisador.total_producoes}</span>
                           </div>
                           <div className="aside-kv">
-                            <span className="aside-kv-lbl">índice H</span>
+                            <span className="aside-kv-lbl">Índice H</span>
                             <span className="aside-kv-val">{detalhe.pesquisador.indice_h}</span>
                           </div>
                           <div className="aside-kv">
@@ -961,7 +961,7 @@ export default function BuscaPage() {
           <section className={`screen ${screen === 'perfil' ? 'active' : ''}`}>
             <div className="profile-page">
               {perfilLoading ? (
-                <div className="empty-state"><div className="spinner" />carregando perfil...</div>
+                <div className="empty-state"><div className="spinner" />Carregando perfil...</div>
               ) : !perfil ? (
                 <div className="empty-state">
                   <div className="empty-state-title">Selecione um pesquisador nos detalhes de uma produção.</div>
@@ -971,7 +971,7 @@ export default function BuscaPage() {
                   <div className="profile-cover">
                     <button className="profile-cover-back" onClick={() => setScreen('detalhes')}>
                       <ArrowLeft size={14} />
-                      voltar
+                      Voltar
                     </button>
 
                     <div className="profile-head">
@@ -993,7 +993,7 @@ export default function BuscaPage() {
                         </div>
                         <div className="profile-links">
                           <a href={`http://lattes.cnpq.br/${perfil.lattes_id}`} target="_blank" rel="noopener noreferrer" className="profile-link">
-                            <ExternalLink size={11} />lattes/cnpq
+                            <ExternalLink size={11} />Lattes/CNPq
                           </a>
                         </div>
                       </div>
@@ -1008,13 +1008,13 @@ export default function BuscaPage() {
 
                   <div className="profile-tabs">
                     <button className={`profile-tab ${perfilTab === 'prod' ? 'active' : ''}`} onClick={() => setPerfilTab('prod')}>
-                      <FileText size={14} />produções
+                      <FileText size={14} />Produções
                     </button>
                     <button className={`profile-tab ${perfilTab === 'ind' ? 'active' : ''}`} onClick={() => setPerfilTab('ind')}>
-                      <BarChart3 size={14} />indicadores
+                      <BarChart3 size={14} />Indicadores
                     </button>
                     <button className={`profile-tab ${perfilTab === 'sobre' ? 'active' : ''}`} onClick={() => setPerfilTab('sobre')}>
-                      <UserRound size={14} />sobre
+                      <UserRound size={14} />Sobre
                     </button>
                   </div>
 
@@ -1022,7 +1022,7 @@ export default function BuscaPage() {
                     {/* Tab: produções */}
                     <div className={`profile-pane ${perfilTab === 'prod' ? 'active' : ''}`}>
                       <div className="section-head">
-                        <h3>produções <span className="ser">recentes</span></h3>
+                        <h3>Produções <span className="ser">recentes</span></h3>
                       </div>
                       <div className="mini-list">
                         {perfilProducoes.map(p => (
@@ -1051,7 +1051,7 @@ export default function BuscaPage() {
                           <div className="chart-card">
                             <div className="chart-head">
                               <div>
-                                <div className="chart-title">publicações por <span className="ser">ano</span></div>
+                                <div className="chart-title">Publicações por <span className="ser">ano</span></div>
                                 <div className="chart-title-sub">{perfil.total_producoes} produções</div>
                               </div>
                             </div>
@@ -1061,7 +1061,7 @@ export default function BuscaPage() {
                           <div className="qualis-dist">
                             <div className="chart-head">
                               <div>
-                                <div className="chart-title">distribuição por <span className="ser">Qualis CAPES</span></div>
+                                <div className="chart-title">Distribuição por <span className="ser">Qualis CAPES</span></div>
                                 <div className="chart-title-sub">{perfil.total_producoes} produções</div>
                               </div>
                             </div>
@@ -1095,7 +1095,7 @@ export default function BuscaPage() {
                             </div>
                             {perfil.data_atualizacao && (
                               <div className="sobre-updated">
-                                currículo extraído do lattes em {new Date(perfil.data_atualizacao).toLocaleDateString('pt-BR')}
+                                Currículo extraído do Lattes em {new Date(perfil.data_atualizacao).toLocaleDateString('pt-BR')}
                               </div>
                             )}
                             <a
@@ -1105,7 +1105,7 @@ export default function BuscaPage() {
                               className="sobre-lattes-link"
                             >
                               <ExternalLink size={11} />
-                              ver currículo lattes
+                              Ver currículo Lattes
                             </a>
                           </div>
                         </div>
@@ -1126,7 +1126,7 @@ export default function BuscaPage() {
                         </div>
 
                         <div className="sobre-bio-section">
-                          <div className="sobre-bio-label">resumo do currículo</div>
+                          <div className="sobre-bio-label">Resumo do currículo</div>
                           <div className="sobre-bio-text">
                             {perfil.resumo ?? 'Resumo não disponível para este pesquisador.'}
                           </div>
@@ -1145,15 +1145,15 @@ export default function BuscaPage() {
               <div className="admin-header">
                 <div className="admin-title-block">
                   <h1 className="admin-title">painel <em>admin</em></h1>
-                  <div className="admin-sub">orquestre a base, monitore o pipeline e gerencie pesquisadores</div>
+                  <div className="admin-sub">Orquestre a base, monitore o pipeline e gerencie pesquisadores</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <span className="badge badge-ok" style={{ padding: '6px 12px', fontSize: 11 }}>
                     <ShieldCheck size={11} />
-                    admin autenticado
+                    Admin autenticado
                   </span>
                   <button className="btn btn-ghost" onClick={handleLogout}>
-                    <LogOut size={14} />sair
+                    <LogOut size={14} />Sair
                   </button>
                 </div>
               </div>
@@ -1163,24 +1163,24 @@ export default function BuscaPage() {
                   <div className="stat-tile">
                     <UserRound size={20} className="stat-tile-icon" />
                     <div className="stat-tile-n">{stats.total_pesquisadores}</div>
-                    <div className="stat-tile-l">pesquisadores</div>
+                    <div className="stat-tile-l">Pesquisadores</div>
                   </div>
                   <div className="stat-tile">
                     <FileText size={20} className="stat-tile-icon" />
                     <div className="stat-tile-n">{stats.total_producoes}</div>
-                    <div className="stat-tile-l">produções</div>
+                    <div className="stat-tile-l">Produções</div>
                   </div>
                   <div className="stat-tile">
                     <Sparkles size={20} className="stat-tile-icon" />
                     <div className="stat-tile-n">{stats.total_vetores}</div>
-                    <div className="stat-tile-l">embeddings</div>
+                    <div className="stat-tile-l">Embeddings</div>
                   </div>
                   {stats.data_ultima_carga && (
                     <div className="stat-tile">
                       <div className="stat-tile-n" style={{ fontSize: 14 }}>
                         {new Date(stats.data_ultima_carga).toLocaleDateString('pt-BR')}
                       </div>
-                      <div className="stat-tile-l">última carga</div>
+                      <div className="stat-tile-l">Última carga</div>
                     </div>
                   )}
                 </div>
@@ -1189,11 +1189,11 @@ export default function BuscaPage() {
               <div className="admin-tabs">
                 <button className={`admin-tab ${adminTab === 'pesquisadores' ? 'active' : ''}`} onClick={() => setAdminTab('pesquisadores')}>
                   <UserRound size={14} />
-                  pesquisadores
+                  Pesquisadores
                 </button>
                 <button className={`admin-tab ${adminTab === 'etl' ? 'active' : ''}`} onClick={() => setAdminTab('etl')}>
                   <Upload size={14} />
-                  importar XMLs
+                  Importar XMLs
                 </button>
               </div>
 
@@ -1204,14 +1204,14 @@ export default function BuscaPage() {
                     <Search size={14} />
                     <input
                       type="text"
-                      placeholder="buscar por nome..."
+                      placeholder="Buscar por nome..."
                       value={adminSearchQ}
                       onChange={e => setAdminSearchQ(e.target.value)}
                     />
                   </div>
                   <button className="btn btn-primary" style={{ marginLeft: 'auto' }} onClick={openAddModal}>
                     <UserRound size={14} />
-                    adicionar
+                    Adicionar
                   </button>
                 </div>
 
@@ -1219,11 +1219,11 @@ export default function BuscaPage() {
                   <table className="data-table">
                     <thead>
                       <tr>
-                        <th>nome</th>
-                        <th>departamento</th>
-                        <th>campus</th>
-                        <th>produções</th>
-                        <th>ações</th>
+                        <th>Nome</th>
+                        <th>Departamento</th>
+                        <th>Campus</th>
+                        <th>Produções</th>
+                        <th>Ações</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1241,7 +1241,7 @@ export default function BuscaPage() {
               {/* Tab: ETL */}
               <div className={`admin-section ${adminTab === 'etl' ? 'active' : ''}`}>
                 <div className="etl-upload-card">
-                  <div className="etl-upload-title">importar currículos Lattes</div>
+                  <div className="etl-upload-title">Importar currículos Lattes</div>
                   <div className="etl-upload-sub">
                     Selecione um ou mais arquivos XML exportados do CNPq. O pipeline executa extração,
                     enriquecimento (Qualis, CrossRef, OpenAlex) e geração de embeddings automaticamente.
@@ -1252,7 +1252,7 @@ export default function BuscaPage() {
                       <Upload size={14} />
                       {etlFiles && etlFiles.length > 0
                         ? `${etlFiles.length} arquivo${etlFiles.length > 1 ? 's' : ''} selecionado${etlFiles.length > 1 ? 's' : ''}`
-                        : 'escolher XMLs'}
+                        : 'Escolher XMLs'}
                       <input
                         type="file"
                         accept=".xml"
@@ -1267,7 +1267,7 @@ export default function BuscaPage() {
                       disabled={!etlFiles || etlFiles.length === 0 || etlLoading}
                     >
                       <Upload size={14} />
-                      {etlLoading ? 'processando...' : 'executar ETL'}
+                      {etlLoading ? 'Processando...' : 'Executar ETL'}
                     </button>
                   </div>
 
@@ -1280,24 +1280,24 @@ export default function BuscaPage() {
                       <div className="etl-result-grid">
                         <div className="etl-result-cell">
                           <div className="etl-result-n">{etlResult.pesquisadores}</div>
-                          <div className="etl-result-l">pesquisadores</div>
+                          <div className="etl-result-l">Pesquisadores</div>
                         </div>
                         <div className="etl-result-cell">
                           <div className="etl-result-n">{etlResult.producoes}</div>
-                          <div className="etl-result-l">produções</div>
+                          <div className="etl-result-l">Produções</div>
                         </div>
                         <div className="etl-result-cell">
                           <div className="etl-result-n">{etlResult.vetores_gerados}</div>
-                          <div className="etl-result-l">embeddings</div>
+                          <div className="etl-result-l">Embeddings</div>
                         </div>
                         <div className="etl-result-cell">
                           <div className="etl-result-n">{etlResult.qualis_match}</div>
-                          <div className="etl-result-l">qualis match</div>
+                          <div className="etl-result-l">Qualis match</div>
                         </div>
                       </div>
                       {etlResult.erros.length > 0 && (
                         <div>
-                          <div className="etl-result-l" style={{ marginBottom: 6 }}>avisos</div>
+                          <div className="etl-result-l" style={{ marginBottom: 6 }}>Avisos</div>
                           {etlResult.erros.map((e, i) => (
                             <div key={i} className="login-error" style={{ marginBottom: 4, fontSize: 12 }}>{e}</div>
                           ))}
@@ -1319,12 +1319,12 @@ export default function BuscaPage() {
           <div className="login-card" style={{ maxWidth: 480 }}>
             <div className="login-brand" style={{ marginBottom: 20 }}>
               <div className="login-title">
-                {adminModal.mode === 'add' ? 'adicionar pesquisador' : 'editar pesquisador'}
+                {adminModal.mode === 'add' ? 'Adicionar pesquisador' : 'Editar pesquisador'}
               </div>
             </div>
 
             <div className="login-field">
-              <label>lattes id</label>
+              <label>Lattes ID</label>
               <input
                 type="text"
                 value={modalLattesId}
@@ -1335,7 +1335,7 @@ export default function BuscaPage() {
               />
             </div>
             <div className="login-field">
-              <label>nome completo *</label>
+              <label>Nome completo *</label>
               <input
                 type="text"
                 value={modalNome}
@@ -1344,7 +1344,7 @@ export default function BuscaPage() {
               />
             </div>
             <div className="login-field">
-              <label>departamento</label>
+              <label>Departamento</label>
               <input
                 type="text"
                 value={modalDepto}
@@ -1353,7 +1353,7 @@ export default function BuscaPage() {
               />
             </div>
             <div className="login-field">
-              <label>campus</label>
+              <label>Campus</label>
               <input
                 type="text"
                 value={modalCampus}
@@ -1368,10 +1368,10 @@ export default function BuscaPage() {
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setAdminModal(null)} disabled={modalLoading}>
-                cancelar
+                Cancelar
               </button>
               <button className="btn btn-primary" onClick={handleModalSave} disabled={modalLoading || !modalNome.trim() || (adminModal.mode === 'add' && !modalLattesId.trim())}>
-                {modalLoading ? 'salvando...' : 'salvar'}
+                {modalLoading ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
           </div>
