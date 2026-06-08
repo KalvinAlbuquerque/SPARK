@@ -230,6 +230,7 @@ def _load_qualis(csv_path: str) -> Tuple[Dict[str, str], Dict[str, str]]:
 async def _fase_qualis(
     pool: asyncpg.Pool,
     result: EtlResult,
+    pesquisador_ids: Optional[List[int]] = None,
 ) -> None:
     qualis_csv = os.getenv("QUALIS_CSV_PATH", "")
     if not qualis_csv or not os.path.isfile(qualis_csv):
@@ -241,15 +242,24 @@ async def _fase_qualis(
         result.erros.append("CSV Qualis vazio ou inválido")
         return
 
-    sql_fetch = """
-        SELECT id, issn, nome_veiculo
-        FROM producoes
-        WHERE tipo_producao = 'ARTIGO' AND qualis IS NULL
-    """
+    if pesquisador_ids:
+        sql_fetch = """
+            SELECT id, issn, nome_veiculo
+            FROM producoes
+            WHERE tipo_producao = 'ARTIGO' AND qualis IS NULL
+              AND pesquisador_id = ANY($1)
+        """
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_fetch, pesquisador_ids)
+    else:
+        sql_fetch = """
+            SELECT id, issn, nome_veiculo
+            FROM producoes
+            WHERE tipo_producao = 'ARTIGO' AND qualis IS NULL
+        """
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_fetch)
     sql_update = "UPDATE producoes SET qualis = COALESCE($1, qualis) WHERE id = $2"
-
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(sql_fetch)
 
     for row in rows:
         estrato = None
@@ -273,19 +283,23 @@ async def _fase_crossref(
     pool: asyncpg.Pool,
     result: EtlResult,
     client: httpx.AsyncClient,
+    pesquisador_ids: Optional[List[int]] = None,
 ) -> None:
     etl_email = os.getenv("ETL_EMAIL", "spark@email.com")
     headers = {"User-Agent": f"SPARK-ETL/1.0 (mailto:{etl_email})"}
 
-    sql_fetch = """
-        SELECT id, titulo, doi
-        FROM producoes
-        WHERE tipo_producao = 'ARTIGO'
-    """
+    if pesquisador_ids:
+        sql_fetch = """
+            SELECT id, titulo, doi FROM producoes
+            WHERE tipo_producao = 'ARTIGO' AND pesquisador_id = ANY($1)
+        """
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_fetch, pesquisador_ids)
+    else:
+        sql_fetch = "SELECT id, titulo, doi FROM producoes WHERE tipo_producao = 'ARTIGO'"
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_fetch)
     sql_update = "UPDATE producoes SET doi = COALESCE($1, doi), resumo = COALESCE($2, resumo) WHERE id = $3"
-
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(sql_fetch)
 
     for row in rows:
         new_doi: Optional[str] = None
@@ -333,18 +347,22 @@ async def _fase_openalex(
     pool: asyncpg.Pool,
     result: EtlResult,
     client: httpx.AsyncClient,
+    pesquisador_ids: Optional[List[int]] = None,
 ) -> None:
     api_key = os.getenv("OPENALEX_APIKEY", "")
 
-    sql_fetch = """
-        SELECT DISTINCT issn
-        FROM producoes
-        WHERE issn IS NOT NULL AND issn != ''
-    """
+    if pesquisador_ids:
+        sql_fetch = """
+            SELECT DISTINCT issn FROM producoes
+            WHERE issn IS NOT NULL AND issn != '' AND pesquisador_id = ANY($1)
+        """
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_fetch, pesquisador_ids)
+    else:
+        sql_fetch = "SELECT DISTINCT issn FROM producoes WHERE issn IS NOT NULL AND issn != ''"
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_fetch)
     sql_update = "UPDATE producoes SET jcr = COALESCE($1, jcr) WHERE issn = $2"
-
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(sql_fetch)
 
     for row in rows:
         issn = row["issn"]
@@ -526,12 +544,12 @@ async def run_pipeline(
     pesquisador_ids = await _fase_extracao(pool, xml_bytes_list, result)
 
     # Fase 3: Qualis
-    await _fase_qualis(pool, result)
+    await _fase_qualis(pool, result, pesquisador_ids)
 
     # Fases 4 + 5: CrossRef + OpenAlex
     async with httpx.AsyncClient(follow_redirects=True) as client:
-        await _fase_crossref(pool, result, client)
-        await _fase_openalex(pool, result, client)
+        await _fase_crossref(pool, result, client, pesquisador_ids)
+        await _fase_openalex(pool, result, client, pesquisador_ids)
 
     # Fase 6: métricas
     await _fase_metricas(pool, pesquisador_ids, result)
