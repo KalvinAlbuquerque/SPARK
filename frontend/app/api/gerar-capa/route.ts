@@ -1,59 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PT_STOPWORDS = new Set([
-  'de','da','do','das','dos','e','em','na','no','nas','nos',
-  'a','o','as','os','um','uma','com','por','para','que','se',
-  'ao','à','sobre','entre','após','ante','até','desde','sem',
-  'sob','sua','seu','suas','seus','este','esta','um','uma',
-  'análise','estudo','avaliação','investigação','pesquisa',
-]);
-
-function extractTerms(titulo: string): string {
-  return titulo
-    .split(/\s+/)
-    .map(w => w.replace(/[^a-záéíóúâêîôûãõàèìòùç\w]/gi, ''))
-    .filter(w => w.length > 3 && !PT_STOPWORDS.has(w.toLowerCase()))
-    .slice(0, 5)
-    .join(' ');
-}
-
-// Seed determinístico para fallback picsum
-function titleSeed(titulo: string, variant: number): number {
-  let seed = variant * 999983;
-  for (let i = 0; i < titulo.length; i++) {
-    seed = Math.imul(seed * 31 + titulo.charCodeAt(i), 1) >>> 0;
-  }
-  return seed;
-}
-
 export async function POST(req: NextRequest) {
-  const { titulo, variant = 0 } = await req.json();
+  const { titulo, resumo, variant = 0 } = await req.json();
 
   if (!titulo) {
     return NextResponse.json({ error: 'titulo é obrigatório' }, { status: 400 });
   }
 
-  const terms = extractTerms(titulo) || titulo.split(' ').slice(0, 3).join(' ');
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: 'GEMINI_API_KEY não configurada' }, { status: 500 });
+  }
+
+  const prompt = buildPrompt(titulo, resumo);
 
   try {
     const res = await fetch(
-      `https://lexica.art/api/v1/search?q=${encodeURIComponent(terms)}`,
-      { headers: { 'User-Agent': 'SPARK/1.0' }, signal: AbortSignal.timeout(8000) }
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+        }),
+        signal: AbortSignal.timeout(30000),
+      }
     );
 
-    if (res.ok) {
-      const data = await res.json();
-      const images: { src: string }[] = data.images ?? [];
-      if (images.length > 0) {
-        const idx = variant % images.length;
-        return NextResponse.json({ capa_url: images[idx].src });
-      }
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Gemini ${res.status}: ${errText}`);
     }
-  } catch {
-    // Lexica indisponível → fallback
-  }
 
-  // Fallback: picsum com seed do título
-  const seed = titleSeed(titulo, variant);
-  return NextResponse.json({ capa_url: `https://picsum.photos/seed/${seed}/1280/720` });
+    const data = await res.json();
+    const parts: { inlineData?: { data: string; mimeType: string } }[] =
+      data.candidates?.[0]?.content?.parts ?? [];
+    const imagePart = parts.find(p => p.inlineData);
+
+    if (imagePart?.inlineData) {
+      const { data: b64, mimeType } = imagePart.inlineData;
+      return NextResponse.json({ capa_url: `data:${mimeType};base64,${b64}` });
+    }
+
+    throw new Error('Gemini não retornou imagem');
+  } catch {
+    // Fallback: picsum com seed do título
+    let seed = (variant * 999983) >>> 0;
+    for (let i = 0; i < titulo.length; i++) {
+      seed = Math.imul(seed * 31 + titulo.charCodeAt(i), 1) >>> 0;
+    }
+    return NextResponse.json({ capa_url: `https://picsum.photos/seed/${seed}/1280/720` });
+  }
+}
+
+function buildPrompt(titulo: string, resumo?: string): string {
+  const snippet = resumo ? resumo.slice(0, 200) : '';
+  return [
+    `Scientific journal cover art for academic paper: "${titulo}".`,
+    snippet ? `Context: ${snippet}.` : '',
+    'Photorealistic scientific visualization, vibrant colors, deep blues, electric purples,',
+    'abstract data patterns, cinematic lighting, 4K quality, editorial design.',
+    'No text, no letters, no words in the image.',
+  ].filter(Boolean).join(' ');
 }
