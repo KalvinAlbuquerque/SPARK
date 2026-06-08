@@ -169,37 +169,49 @@ async def search_text(
     offset_ph = f"${next_idx + 1}"
 
     sql = f"""
-        WITH grouped AS (
+        WITH base AS (
             SELECT
-                MIN(p.id) AS id,
-                p.titulo,
-                p.tipo_producao,
-                p.ano_publicacao,
-                p.nome_veiculo,
-                p.issn,
-                p.doi,
-                p.qualis,
-                p.jcr,
-                MAX(ts_rank(p.texto_busca, websearch_to_tsquery('portuguese', $1))) AS rank,
-                json_agg(
-                    json_build_object(
-                        'id', pe.id,
-                        'nome_completo', pe.nome_completo,
-                        'departamento', pe.departamento,
-                        'campus', pe.campus
-                    ) ORDER BY pe.nome_completo
-                ) AS pesquisadores_json
+                p.id, p.titulo, p.tipo_producao, p.ano_publicacao, p.nome_veiculo,
+                p.issn, p.doi, p.qualis, p.jcr,
+                pe.id AS pe_id, pe.nome_completo, pe.departamento, pe.campus,
+                ts_rank(p.texto_busca, websearch_to_tsquery('portuguese', $1)) AS rank
             FROM producoes p
             JOIN pesquisadores pe ON pe.id = p.pesquisador_id
             WHERE p.texto_busca @@ websearch_to_tsquery('portuguese', $1)
             {filter_sql}
-            GROUP BY LOWER(p.titulo), p.ano_publicacao,
-                     p.titulo, p.tipo_producao, p.nome_veiculo,
-                     p.issn, p.doi, p.qualis, p.jcr
+        ),
+        authors AS (
+            SELECT
+                LOWER(titulo) AS tkey,
+                COALESCE(ano_publicacao, 0) AS akey,
+                json_agg(
+                    json_build_object(
+                        'id', pe_id,
+                        'nome_completo', nome_completo,
+                        'departamento', departamento,
+                        'campus', campus
+                    ) ORDER BY nome_completo
+                ) AS pesquisadores_json
+            FROM (
+                SELECT DISTINCT ON (LOWER(titulo), COALESCE(ano_publicacao, 0), pe_id)
+                    titulo, ano_publicacao, pe_id, nome_completo, departamento, campus
+                FROM base
+                ORDER BY LOWER(titulo), COALESCE(ano_publicacao, 0), pe_id
+            ) sub
+            GROUP BY LOWER(titulo), COALESCE(ano_publicacao, 0)
+        ),
+        deduped AS (
+            SELECT DISTINCT ON (LOWER(titulo), COALESCE(ano_publicacao, 0))
+                id, titulo, tipo_producao, ano_publicacao, nome_veiculo, issn, doi, qualis, jcr, rank
+            FROM base
+            ORDER BY LOWER(titulo), COALESCE(ano_publicacao, 0), rank DESC, id
         ),
         counted AS (
-            SELECT *, COUNT(*) OVER() AS total_count
-            FROM grouped
+            SELECT d.*, a.pesquisadores_json, COUNT(*) OVER() AS total_count
+            FROM deduped d
+            JOIN authors a
+                ON LOWER(d.titulo) = a.tkey
+                AND COALESCE(d.ano_publicacao, 0) = a.akey
         )
         SELECT * FROM counted
         ORDER BY rank DESC

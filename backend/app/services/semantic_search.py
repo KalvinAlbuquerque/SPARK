@@ -91,12 +91,10 @@ async def search_semantic(
             ORDER BY v.embedding <=> $1
             LIMIT {inner_limit_ph}
         ),
-        grouped AS (
+        authors AS (
             SELECT
-                MIN(id) AS id,
-                titulo, tipo_producao, ano_publicacao, nome_veiculo,
-                issn, doi, qualis, jcr,
-                MAX(similarity_score) AS similarity_score,
+                LOWER(titulo) AS tkey,
+                COALESCE(ano_publicacao, 0) AS akey,
                 json_agg(
                     json_build_object(
                         'id', pe_id,
@@ -105,12 +103,25 @@ async def search_semantic(
                         'campus', campus
                     ) ORDER BY nome_completo
                 ) AS pesquisadores_json
+            FROM (
+                SELECT DISTINCT ON (LOWER(titulo), COALESCE(ano_publicacao, 0), pe_id)
+                    titulo, ano_publicacao, pe_id, nome_completo, departamento, campus
+                FROM candidates
+                ORDER BY LOWER(titulo), COALESCE(ano_publicacao, 0), pe_id
+            ) sub
+            GROUP BY LOWER(titulo), COALESCE(ano_publicacao, 0)
+        ),
+        deduped AS (
+            SELECT DISTINCT ON (LOWER(titulo), COALESCE(ano_publicacao, 0))
+                id, titulo, tipo_producao, ano_publicacao, nome_veiculo, issn, doi, qualis, jcr, similarity_score
             FROM candidates
-            GROUP BY LOWER(titulo), ano_publicacao,
-                     titulo, tipo_producao, nome_veiculo,
-                     issn, doi, qualis, jcr
+            ORDER BY LOWER(titulo), COALESCE(ano_publicacao, 0), similarity_score DESC, id
         )
-        SELECT * FROM grouped
+        SELECT d.*, a.pesquisadores_json
+        FROM deduped d
+        JOIN authors a
+            ON LOWER(d.titulo) = a.tkey
+            AND COALESCE(d.ano_publicacao, 0) = a.akey
         ORDER BY similarity_score DESC
         LIMIT {limit_ph}
     """
