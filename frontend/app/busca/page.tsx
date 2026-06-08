@@ -252,8 +252,8 @@ export default function BuscaPage() {
     try {
       const res = await api.gerarCapa(detalhe.titulo, detalhe.resumo, nextVariant);
       setCapaUrl(res.capa_url);
-    } catch {
-      setCapaError('Não foi possível gerar a capa.');
+    } catch (e: unknown) {
+      setCapaError(e instanceof Error ? e.message : 'Erro ao gerar capa.');
     } finally {
       setCapaLoading(false);
     }
