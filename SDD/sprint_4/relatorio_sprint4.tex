@@ -1,0 +1,669 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- Encoding & Language ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+
+% --- Layout ---
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% --- Fonts ---
+\usepackage{lmodern}
+
+% --- Colors ---
+\usepackage[dvipsnames,table]{xcolor}
+\definecolor{sparkblue}{RGB}{30, 80, 160}
+\definecolor{sparkgray}{RGB}{245, 245, 245}
+\definecolor{sparkgreen}{RGB}{0, 140, 70}
+\definecolor{sparkorange}{RGB}{200, 80, 0}
+\definecolor{rowalt}{RGB}{237, 242, 250}
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+% --- Graphics ---
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% --- Section Formatting ---
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries\color{sparkblue}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{sparkblue}}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{}{0em}{}
+
+% --- Header / Footer ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{gray}{Relatório Sprint IV — Projeto SPARK}}
+\fancyhead[R]{\small\textcolor{gray}{UNEB / DCET}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% --- Misc ---
+\usepackage{enumitem}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=sparkblue, urlcolor=sparkblue}
+\usepackage{pifont}
+\newcommand{\cmark}{\textcolor{sparkgreen}{\ding{51}}}
+\newcommand{\xmark}{\textcolor{sparkorange}{\ding{55}}}
+
+% ============================================================
+\begin{document}
+% ============================================================
+
+% --- Capa ---
+\begin{titlepage}
+  \begin{center}
+    \vspace*{2cm}
+    {\Large\bfseries\color{sparkblue} UNIVERSIDADE DO ESTADO DA BAHIA}\\[0.3cm]
+    {\large Departamento de Ciências Exatas e da Terra — DCET}\\[2.5cm]
+
+    \rule{\linewidth}{1.5pt}\\[0.4cm]
+    {\huge\bfseries\color{sparkblue} SPARK}\\[0.2cm]
+    {\large Plataforma de Busca de Produções Científicas}\\[0.2cm]
+    \rule{\linewidth}{1.5pt}\\[1.5cm]
+
+    {\LARGE\bfseries Relatório de Sprint IV}\\[0.5cm]
+    {\large Front-End Next.js, Painel Admin e Deploy em Produção}\\[2cm]
+
+    \begin{tabular}{rl}
+      \textbf{Equipe:}      & Kalvin Santos \quad · \quad Glenda Santana \\[0.3cm]
+      \textbf{Período:}     & 28/05/2026 a 08/06/2026 \\[0.3cm]
+      \textbf{Metodologia:} & Scrum \\[0.3cm]
+      \textbf{Ferramenta:}  & Jira (Projeto SPARK — código SPK) \\[0.3cm]
+      \textbf{Velocidade:}  & 24 Story Points entregues \\
+    \end{tabular}
+
+    \vfill
+    {\large Salvador, junho de 2026}
+  \end{center}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Contexto da Sprint IV}
+% ============================================================
+
+A Sprint~IV teve como objetivo a construção e entrega do \textbf{front-end completo} da plataforma SPARK,
+com deploy em produção no Vercel. A sprint cobriu desde a landing page institucional até as cinco telas
+da aplicação (busca, resultados, detalhe de produção, perfil de pesquisador e painel administrativo),
+integradas à API FastAPI deployada no Railway na Sprint~III.
+
+\vspace{0.3cm}
+\noindent\textbf{Nota sobre itens não-código:} Sessões de Planning Poker, Daily Scrums, Sprint Review e
+Sprint Retrospective são atividades de processo Scrum. Estas atividades \textbf{não integram as entregas
+contabilizadas} em Story Points e não constam nos artefatos de código do repositório. São descritas apenas
+na Seção~7 (Ritos Scrum) para fins de registro metodológico.
+
+\vspace{0.3cm}
+\noindent\textbf{Feature tentada e removida (não compõe as entregas):} Durante a sprint foi explorada uma
+funcionalidade de ``Gerar Capa com IA'' para as produções, utilizando Pollinations AI e posteriormente
+Gemini 2.0 Flash. As tentativas resultaram em erros de autenticação, rate limiting e incompatibilidade
+com chaves de API sem billing ativado. A feature foi integralmente revertida antes da Sprint Review e
+\textbf{não é contabilizada} nem nos Story Points nem nos artefatos entregues.
+
+% ============================================================
+\section{Product Backlog da Sprint IV}
+% ============================================================
+
+\vspace{0.3cm}
+\rowcolors{2}{rowalt}{white}
+\begin{longtable}{C{1.6cm} C{1.8cm} L{7.5cm} C{2cm}}
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Issue}} &
+  \textcolor{white}{\textbf{Tipo}} &
+  \textcolor{white}{\textbf{Título}} &
+  \textcolor{white}{\textbf{Status}} \\
+  \midrule
+  \endfirsthead
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Issue}} &
+  \textcolor{white}{\textbf{Tipo}} &
+  \textcolor{white}{\textbf{Título}} &
+  \textcolor{white}{\textbf{Status}} \\
+  \midrule
+  \endhead
+  SPK-106 & User Story & US-14 · Página de busca e listagem de resultados (UC-01 e UC-02) & \cmark\ Concluído \\
+  SPK-107 & User Story & US-15 · Detalhe da produção e perfil do pesquisador (UC-03 e UC-04) & \cmark\ Concluído \\
+  SPK-108 & User Story & US-16 · Painel admin: login, gerenciamento de pesquisadores e importação de XML (UC-05) & \cmark\ Concluído \\
+  SPK-109 & User Story & US-17 · Deploy do front-end no Vercel e validação end-to-end & \cmark\ Concluído \\
+  \bottomrule
+  \caption{Backlog da Sprint IV — Jira, Projeto SPARK (EP-04 · Front-End Next.js e Deploy)}
+\end{longtable}
+
+% ============================================================
+\section{Planning Poker}
+% ============================================================
+
+\begin{tabular}{rl}
+  \textbf{Data da sessão:}   & 28/05/2026 \\
+  \textbf{Facilitador:}      & Kalvin Santos \\
+  \textbf{Participantes:}    & Kalvin Santos · Glenda Santana \\
+  \textbf{Escala utilizada:} & Fibonacci (1, 2, 3, 5, 8, 13, 21) \\
+  \textbf{Velocidade ref.:}  & Sprint III — 32 SP \\
+\end{tabular}
+
+\subsection{Rodadas de Estimativa}
+
+% --- SPK-106 ---
+\subsubsection{SPK-106 · US-14 · Página de busca e listagem de resultados}
+
+\textit{Construir a página de busca do SPARK em Next.js, com suporte a busca textual e semântica,
+listagem de resultados em cards responsivos com badges Qualis/JCR, filtros sem reload de página,
+autocomplete de títulos e paginação — cobrindo UC-01 e UC-02.}
+
+\vspace{0.3cm}
+\rowcolors{2}{rowalt}{white}
+\begin{tabular}{lcc}
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Participante}} &
+  \textcolor{white}{\textbf{Voto 1}} &
+  \textcolor{white}{\textbf{Voto Final}} \\
+  \midrule
+  Kalvin Santos  &  8 & 8 \\
+  Glenda Santana & 13 & 8 \\
+  \bottomrule
+\end{tabular}
+
+\vspace{0.2cm}
+\textbf{Discussão:} Glenda estimou 13 pela complexidade de manter os filtros de busca sincronizados com
+os dois modos de busca — FTS retorna até 20 resultados paginados enquanto a semântica retorna top-10 fixo,
+e ambos precisam conviver com o mesmo painel de facetas. Kalvin argumentou que o painel de filtros é
+composto por checkboxes simples cujo estado é lido antes de cada chamada à API, sem necessidade de
+sincronização complexa. A paginação e o toggle de modo são triviais em React com \texttt{useState}.
+Após o alinhamento, Glenda revisou para 8.
+
+\textbf{Consenso: 8 SP} \quad | \quad \textbf{Responsável:} Glenda Santana
+
+% --- SPK-107 ---
+\subsubsection{SPK-107 · US-15 · Detalhe da produção e perfil do pesquisador}
+
+\textit{Construir a tela de detalhe de uma produção e a tela de perfil completo do pesquisador, com
+foto via proxy server-side (CNPq), gráficos de indicadores e co-autores UNEB — cobrindo UC-03 e UC-04.}
+
+\vspace{0.3cm}
+\rowcolors{2}{rowalt}{white}
+\begin{tabular}{lcc}
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Participante}} &
+  \textcolor{white}{\textbf{Voto 1}} &
+  \textcolor{white}{\textbf{Voto Final}} \\
+  \midrule
+  Kalvin Santos  & 5 & 5 \\
+  Glenda Santana & 8 & 5 \\
+  \bottomrule
+\end{tabular}
+
+\vspace{0.2cm}
+\textbf{Discussão:} Glenda estimou 8 pela implementação dos gráficos de barras (distribuição por ano e
+por estrato Qualis) e pela integração do proxy server-side para a foto do Lattes — o CNPq bloqueia
+requisições diretas do navegador por geo-referenciamento. Kalvin lembrou que os gráficos são barras
+simples renderizadas em CSS puro sem dependência de biblioteca de charts, e que o proxy é um Route Handler
+Next.js de menos de 30 linhas reutilizando \texttt{fetch} nativo. A tela de detalhe consome um único
+endpoint já implementado na Sprint~III. Glenda revisou para 5.
+
+\textbf{Consenso: 5 SP} \quad | \quad \textbf{Responsável:} Kalvin Santos
+
+% --- SPK-108 ---
+\subsubsection{SPK-108 · US-16 · Painel admin: login, gerenciamento e importação de XML}
+
+\textit{Construir o painel administrativo com login via Supabase Auth, CRUD de pesquisadores, acionamento
+de reprocessamento individual e importação de XMLs Lattes via interface — cobrindo UC-05.}
+
+\vspace{0.3cm}
+\rowcolors{2}{rowalt}{white}
+\begin{tabular}{lcc}
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Participante}} &
+  \textcolor{white}{\textbf{Voto 1}} &
+  \textcolor{white}{\textbf{Voto Final}} \\
+  \midrule
+  Kalvin Santos  & 13 & 8 \\
+  Glenda Santana &  8 & 8 \\
+  \bottomrule
+\end{tabular}
+
+\vspace{0.2cm}
+\textbf{Discussão:} Kalvin estimou 13 pela amplitude do escopo: auth, CRUD completo de pesquisadores,
+upload de arquivo XML com progress e exibição do resultado do pipeline, e proteção de rota sem sessão.
+Glenda argumentou que a autenticação via Supabase Auth já estava configurada na Sprint~III — o front-end
+apenas consome o SDK de cliente com \texttt{signInWithPassword} e \texttt{onAuthStateChange}. O CRUD é
+direto (formulário modal + chamadas aos endpoints internos já existentes) e o upload de XML usa o input
+\texttt{type=file} padrão do HTML. Kalvin aceitou 8 após o alinhamento.
+
+\textbf{Consenso: 8 SP} \quad | \quad \textbf{Responsável:} Kalvin Santos
+
+% --- SPK-109 ---
+\subsubsection{SPK-109 · US-17 · Deploy do front-end no Vercel e validação end-to-end}
+
+\textit{Fazer o deploy do front-end Next.js no Vercel, apontando para a API Railway em produção,
+e validar o fluxo completo end-to-end pelo navegador.}
+
+\vspace{0.3cm}
+\rowcolors{2}{rowalt}{white}
+\begin{tabular}{lcc}
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Participante}} &
+  \textcolor{white}{\textbf{Voto 1}} &
+  \textcolor{white}{\textbf{Voto Final}} \\
+  \midrule
+  Kalvin Santos  & 3 & 3 \\
+  Glenda Santana & 3 & 3 \\
+  \bottomrule
+\end{tabular}
+
+\vspace{0.2cm}
+\textbf{Discussão:} Consenso imediato. O maior esforço era configurar o \texttt{Root Directory: frontend}
+no Vercel (necessário em monorepo) e a variável de ambiente \texttt{NEXT\_PUBLIC\_API\_URL} apontando para
+o Railway. O smoke test de validação end-to-end é feito manualmente no navegador.
+
+\textbf{Consenso: 3 SP} \quad | \quad \textbf{Responsável:} Glenda Santana
+
+\subsection{Resumo das Estimativas}
+
+\rowcolors{2}{rowalt}{white}
+\begin{tabular}{C{1.8cm} L{7cm} C{3cm} C{1.5cm}}
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Issue}} &
+  \textcolor{white}{\textbf{Título resumido}} &
+  \textcolor{white}{\textbf{Responsável}} &
+  \textcolor{white}{\textbf{SP}} \\
+  \midrule
+  SPK-106 & Busca + listagem de resultados (UC-01/02)  & Glenda Santana & 8  \\
+  SPK-107 & Detalhe de produção + perfil (UC-03/04)    & Kalvin Santos  & 5  \\
+  SPK-108 & Painel admin + importação XML (UC-05)      & Kalvin Santos  & 8  \\
+  SPK-109 & Deploy Vercel + validação end-to-end       & Glenda Santana & 3  \\
+  \midrule
+  \multicolumn{3}{r}{\textbf{Total}} & \textbf{24} \\
+  \bottomrule
+\end{tabular}
+
+\vspace{0.4cm}
+\textbf{Carga por membro:}
+
+\rowcolors{2}{rowalt}{white}
+\begin{tabular}{lcc}
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Membro}} &
+  \textcolor{white}{\textbf{Issues}} &
+  \textcolor{white}{\textbf{SP}} \\
+  \midrule
+  Kalvin Santos  & SPK-107, SPK-108 & 13 SP \\
+  Glenda Santana & SPK-106, SPK-109 & 11 SP \\
+  \bottomrule
+\end{tabular}
+
+% ============================================================
+\section{Burndown Chart}
+% ============================================================
+
+\begin{tabular}{rl}
+  \textbf{Período:}  & 28/05/2026 a 08/06/2026 (8 dias úteis) \\
+  \textbf{Total SP:} & 24 Story Points \\
+\end{tabular}
+
+\subsection{Dados do Burndown}
+
+\rowcolors{2}{rowalt}{white}
+\begin{tabular}{cccc}
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Ponto}} &
+  \textcolor{white}{\textbf{Data}} &
+  \textcolor{white}{\textbf{SP Restante (Real)}} &
+  \textcolor{white}{\textbf{SP Ideal}} \\
+  \midrule
+  0 & 28/05 (Qua) & 24 & 24,0 \\
+  1 & 02/06 (Seg) & 13 & 16,0 \\
+  2 & 06/06 (Sex) &  8 &  8,0 \\
+  3 & 08/06 (Dom) &  0 &  0,0 \\
+  \bottomrule
+\end{tabular}
+
+\vspace{0.3cm}
+\textbf{Entregas por ponto:}
+\begin{itemize}[noitemsep]
+  \item \textbf{Ponto 1 (02/06):} SPK-109 (3 SP) + SPK-106 (8 SP) — front-end deployado no Vercel e tela de busca funcional
+  \item \textbf{Ponto 2 (06/06):} SPK-107 (5 SP) — detalhe de produção e perfil do pesquisador
+  \item \textbf{Ponto 3 (08/06):} SPK-108 (8 SP) — painel admin completo com CRUD e importação de XML
+\end{itemize}
+
+\subsection{Gráfico de Burndown}
+
+\begin{center}
+\begin{tikzpicture}
+  \begin{axis}[
+    width=11cm, height=7cm,
+    xlabel={Ponto de Verificação},
+    ylabel={Story Points Restantes},
+    xmin=0, xmax=3,
+    ymin=0, ymax=27,
+    xtick={0,1,2,3},
+    xticklabels={28/05,02/06,06/06,08/06},
+    x tick label style={font=\small},
+    ytick={0,4,8,12,13,16,20,24},
+    grid=both,
+    grid style={line width=0.3pt, draw=gray!30},
+    major grid style={line width=0.5pt, draw=gray!50},
+    legend pos=north east,
+    legend style={font=\small},
+  ]
+    \addplot[color=gray, dashed, thick, mark=none]
+      coordinates {(0,24)(1,16)(2,8)(3,0)};
+    \addlegendentry{Ideal}
+
+    \addplot[color=sparkblue, solid, thick, mark=*, mark size=3pt]
+      coordinates {(0,24)(1,13)(2,8)(3,0)};
+    \addlegendentry{Real}
+
+    \node[font=\tiny, text=sparkblue, above right] at (axis cs:1,13) {SPK-109, SPK-106};
+    \node[font=\tiny, text=sparkblue, above right] at (axis cs:2,8)  {SPK-107};
+    \node[font=\tiny, text=sparkblue, above right] at (axis cs:3,0)  {SPK-108};
+  \end{axis}
+\end{tikzpicture}
+\end{center}
+
+\subsection{Log de Entregas}
+
+\rowcolors{2}{rowalt}{white}
+\begin{tabular}{C{2.5cm} C{1.5cm} L{5.8cm} C{1cm} C{3cm}}
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Data}} &
+  \textcolor{white}{\textbf{Issue}} &
+  \textcolor{white}{\textbf{Descrição}} &
+  \textcolor{white}{\textbf{SP}} &
+  \textcolor{white}{\textbf{Responsável}} \\
+  \midrule
+  31/05--01/06 & SPK-109 & Deploy Vercel + env vars + smoke test    & 3 & Glenda Santana \\
+  31/05--01/06 & SPK-106 & Busca + resultados + filtros + autocomplete & 8 & Glenda Santana \\
+  05/06--06/06 & SPK-107 & Detalhe de produção + perfil pesquisador  & 5 & Kalvin Santos  \\
+  07/06--08/06 & SPK-108 & Admin: CRUD + reprocessar + import XML    & 8 & Kalvin Santos  \\
+  \midrule
+  \multicolumn{3}{r}{\textbf{Total}} & \textbf{24} & \\
+  \bottomrule
+\end{tabular}
+
+\vspace{0.3cm}
+\textbf{Padrão observado:} a equipe entregou as telas de busca e o deploy (11 SP) já na primeira semana,
+ficando acima do ritmo ideal no ponto 1. A tela de perfil e o painel admin foram entregues na segunda
+semana, zerando o backlog no último dia da sprint. O trabalho foi parcialmente realizado nos fins de
+semana, refletindo a dinâmica de sprint curta com deadline fixo.
+
+% ============================================================
+\section{O que foi desenvolvido}
+% ============================================================
+
+\subsection{SPK-106 — US-14 — Página de busca e listagem de resultados}
+
+Tela principal da aplicação SPARK, cobrindo os casos de uso UC-01 (busca textual) e UC-02 (busca
+semântica).
+
+\textbf{O que foi feito:}
+\begin{itemize}[noitemsep]
+  \item \texttt{frontend/app/busca/page.tsx} — SPA de tela única com estado React gerenciando as cinco
+        telas (busca, resultados, detalhe, perfil, admin)
+  \item \texttt{frontend/app/page.tsx} — Landing page institucional: hero com stats ao vivo
+        (\texttt{GET /api/stats}), seção ``Como funciona'' em 4 passos, bento de recursos e footer
+  \item Barra de busca com toggle FTS / Semântica e atalho de teclado \texttt{Enter}
+  \item Cards de resultado com título, veículo, ano, Qualis (badge colorido), JCR e co-autores
+        (avatares com iniciais, até 3 visíveis + ``+N autores'')
+  \item \textbf{Autocomplete:} dropdown de sugestões de títulos via \texttt{GET /api/search/suggest}
+        ativado após 2 caracteres com debounce de 300 ms
+  \item \textbf{Filtros com facetas:} painel lateral com checkboxes para estrato Qualis, tipo de
+        produção e ano de publicação; facetas com contagem retornadas pelo backend em cada resposta
+  \item \textbf{Deduplicação de co-autores:} artigos com múltiplos pesquisadores da UNEB aparecem
+        uma única vez nos resultados, agrupando todos os co-autores — corrigido via \texttt{DISTINCT ON}
+        no PostgreSQL substituindo a abordagem anterior de \texttt{GROUP BY} que falhou em títulos com
+        capitalização diferente entre linhas
+  \item Paginação: 20 resultados/página no FTS (com ``Página X de Y''); top-10 fixo na semântica
+  \item Badge de similaridade destacado visualmente quando \texttt{similarity\_score} $\geq$ 0,85
+  \item Estado vazio com mensagem ``Nenhuma produção encontrada'' e sugestão de refinar a busca
+\end{itemize}
+
+% -------------------------------------------------------
+\subsection{SPK-107 — US-15 — Detalhe da produção e perfil do pesquisador}
+
+Telas de visualização profunda de uma produção e do currículo completo do pesquisador.
+
+\textbf{Tela de detalhe da produção:}
+\begin{itemize}[noitemsep]
+  \item Título completo, veículo, ano, ISSN, DOI (link externo com \texttt{target="\_blank"})
+  \item \textbf{Resumo:} sempre visível; exibe o abstract quando disponível ou o texto
+        ``Resumo não disponível para esta produção.'' como fallback — nunca omitido silenciosamente
+  \item Métricas em cards: estrato Qualis (com badge colorido), fator de impacto JCR
+  \item \textbf{Co-autores UNEB:} lista lateral com avatar (foto CNPq ou iniciais), nome, departamento
+        e link ``Ver perfil'' para cada pesquisador; título ``Autores (UNEB)'' quando múltiplos
+\end{itemize}
+
+\textbf{Tela de perfil do pesquisador:}
+\begin{itemize}[noitemsep]
+  \item Cover com gradiente e foto Lattes obtida via proxy server-side (\texttt{/api/foto-proxy})
+        que contorna o bloqueio geo-referenciado do CNPq; fallback para initials quando sem foto
+  \item Métricas no cover: total de produções, índice H e total A1/A2 (campos pré-calculados)
+  \item Três abas: \textbf{Produções} (lista paginada 20/pág com Qualis + JCR por item),
+        \textbf{Indicadores} (gráfico de barras por ano e distribuição por estrato Qualis),
+        \textbf{Sobre} (bio do currículo, departamento e campus)
+  \item Gráficos de barras implementados em CSS puro (sem biblioteca externa), responsivos
+\end{itemize}
+
+\textbf{Correção backend associada:} \texttt{GET /api/producoes/\{id\}} agora retorna
+\texttt{pesquisadores} (lista de todos os co-autores UNEB) via self-join em
+\texttt{producoes} por \texttt{LOWER(titulo)} e \texttt{ano\_publicacao}, além de
+\texttt{pesquisador} (autor principal) já existente.
+
+% -------------------------------------------------------
+\subsection{SPK-108 — US-16 — Painel admin}
+
+Interface administrativa completa para gestão de pesquisadores e importação de currículos.
+
+\textbf{Autenticação:}
+\begin{itemize}[noitemsep]
+  \item Login via Supabase Auth (\texttt{signInWithPassword}); credenciais: \texttt{admin@spark.uneb.br}
+        / \texttt{spark2026}
+  \item Listener \texttt{onAuthStateChange} protege todas as rotas do admin — sem sessão ativa,
+        redireciona para a tela de login
+  \item Logout encerra a sessão e retorna à tela pública de busca
+\end{itemize}
+
+\textbf{Dashboard:}
+\begin{itemize}[noitemsep]
+  \item Tiles de estatísticas globais: total de produções, pesquisadores, vetores e data da última carga
+        (via \texttt{GET /api/stats})
+\end{itemize}
+
+\textbf{CRUD de pesquisadores:}
+\begin{itemize}[noitemsep]
+  \item Tabela com busca por nome (\texttt{GET /internal/pesquisadores?q=})
+  \item \textbf{Criar:} modal com campos Lattes ID, nome completo, departamento e campus
+        (\texttt{POST /internal/pesquisadores})
+  \item \textbf{Editar:} modal pré-preenchido (\texttt{PUT /internal/pesquisadores/\{id\}})
+  \item \textbf{Reprocessar:} aciona CrossRef + OpenAlex + métricas + embeddings para o pesquisador
+        selecionado (\texttt{POST /internal/pesquisadores/\{id\}/reprocessar}); exibe resumo com contadores
+  \item \textbf{Remover:} confirmação modal antes do delete cascade
+        (\texttt{DELETE /internal/pesquisadores/\{id\}}) — produções e vetores removidos em cascata
+\end{itemize}
+
+\textbf{Importação de XMLs:}
+\begin{itemize}[noitemsep]
+  \item Aba ``Importar XMLs'' com input \texttt{type=file} (aceita \texttt{.xml}, múltiplos arquivos)
+  \item Envio via \texttt{multipart/form-data} para \texttt{POST /internal/trigger-etl}
+  \item Exibe resumo pós-importação: pesquisadores, produções, Qualis, DOI, resumos, JCR e embeddings
+\end{itemize}
+
+\textbf{Correção de performance associada:} o pipeline ETL (\texttt{etl\_pipeline.py}) foi corrigido
+para escopar as fases de CrossRef, OpenAlex e Qualis apenas aos pesquisadores do XML recém-importado,
+eliminando o processamento de todos os ~918 registros existentes a cada novo upload — o que causava
+travamentos de horas.
+
+% -------------------------------------------------------
+\subsection{SPK-109 — US-17 — Deploy do front-end no Vercel}
+
+Deploy da aplicação Next.js em produção com integração à API Railway.
+
+\textbf{O que foi feito:}
+\begin{itemize}[noitemsep]
+  \item Deploy do projeto Next.js no Vercel com \texttt{Root Directory: frontend} (configuração
+        obrigatória para monorepo — sem isso, o Vercel detecta \texttt{import} na raiz e falha)
+  \item Variável de ambiente \texttt{NEXT\_PUBLIC\_API\_URL} configurada apontando para
+        \texttt{https://spark-production-1903.up.railway.app}
+  \item Favicon SVG (spark glyph roxo \texttt{\#7C6FFF}) configurado via \texttt{app/icon.svg}
+        (App Router detecta automaticamente)
+  \item Título da página: ``SPARK — Busca inteligente da produção científica''
+  \item Smoke test end-to-end validado: busca textual, semântica, detalhe de produção, perfil de
+        pesquisador e painel admin na URL pública do Vercel
+\end{itemize}
+
+% ============================================================
+\section{Artefatos entregues — visão consolidada}
+% ============================================================
+
+\rowcolors{2}{rowalt}{white}
+\begin{longtable}{L{6cm} L{7.5cm}}
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Arquivo}} &
+  \textcolor{white}{\textbf{Descrição}} \\
+  \midrule
+  \endfirsthead
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Arquivo}} &
+  \textcolor{white}{\textbf{Descrição}} \\
+  \midrule
+  \endhead
+  \texttt{frontend/app/page.tsx}                      & Landing page: hero, stats, como funciona, feat bento, footer \\
+  \texttt{frontend/app/busca/page.tsx}                & SPA principal — 5 telas (busca, resultados, detalhe, perfil, admin) \\
+  \texttt{frontend/app/globals.css}                   & Design system completo (dark mode, tokens CSS, todas as telas) \\
+  \texttt{frontend/lib/api.ts}                        & Cliente HTTP com todas as interfaces TypeScript \\
+  \texttt{frontend/app/layout.tsx}                    & Root layout com título ``SPARK — Busca inteligente...'' \\
+  \texttt{frontend/app/icon.svg}                      & Favicon — spark glyph \textcolor{sparkblue}{\#7C6FFF} \\
+  \texttt{frontend/next.config.ts}                    & \texttt{transpilePackages: ['lucide-react']} — fix Turbopack \\
+  \texttt{frontend/app/api/foto-proxy/route.ts}       & Proxy server-side para foto CNPq (contorna bloqueio geo) \\
+  \texttt{backend/app/services/text\_search.py}       & Fix deduplicação: DISTINCT ON substituindo GROUP BY \\
+  \texttt{backend/app/services/semantic\_search.py}   & Fix deduplicação semântica (mesma abordagem) \\
+  \texttt{backend/app/routers/producoes.py}           & Co-autores via self-join por LOWER(titulo) e ano \\
+  \texttt{backend/app/schemas.py}                     & \texttt{ProducaoCard.pesquisadores} (lista, plural) \\
+  \texttt{backend/app/services/etl\_pipeline.py}      & Fases CrossRef/OpenAlex/Qualis filtradas por pesquisador\_ids \\
+  \bottomrule
+  \caption{Artefatos entregues na Sprint IV}
+\end{longtable}
+
+% ============================================================
+\section{Resultados consolidados}
+% ============================================================
+
+\rowcolors{2}{rowalt}{white}
+\begin{tabular}{L{8.5cm} C{2.5cm} C{1.5cm}}
+  \toprule
+  \rowcolor{sparkblue}
+  \textcolor{white}{\textbf{Métrica}} &
+  \textcolor{white}{\textbf{Resultado}} &
+  \textcolor{white}{\textbf{Status}} \\
+  \midrule
+  Telas implementadas (landing + app)         & 6               & \cmark \\
+  Deploy em produção (Vercel)                 & Online          & \cmark \\
+  Busca textual funcional (918 produções)     & Funcional       & \cmark \\
+  Busca semântica com similarity\_score       & Funcional       & \cmark \\
+  Filtros com facetas (Qualis, tipo, ano)     & Funcionais      & \cmark \\
+  Autocomplete de títulos                     & Funcional       & \cmark \\
+  Deduplicação de co-autores em resultados    & Corrigida       & \cmark \\
+  Co-autores agrupados em card único          & Implementado    & \cmark \\
+  Resumo com fallback (260/918 têm abstract)  & Exibido         & \cmark \\
+  Proxy foto Lattes server-side               & Funcional       & \cmark \\
+  Admin: login / logout Supabase Auth         & Funcional       & \cmark \\
+  Admin: CRUD de pesquisadores                & Funcional       & \cmark \\
+  Admin: reprocessar pesquisador              & Funcional       & \cmark \\
+  Admin: importação de XML via interface      & Funcional       & \cmark \\
+  ETL: escopo fases CrossRef/OpenAlex/Qualis  & Corrigido       & \cmark \\
+  Gerar capa com IA                           & Removida        & \xmark \\
+  \bottomrule
+\end{tabular}
+
+% ============================================================
+\section{Ritos Scrum realizados}
+% ============================================================
+
+\noindent\textit{Nota: os ritos a seguir são atividades de processo e não compõem os Story Points
+entregues nem os artefatos de código.}
+
+\subsection{Sprint Planning}
+
+Realizada em 28/05/2026 com Planning Poker (documentado na Seção~3). As 4 histórias foram estimadas,
+distribuídas entre os membros e comprometidas para entrega até 08/06/2026.
+
+\subsection{Daily Scrum}
+
+Reuniões diárias realizadas por videochamada (Google Meet) com duração máxima de 15 minutos, cobrindo
+o progresso de cada história e bloqueios. Os principais pontos de atenção registrados foram:
+\begin{itemize}[noitemsep]
+  \item Bloqueio geo do CNPq para fotos Lattes — resolvido com Route Handler proxy server-side
+  \item Deploy no Vercel falhando por detecção de \texttt{import} na raiz do monorepo — resolvido
+        com configuração de \texttt{Root Directory: frontend}
+  \item ETL travando por horas ao importar XML de pesquisador com poucas produções — causado pelo
+        escopo global das fases CrossRef e OpenAlex; corrigido filtrando por \texttt{pesquisador\_ids}
+\end{itemize}
+
+\subsection{Sprint Review}
+
+Demonstração ao vivo para o professor em 08/06/2026 com:
+\begin{itemize}[noitemsep]
+  \item Landing page institucional no Vercel com stats ao vivo da API Railway
+  \item Busca textual por ``dengue bahia'' retornando produções da UNEB sem duplicatas
+  \item Busca semântica por ``vigilância genômica de arboviroses'' com similarity\_score visível
+  \item Filtros de facetas (Qualis A1, tipo ARTIGO) aplicados em tempo real
+  \item Tela de detalhe com co-autores, resumo (abstract CrossRef) e link DOI
+  \item Perfil de pesquisador com foto CNPq, gráficos de indicadores e lista de produções
+  \item Painel admin: login, criação de pesquisador, upload de XML e reprocessamento individual
+\end{itemize}
+Todos os artefatos foram validados e a sprint foi aprovada integralmente.
+
+\subsection{Sprint Retrospective}
+
+\textbf{O que funcionou bem:}
+\begin{itemize}[noitemsep]
+  \item Desenvolvimento frontend concentrado nos primeiros dias liberou a segunda semana para polish
+        e correção de bugs — deduplicação, co-autores e resumo com fallback
+  \item O design system em CSS puro (sem framework de UI) garantiu consistência visual entre todas
+        as telas sem overhead de dependências externas
+  \item O proxy server-side para foto Lattes foi uma solução elegante que não exigiu configuração
+        adicional de CORS ou proxy externo
+\end{itemize}
+
+\textbf{O que precisa melhorar:}
+\begin{itemize}[noitemsep]
+  \item A feature de ``Gerar Capa com IA'' consumiu tempo de desenvolvimento sem retornar valor —
+        limitações de billing e rate limiting das APIs de geração de imagem devem ser validadas antes
+        do planning de qualquer feature dependente de serviço externo pago
+  \item O bug de escopo do ETL (processando todos os 918 registros a cada import) deveria ter sido
+        identificado na Sprint~III durante os testes do \texttt{trigger-etl}; incluir testes com
+        banco populado nas sprints seguintes
+\end{itemize}
+
+\textbf{Ações para a Sprint seguinte:}
+\begin{itemize}[noitemsep]
+  \item Validar limites e custos de APIs externas antes de incluir features dependentes no backlog
+  \item Adicionar testes de integração para o endpoint \texttt{trigger-etl} com banco populado
+\end{itemize}
+
+\end{document}
