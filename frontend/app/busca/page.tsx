@@ -72,6 +72,7 @@ export default function BuscaPage() {
   const [capaUrl, setCapaUrl] = useState<string | null>(null);
   const [capaLoading, setCapaLoading] = useState(false);
   const [capaError, setCapaError] = useState<string | null>(null);
+  const [capaVariant, setCapaVariant] = useState(0);
 
   /* Profile state */
   const [perfil, setPerfil] = useState<PesquisadorProfile | null>(null);
@@ -246,11 +247,13 @@ export default function BuscaPage() {
     if (!detalhe) return;
     setCapaLoading(true);
     setCapaError(null);
+    const nextVariant = capaVariant + 1;
+    setCapaVariant(nextVariant);
     try {
-      const res = await api.gerarCapa(detalhe.titulo, detalhe.resumo);
+      const res = await api.gerarCapa(detalhe.titulo, detalhe.resumo, nextVariant);
       setCapaUrl(res.capa_url);
     } catch {
-      setCapaError('Não foi possível gerar a capa. Verifique a chave GEMINI_API_KEY.');
+      setCapaError('Não foi possível gerar a capa.');
     } finally {
       setCapaLoading(false);
     }
