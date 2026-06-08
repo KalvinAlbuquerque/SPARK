@@ -850,12 +850,13 @@ export default function BuscaPage() {
 
                   <div className="detail-grid">
                     <div>
-                      {detalhe.resumo && (
-                        <div className="detail-section">
-                          <div className="detail-section-title">resumo</div>
-                          <div className="detail-abstract">{detalhe.resumo}</div>
-                        </div>
-                      )}
+                      <div className="detail-section">
+                        <div className="detail-section-title">resumo</div>
+                        {detalhe.resumo
+                          ? <div className="detail-abstract">{detalhe.resumo}</div>
+                          : <div className="detail-abstract" style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>Resumo não disponível para esta produção.</div>
+                        }
+                      </div>
 
                       <div className="detail-section">
                         <div className="detail-section-title">metadados bibliográficos</div>
