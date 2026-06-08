@@ -695,10 +695,15 @@ export default function BuscaPage() {
                             </div>
                           </div>
                           <div className="result-row-aside">
-                            <span className="author">
-                              <span className="avatar-mini">{initials(r.pesquisador.nome_completo)}</span>
-                              {r.pesquisador.nome_completo}
-                            </span>
+                            {r.pesquisadores.slice(0, 3).map((p, i) => (
+                              <span key={p.id} className="author" style={i > 0 ? { marginTop: 4 } : {}}>
+                                <span className="avatar-mini">{initials(p.nome_completo)}</span>
+                                {p.nome_completo}
+                              </span>
+                            ))}
+                            {r.pesquisadores.length > 3 && (
+                              <span className="meta-dim">+{r.pesquisadores.length - 3} autores</span>
+                            )}
                             {r.doi && <span className="meta-dim">DOI: {r.doi.slice(0, 20)}…</span>}
                             {r.ano_publicacao && <span className="meta-dim">{r.ano_publicacao}</span>}
                           </div>
@@ -906,31 +911,42 @@ export default function BuscaPage() {
 
                     <aside>
                       <div className="aside-card">
-                        <div className="aside-card-title">pesquisador principal</div>
-                        <div className="aside-author" style={{ cursor: 'pointer' }} onClick={() => loadPerfil(detalhe.pesquisador.id)}>
-                          <div className="avatar">{initials(detalhe.pesquisador.nome_completo)}</div>
-                          <div>
-                            <div className="aside-author-name">{detalhe.pesquisador.nome_completo}</div>
-                            <div className="aside-author-sub">
-                              UNEB{detalhe.pesquisador.departamento ? ` · ${detalhe.pesquisador.departamento}` : ''}
-                              {detalhe.pesquisador.campus ? ` · ${detalhe.pesquisador.campus}` : ''}
+                        <div className="aside-card-title">
+                          {detalhe.pesquisadores && detalhe.pesquisadores.length > 1 ? 'autores (UNEB)' : 'pesquisador principal'}
+                        </div>
+
+                        {(detalhe.pesquisadores && detalhe.pesquisadores.length > 0
+                          ? detalhe.pesquisadores
+                          : [detalhe.pesquisador]
+                        ).map((p, i) => (
+                          <div key={p.id} className="aside-author" style={{ cursor: 'pointer', marginBottom: i < (detalhe.pesquisadores?.length ?? 1) - 1 ? 12 : 0 }} onClick={() => loadPerfil(p.id)}>
+                            <div className="avatar">{initials(p.nome_completo)}</div>
+                            <div>
+                              <div className="aside-author-name">{p.nome_completo}</div>
+                              <div className="aside-author-sub">
+                                UNEB{p.departamento ? ` · ${p.departamento}` : ''}
+                                {p.campus ? ` · ${p.campus}` : ''}
+                              </div>
+                              <span className="aside-author-link">
+                                ver perfil <ArrowRight size={11} />
+                              </span>
                             </div>
-                            <span className="aside-author-link">
-                              ver perfil <ArrowRight size={11} />
-                            </span>
                           </div>
-                        </div>
-                        <div className="aside-kv">
-                          <span className="aside-kv-lbl">produções totais</span>
-                          <span className="aside-kv-val">{detalhe.pesquisador.total_producoes}</span>
-                        </div>
-                        <div className="aside-kv">
-                          <span className="aside-kv-lbl">índice H</span>
-                          <span className="aside-kv-val">{detalhe.pesquisador.indice_h}</span>
-                        </div>
-                        <div className="aside-kv">
-                          <span className="aside-kv-lbl">A1 + A2</span>
-                          <span className="aside-kv-val">{detalhe.pesquisador.total_a1_a2}</span>
+                        ))}
+
+                        <div style={{ borderTop: '1px solid var(--border)', marginTop: 12, paddingTop: 12 }}>
+                          <div className="aside-kv">
+                            <span className="aside-kv-lbl">produções totais</span>
+                            <span className="aside-kv-val">{detalhe.pesquisador.total_producoes}</span>
+                          </div>
+                          <div className="aside-kv">
+                            <span className="aside-kv-lbl">índice H</span>
+                            <span className="aside-kv-val">{detalhe.pesquisador.indice_h}</span>
+                          </div>
+                          <div className="aside-kv">
+                            <span className="aside-kv-lbl">A1 + A2</span>
+                            <span className="aside-kv-val">{detalhe.pesquisador.total_a1_a2}</span>
+                          </div>
                         </div>
                       </div>
                     </aside>

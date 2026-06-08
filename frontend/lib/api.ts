@@ -23,7 +23,7 @@ export interface ProducaoCard {
   doi?: string;
   qualis?: string;
   jcr?: number;
-  pesquisador: PesquisadorSummary;
+  pesquisadores: PesquisadorSummary[];
   similarity_score?: number;
 }
 
@@ -39,6 +39,7 @@ export interface ProducaoDetalhe {
   qualis?: string;
   jcr?: number;
   pesquisador: PesquisadorNested;
+  pesquisadores?: PesquisadorSummary[];
 }
 
 export interface PesquisadorProfile {

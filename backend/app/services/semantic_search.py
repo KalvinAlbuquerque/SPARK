@@ -35,6 +35,18 @@ def _facetas_from_cards(cards: list[ProducaoCard]) -> SearchFacetas:
 
 
 def _row_to_card(row: Any) -> ProducaoCard:
+    import json as _json
+    raw = row["pesquisadores_json"]
+    pesquisadores_data = _json.loads(raw) if isinstance(raw, str) else raw
+    pesquisadores = [
+        PesquisadorSummary(
+            id=p["id"],
+            nome_completo=p["nome_completo"],
+            departamento=p.get("departamento") or None,
+            campus=p.get("campus") or None,
+        )
+        for p in pesquisadores_data
+    ]
     return ProducaoCard(
         id=row["id"],
         titulo=row["titulo"],
@@ -45,12 +57,7 @@ def _row_to_card(row: Any) -> ProducaoCard:
         doi=row["doi"] or None,
         qualis=row["qualis"] or None,
         jcr=float(row["jcr"]) if row["jcr"] is not None else None,
-        pesquisador=PesquisadorSummary(
-            id=row["pesquisador_id"],
-            nome_completo=row["nome_completo"],
-            departamento=row["departamento"] or None,
-            campus=row["campus"] or None,
-        ),
+        pesquisadores=pesquisadores,
         similarity_score=float(row["similarity_score"]),
     )
 
@@ -74,7 +81,7 @@ async def search_semantic(
             SELECT
                 p.id, p.titulo, p.tipo_producao, p.ano_publicacao, p.nome_veiculo,
                 p.issn, p.doi, p.qualis, p.jcr,
-                pe.id AS pesquisador_id, pe.nome_completo, pe.departamento, pe.campus,
+                pe.id AS pe_id, pe.nome_completo, pe.departamento, pe.campus,
                 GREATEST(0.0, 1.0 - (v.embedding <=> $1)) AS similarity_score
             FROM vetores v
             JOIN producoes p ON p.id = v.producao_id
@@ -84,19 +91,26 @@ async def search_semantic(
             ORDER BY v.embedding <=> $1
             LIMIT {inner_limit_ph}
         ),
-        ranked AS (
-            SELECT *,
-                ROW_NUMBER() OVER (
-                    PARTITION BY LOWER(titulo), COALESCE(ano_publicacao, 0)
-                    ORDER BY similarity_score DESC, id
-                ) AS rn
+        grouped AS (
+            SELECT
+                MIN(id) AS id,
+                titulo, tipo_producao, ano_publicacao, nome_veiculo,
+                issn, doi, qualis, jcr,
+                MAX(similarity_score) AS similarity_score,
+                json_agg(
+                    json_build_object(
+                        'id', pe_id,
+                        'nome_completo', nome_completo,
+                        'departamento', departamento,
+                        'campus', campus
+                    ) ORDER BY nome_completo
+                ) AS pesquisadores_json
             FROM candidates
+            GROUP BY LOWER(titulo), ano_publicacao,
+                     titulo, tipo_producao, nome_veiculo,
+                     issn, doi, qualis, jcr
         )
-        SELECT id, titulo, tipo_producao, ano_publicacao, nome_veiculo,
-               issn, doi, qualis, jcr, pesquisador_id, nome_completo,
-               departamento, campus, similarity_score
-        FROM ranked
-        WHERE rn = 1
+        SELECT * FROM grouped
         ORDER BY similarity_score DESC
         LIMIT {limit_ph}
     """

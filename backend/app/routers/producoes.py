@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 
 from app.database import get_db
-from app.schemas import ProducaoDetalhe, PesquisadorNested, TipoProducaoItem
+from app.schemas import ProducaoDetalhe, PesquisadorNested, PesquisadorSummary, TipoProducaoItem
 
 router = APIRouter(prefix="/api/producoes", tags=["producoes"])
 
@@ -39,11 +39,21 @@ async def detalhe_producao(producao_id: int, pool=Depends(get_db)):
         JOIN pesquisadores pe ON pe.id = p.pesquisador_id
         WHERE p.id = $1
     """
+    coautores_sql = """
+        SELECT DISTINCT pe2.id, pe2.nome_completo, pe2.departamento, pe2.campus
+        FROM producoes p1
+        JOIN producoes p2
+            ON LOWER(p2.titulo) = LOWER(p1.titulo)
+            AND COALESCE(p2.ano_publicacao, 0) = COALESCE(p1.ano_publicacao, 0)
+        JOIN pesquisadores pe2 ON pe2.id = p2.pesquisador_id
+        WHERE p1.id = $1
+        ORDER BY pe2.nome_completo
+    """
     async with pool.acquire() as conn:
         row = await conn.fetchrow(sql, producao_id)
-
-    if row is None:
-        raise HTTPException(status_code=404, detail="Produção não encontrada")
+        if row is None:
+            raise HTTPException(status_code=404, detail="Produção não encontrada")
+        coautores_rows = await conn.fetch(coautores_sql, producao_id)
 
     return ProducaoDetalhe(
         id=row["id"],
@@ -65,4 +75,13 @@ async def detalhe_producao(producao_id: int, pool=Depends(get_db)):
             indice_h=row["indice_h"],
             total_a1_a2=row["total_a1_a2"],
         ),
+        pesquisadores=[
+            PesquisadorSummary(
+                id=r["id"],
+                nome_completo=r["nome_completo"],
+                departamento=r["departamento"] or None,
+                campus=r["campus"] or None,
+            )
+            for r in coautores_rows
+        ],
     )

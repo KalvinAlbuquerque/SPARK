@@ -126,6 +126,18 @@ def build_facetas_from_rows(facet_rows: list) -> SearchFacetas:
 
 
 def _row_to_card(row: Any) -> ProducaoCard:
+    import json as _json
+    raw = row["pesquisadores_json"]
+    pesquisadores_data = _json.loads(raw) if isinstance(raw, str) else raw
+    pesquisadores = [
+        PesquisadorSummary(
+            id=p["id"],
+            nome_completo=p["nome_completo"],
+            departamento=p.get("departamento") or None,
+            campus=p.get("campus") or None,
+        )
+        for p in pesquisadores_data
+    ]
     return ProducaoCard(
         id=row["id"],
         titulo=row["titulo"],
@@ -136,12 +148,7 @@ def _row_to_card(row: Any) -> ProducaoCard:
         doi=row["doi"] or None,
         qualis=row["qualis"] or None,
         jcr=float(row["jcr"]) if row["jcr"] is not None else None,
-        pesquisador=PesquisadorSummary(
-            id=row["pesquisador_id"],
-            nome_completo=row["nome_completo"],
-            departamento=row["departamento"] or None,
-            campus=row["campus"] or None,
-        ),
+        pesquisadores=pesquisadores,
     )
 
 
@@ -162,27 +169,39 @@ async def search_text(
     offset_ph = f"${next_idx + 1}"
 
     sql = f"""
-        WITH ranked AS (
+        WITH grouped AS (
             SELECT
-                p.id, p.titulo, p.tipo_producao, p.ano_publicacao, p.nome_veiculo,
-                p.issn, p.doi, p.qualis, p.jcr,
-                pe.id AS pesquisador_id, pe.nome_completo, pe.departamento, pe.campus,
-                ts_rank(p.texto_busca, websearch_to_tsquery('portuguese', $1)) AS rank,
-                ROW_NUMBER() OVER (
-                    PARTITION BY LOWER(p.titulo), COALESCE(p.ano_publicacao, 0)
-                    ORDER BY ts_rank(p.texto_busca, websearch_to_tsquery('portuguese', $1)) DESC, p.id
-                ) AS rn
+                MIN(p.id) AS id,
+                p.titulo,
+                p.tipo_producao,
+                p.ano_publicacao,
+                p.nome_veiculo,
+                p.issn,
+                p.doi,
+                p.qualis,
+                p.jcr,
+                MAX(ts_rank(p.texto_busca, websearch_to_tsquery('portuguese', $1))) AS rank,
+                json_agg(
+                    json_build_object(
+                        'id', pe.id,
+                        'nome_completo', pe.nome_completo,
+                        'departamento', pe.departamento,
+                        'campus', pe.campus
+                    ) ORDER BY pe.nome_completo
+                ) AS pesquisadores_json
             FROM producoes p
             JOIN pesquisadores pe ON pe.id = p.pesquisador_id
             WHERE p.texto_busca @@ websearch_to_tsquery('portuguese', $1)
             {filter_sql}
+            GROUP BY LOWER(p.titulo), p.ano_publicacao,
+                     p.titulo, p.tipo_producao, p.nome_veiculo,
+                     p.issn, p.doi, p.qualis, p.jcr
         ),
-        unique_results AS (
+        counted AS (
             SELECT *, COUNT(*) OVER() AS total_count
-            FROM ranked
-            WHERE rn = 1
+            FROM grouped
         )
-        SELECT * FROM unique_results
+        SELECT * FROM counted
         ORDER BY rank DESC
         LIMIT {limit_ph} OFFSET {offset_ph}
     """

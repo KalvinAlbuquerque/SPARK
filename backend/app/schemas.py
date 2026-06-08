@@ -71,7 +71,7 @@ class ProducaoCard(BaseModel):
     doi: Optional[str] = None
     qualis: Optional[str] = None
     jcr: Optional[float] = None
-    pesquisador: PesquisadorSummary
+    pesquisadores: List[PesquisadorSummary]
     similarity_score: Optional[float] = None
 
 
@@ -111,6 +111,7 @@ class ProducaoDetalhe(BaseModel):
     qualis: Optional[str] = None
     jcr: Optional[float] = None
     pesquisador: PesquisadorNested
+    pesquisadores: List[PesquisadorSummary] = Field(default_factory=list)
 
 
 # ── Pesquisadores ─────────────────────────────────────────────────────────────
