@@ -11,6 +11,8 @@ from app.schemas import (
     PesquisadorAdminItem,
     PesquisadorAdminListResponse,
     PesquisadorCreateRequest,
+    PesquisadorUpdateRequest,
+    ReprocessarResponse,
     TriggerEmbeddingsResponse,
     TriggerEtlResponse,
 )
@@ -142,6 +144,36 @@ async def create_pesquisador(
     return PesquisadorAdminItem(**dict(row))
 
 
+@router.put(
+    "/pesquisadores/{pesquisador_id}",
+    response_model=PesquisadorAdminItem,
+    dependencies=[Depends(_require_api_key)],
+)
+async def update_pesquisador(
+    pesquisador_id: int,
+    body: PesquisadorUpdateRequest,
+    pool=Depends(get_db),
+):
+    updates = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=422, detail="Nenhum campo para atualizar")
+
+    set_clause = ", ".join(f"{k} = ${i + 1}" for i, k in enumerate(updates))
+    values = list(updates.values()) + [pesquisador_id]
+    sql = (
+        f"UPDATE pesquisadores SET {set_clause} WHERE id = ${len(values)}"
+        " RETURNING id, lattes_id, nome_completo, departamento, campus,"
+        " total_producoes, data_atualizacao"
+    )
+
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(sql, *values)
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="Pesquisador não encontrado")
+    return PesquisadorAdminItem(**dict(row))
+
+
 @router.delete(
     "/pesquisadores/{pesquisador_id}",
     status_code=204,
@@ -152,6 +184,31 @@ async def delete_pesquisador(pesquisador_id: int, pool=Depends(get_db)):
         result = await conn.execute(
             "DELETE FROM pesquisadores WHERE id = $1", pesquisador_id
         )
-    # asyncpg returns "DELETE N"
     if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Pesquisador não encontrado")
+
+
+@router.post(
+    "/pesquisadores/{pesquisador_id}/reprocessar",
+    response_model=ReprocessarResponse,
+    dependencies=[Depends(_require_api_key)],
+)
+async def reprocessar_pesquisador(pesquisador_id: int, pool=Depends(get_db)):
+    async with pool.acquire() as conn:
+        exists = await conn.fetchval(
+            "SELECT 1 FROM pesquisadores WHERE id = $1", pesquisador_id
+        )
+    if not exists:
+        raise HTTPException(status_code=404, detail="Pesquisador não encontrado")
+
+    from app.services.etl_pipeline import run_enrichment_for_pesquisador  # lazy
+
+    result = await run_enrichment_for_pesquisador(pool, pesquisador_id)
+    return ReprocessarResponse(
+        qualis_match=result.qualis_match,
+        doi_fill=result.doi_fill,
+        resumo_fill=result.resumo_fill,
+        jcr_fill=result.jcr_fill,
+        vetores_gerados=result.vetores_gerados,
+        erros=result.erros,
+    )

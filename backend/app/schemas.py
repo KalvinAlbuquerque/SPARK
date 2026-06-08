@@ -206,3 +206,18 @@ class PesquisadorCreateRequest(BaseModel):
     nome_completo: str = Field(..., min_length=1, max_length=255)
     departamento: Optional[str] = Field(None, max_length=255)
     campus: Optional[str] = Field(None, max_length=100)
+
+
+class PesquisadorUpdateRequest(BaseModel):
+    nome_completo: Optional[str] = Field(None, min_length=1, max_length=255)
+    departamento: Optional[str] = Field(None, max_length=255)
+    campus: Optional[str] = Field(None, max_length=100)
+
+
+class ReprocessarResponse(BaseModel):
+    qualis_match: int
+    doi_fill: int
+    resumo_fill: int
+    jcr_fill: int
+    vetores_gerados: int
+    erros: List[str]

@@ -12,7 +12,8 @@ import {
   api,
   ProducaoCard, ProducaoDetalhe, PesquisadorProfile,
   PesquisadorProducaoItem, PesquisadorStats,
-  SearchFilters, SearchFacetas, GlobalStats, TriggerEtlResponse, PesquisadorAdminItem,
+  SearchFilters, SearchFacetas, GlobalStats, TriggerEtlResponse,
+  PesquisadorAdminItem, ReprocessarResponse,
 } from '../../lib/api';
 
 /* ─── Types ─── */
@@ -86,6 +87,14 @@ export default function BuscaPage() {
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [adminTab, setAdminTab] = useState<'pesquisadores' | 'etl'>('pesquisadores');
   const [adminSearchQ, setAdminSearchQ] = useState('');
+  const [adminReloadKey, setAdminReloadKey] = useState(0);
+  const [adminModal, setAdminModal] = useState<{ mode: 'add' | 'edit'; item?: PesquisadorAdminItem } | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [modalLattesId, setModalLattesId] = useState('');
+  const [modalNome, setModalNome] = useState('');
+  const [modalDepto, setModalDepto] = useState('');
+  const [modalCampus, setModalCampus] = useState('');
   const [etlFiles, setEtlFiles] = useState<FileList | null>(null);
   const [etlLoading, setEtlLoading] = useState(false);
   const [etlResult, setEtlResult] = useState<TriggerEtlResponse | null>(null);
@@ -305,6 +314,53 @@ export default function BuscaPage() {
       setEtlError('Erro ao processar. Verifique se o servidor está acessível e os XMLs são válidos.');
     } finally {
       setEtlLoading(false);
+    }
+  }
+
+  /* ── Admin CRUD ── */
+  function openAddModal() {
+    setModalLattesId('');
+    setModalNome('');
+    setModalDepto('');
+    setModalCampus('');
+    setModalError(null);
+    setAdminModal({ mode: 'add' });
+  }
+
+  function openEditModal(item: PesquisadorAdminItem) {
+    setModalLattesId(item.lattes_id);
+    setModalNome(item.nome_completo);
+    setModalDepto(item.departamento ?? '');
+    setModalCampus(item.campus ?? '');
+    setModalError(null);
+    setAdminModal({ mode: 'edit', item });
+  }
+
+  async function handleModalSave() {
+    if (!adminModal) return;
+    setModalLoading(true);
+    setModalError(null);
+    try {
+      if (adminModal.mode === 'add') {
+        await api.createInternalPesquisador({
+          lattes_id: modalLattesId.trim(),
+          nome_completo: modalNome.trim(),
+          departamento: modalDepto.trim() || undefined,
+          campus: modalCampus.trim() || undefined,
+        });
+      } else if (adminModal.item) {
+        await api.updateInternalPesquisador(adminModal.item.id, {
+          nome_completo: modalNome.trim() || undefined,
+          departamento: modalDepto.trim() || undefined,
+          campus: modalCampus.trim() || undefined,
+        });
+      }
+      setAdminModal(null);
+      setAdminReloadKey(k => k + 1);
+    } catch (e: unknown) {
+      setModalError(e instanceof Error ? e.message : 'Erro ao salvar.');
+    } finally {
+      setModalLoading(false);
     }
   }
 
@@ -1187,6 +1243,10 @@ export default function BuscaPage() {
                       onChange={e => setAdminSearchQ(e.target.value)}
                     />
                   </div>
+                  <button className="btn btn-primary" style={{ marginLeft: 'auto' }} onClick={openAddModal}>
+                    <UserRound size={14} />
+                    adicionar
+                  </button>
                 </div>
 
                 <div className="data-table-wrap">
@@ -1197,10 +1257,16 @@ export default function BuscaPage() {
                         <th>departamento</th>
                         <th>campus</th>
                         <th>produções</th>
+                        <th>ações</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <AdminResearcherRows q={adminSearchQ} />
+                      <AdminResearcherRows
+                        q={adminSearchQ}
+                        reloadKey={adminReloadKey}
+                        onReload={() => setAdminReloadKey(k => k + 1)}
+                        onEdit={openEditModal}
+                      />
                     </tbody>
                   </table>
                 </div>
@@ -1280,6 +1346,71 @@ export default function BuscaPage() {
 
         </main>
       </div>
+
+      {/* ── Admin modal (add / edit pesquisador) ── */}
+      {adminModal && (
+        <div className="login-overlay" onClick={e => { if (e.target === e.currentTarget) setAdminModal(null); }}>
+          <div className="login-card" style={{ maxWidth: 480 }}>
+            <div className="login-brand" style={{ marginBottom: 20 }}>
+              <div className="login-title">
+                {adminModal.mode === 'add' ? 'adicionar pesquisador' : 'editar pesquisador'}
+              </div>
+            </div>
+
+            <div className="login-field">
+              <label>lattes id</label>
+              <input
+                type="text"
+                value={modalLattesId}
+                onChange={e => setModalLattesId(e.target.value)}
+                placeholder="ex: 1234567890123456"
+                disabled={adminModal.mode === 'edit'}
+                style={adminModal.mode === 'edit' ? { opacity: 0.5 } : {}}
+              />
+            </div>
+            <div className="login-field">
+              <label>nome completo *</label>
+              <input
+                type="text"
+                value={modalNome}
+                onChange={e => setModalNome(e.target.value)}
+                placeholder="Nome do Pesquisador"
+              />
+            </div>
+            <div className="login-field">
+              <label>departamento</label>
+              <input
+                type="text"
+                value={modalDepto}
+                onChange={e => setModalDepto(e.target.value)}
+                placeholder="ex: DCET"
+              />
+            </div>
+            <div className="login-field">
+              <label>campus</label>
+              <input
+                type="text"
+                value={modalCampus}
+                onChange={e => setModalCampus(e.target.value)}
+                placeholder="ex: Campus I"
+              />
+            </div>
+
+            {modalError && (
+              <div className="login-error visible" style={{ marginBottom: 14 }}>{modalError}</div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setAdminModal(null)} disabled={modalLoading}>
+                cancelar
+              </button>
+              <button className="btn btn-primary" onClick={handleModalSave} disabled={modalLoading || !modalNome.trim() || (adminModal.mode === 'add' && !modalLattesId.trim())}>
+                {modalLoading ? 'salvando...' : 'salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1330,9 +1461,22 @@ function QualisBars({ data, total }: { data: { qualis: string; total: number }[]
   );
 }
 
-function AdminResearcherRows({ q }: { q: string }) {
+function AdminResearcherRows({
+  q,
+  reloadKey,
+  onReload,
+  onEdit,
+}: {
+  q: string;
+  reloadKey: number;
+  onReload: () => void;
+  onEdit: (item: PesquisadorAdminItem) => void;
+}) {
   const [rows, setRows] = useState<PesquisadorAdminItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reprocessingId, setReprocessingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [reprocessResult, setReprocessResult] = useState<{ id: number; r: ReprocessarResponse } | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -1340,12 +1484,39 @@ function AdminResearcherRows({ q }: { q: string }) {
       .then(r => setRows(r.resultados))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
-  }, [q]);
+  }, [q, reloadKey]);
+
+  async function handleDelete(id: number, nome: string) {
+    if (!confirm(`Remover "${nome}" e todas as suas produções? Essa ação não pode ser desfeita.`)) return;
+    setDeletingId(id);
+    try {
+      await api.deleteInternalPesquisador(id);
+      onReload();
+    } catch {
+      alert('Erro ao remover pesquisador.');
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleReprocess(id: number) {
+    setReprocessingId(id);
+    setReprocessResult(null);
+    try {
+      const r = await api.reprocessarPesquisador(id);
+      setReprocessResult({ id, r });
+      onReload();
+    } catch {
+      alert('Erro ao reprocessar pesquisador.');
+    } finally {
+      setReprocessingId(null);
+    }
+  }
 
   if (loading) {
     return (
       <tr>
-        <td colSpan={4} style={{ textAlign: 'center', padding: 28 }}>
+        <td colSpan={5} style={{ textAlign: 'center', padding: 28 }}>
           <div className="spinner" style={{ margin: '0 auto', marginBottom: 0 }} />
         </td>
       </tr>
@@ -1355,7 +1526,7 @@ function AdminResearcherRows({ q }: { q: string }) {
   if (!rows.length) {
     return (
       <tr>
-        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-3)', padding: 24 }}>
+        <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-3)', padding: 24 }}>
           Nenhum pesquisador encontrado.
         </td>
       </tr>
@@ -1364,12 +1535,57 @@ function AdminResearcherRows({ q }: { q: string }) {
 
   return (
     <>
+      {reprocessResult && (
+        <tr>
+          <td colSpan={5} style={{ padding: '10px 18px' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', background: 'var(--surface-2)', borderRadius: 8, padding: '10px 14px' }}>
+              Reprocessado: {reprocessResult.r.qualis_match} qualis · {reprocessResult.r.doi_fill} DOI · {reprocessResult.r.resumo_fill} resumos · {reprocessResult.r.jcr_fill} JCR · {reprocessResult.r.vetores_gerados} embeddings
+              {reprocessResult.r.erros.length > 0 && <span style={{ color: 'var(--err-fg)', marginLeft: 8 }}>({reprocessResult.r.erros.length} avisos)</span>}
+            </div>
+          </td>
+        </tr>
+      )}
       {rows.map(r => (
         <tr key={r.id}>
           <td>{r.nome_completo}</td>
           <td>{r.departamento ?? '—'}</td>
           <td>{r.campus ?? '—'}</td>
           <td className="mono">{r.total_producoes}</td>
+          <td>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button
+                className="icon-btn"
+                title="Reprocessar enriquecimento"
+                onClick={() => handleReprocess(r.id)}
+                disabled={reprocessingId === r.id || deletingId === r.id}
+                style={{ width: 30, height: 30 }}
+              >
+                {reprocessingId === r.id
+                  ? <div className="spinner" style={{ width: 12, height: 12, margin: 0 }} />
+                  : <RefreshCw size={13} />}
+              </button>
+              <button
+                className="icon-btn"
+                title="Editar"
+                onClick={() => onEdit(r)}
+                disabled={reprocessingId === r.id || deletingId === r.id}
+                style={{ width: 30, height: 30 }}
+              >
+                <Info size={13} />
+              </button>
+              <button
+                className="icon-btn"
+                title="Remover pesquisador"
+                onClick={() => handleDelete(r.id, r.nome_completo)}
+                disabled={reprocessingId === r.id || deletingId === r.id}
+                style={{ width: 30, height: 30, color: 'var(--err-fg)' }}
+              >
+                {deletingId === r.id
+                  ? <div className="spinner" style={{ width: 12, height: 12, margin: 0 }} />
+                  : <X size={13} />}
+              </button>
+            </div>
+          </td>
         </tr>
       ))}
     </>

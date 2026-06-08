@@ -148,6 +148,28 @@ export interface TriggerEtlResponse {
   erros: string[];
 }
 
+export interface ReprocessarResponse {
+  qualis_match: number;
+  doi_fill: number;
+  resumo_fill: number;
+  jcr_fill: number;
+  vetores_gerados: number;
+  erros: string[];
+}
+
+export interface PesquisadorCreateRequest {
+  lattes_id: string;
+  nome_completo: string;
+  departamento?: string;
+  campus?: string;
+}
+
+export interface PesquisadorUpdateRequest {
+  nome_completo?: string;
+  departamento?: string;
+  campus?: string;
+}
+
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
@@ -186,6 +208,21 @@ async function proxyPostJSON<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
+async function proxyPut<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+async function proxyDelete(path: string): Promise<void> {
+  const res = await fetch(path, { method: 'DELETE' });
+  if (!res.ok && res.status !== 204) throw new Error(`${res.status} ${res.statusText}`);
+}
+
 export const api = {
   searchText: (query: string, filters: SearchFilters = {}, page = 1) =>
     post<TextSearchResult>('/api/search/text', { query, filters, page }),
@@ -212,6 +249,18 @@ export const api = {
     proxyGet<PesquisadorAdminListResponse>(
       `/api/internal/pesquisadores${q ? `?q=${encodeURIComponent(q)}` : ''}`
     ),
+
+  createInternalPesquisador: (body: PesquisadorCreateRequest) =>
+    proxyPostJSON<PesquisadorAdminItem>('/api/internal/pesquisadores', body),
+
+  updateInternalPesquisador: (id: number, body: PesquisadorUpdateRequest) =>
+    proxyPut<PesquisadorAdminItem>(`/api/internal/pesquisadores/${id}`, body),
+
+  deleteInternalPesquisador: (id: number) =>
+    proxyDelete(`/api/internal/pesquisadores/${id}`),
+
+  reprocessarPesquisador: (id: number) =>
+    proxyPostJSON<ReprocessarResponse>(`/api/internal/pesquisadores/${id}/reprocessar`, {}),
 
   triggerEtl: (formData: FormData) =>
     proxyPost<TriggerEtlResponse>('/api/internal/trigger-etl', formData),

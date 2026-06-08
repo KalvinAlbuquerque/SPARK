@@ -394,6 +394,123 @@ async def _fase_metricas(
             result.erros.append(f"Métricas pesquisador {pid}: {exc}")
 
 
+# ── Re-enriquecimento por pesquisador ─────────────────────────────────────────
+
+async def run_enrichment_for_pesquisador(
+    pool: asyncpg.Pool,
+    pesquisador_id: int,
+) -> EtlResult:
+    """Re-executa fases de enriquecimento (Qualis, CrossRef, OpenAlex, métricas, embeddings)
+    para as produções existentes de um pesquisador específico."""
+    from worker.embeddings_worker import run_worker
+
+    result = EtlResult()
+
+    # Qualis — apenas artigos deste pesquisador sem qualis
+    qualis_csv = os.getenv("QUALIS_CSV_PATH", "")
+    if qualis_csv and os.path.isfile(qualis_csv):
+        issn_map, titulo_map = _load_qualis(qualis_csv)
+        if issn_map or titulo_map:
+            sql_fetch = """
+                SELECT id, issn, nome_veiculo FROM producoes
+                WHERE pesquisador_id = $1 AND tipo_producao = 'ARTIGO' AND qualis IS NULL
+            """
+            async with pool.acquire() as conn:
+                rows = await conn.fetch(sql_fetch, pesquisador_id)
+            sql_upd = "UPDATE producoes SET qualis = COALESCE($1, qualis) WHERE id = $2"
+            for row in rows:
+                estrato = None
+                if row["issn"]:
+                    estrato = issn_map.get(row["issn"])
+                if not estrato and row["nome_veiculo"]:
+                    estrato = titulo_map.get(row["nome_veiculo"].strip())
+                if estrato:
+                    async with pool.acquire() as conn:
+                        await conn.execute(sql_upd, estrato, row["id"])
+                    result.qualis_match += 1
+
+    etl_email = os.getenv("ETL_EMAIL", "spark@email.com")
+    headers = {"User-Agent": f"SPARK-ETL/1.0 (mailto:{etl_email})"}
+    api_key = os.getenv("OPENALEX_APIKEY", "")
+
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        # CrossRef — artigos deste pesquisador
+        sql_fetch = """
+            SELECT id, titulo, doi FROM producoes
+            WHERE pesquisador_id = $1 AND tipo_producao = 'ARTIGO'
+        """
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_fetch, pesquisador_id)
+        sql_upd = "UPDATE producoes SET doi = COALESCE($1, doi), resumo = COALESCE($2, resumo) WHERE id = $3"
+        for row in rows:
+            new_doi: Optional[str] = None
+            new_resumo: Optional[str] = None
+            try:
+                if row["doi"] is not None:
+                    url = f"https://api.crossref.org/works/{row['doi']}?mailto={etl_email}"
+                    resp = await client.get(url, headers=headers, timeout=15)
+                    if resp.status_code == 200:
+                        abstract = resp.json().get("message", {}).get("abstract", "")
+                        if abstract:
+                            new_resumo = _HTML_TAG.sub("", abstract).strip() or None
+                else:
+                    params = {"query.bibliographic": row["titulo"], "rows": "1", "mailto": etl_email}
+                    resp = await client.get(
+                        "https://api.crossref.org/works", params=params, headers=headers, timeout=15
+                    )
+                    if resp.status_code == 200:
+                        items = resp.json().get("message", {}).get("items", [])
+                        if items and items[0].get("score", 0) > 70:
+                            new_doi = (items[0].get("DOI", "") or "").strip() or None
+                            abstract = items[0].get("abstract", "")
+                            if abstract:
+                                new_resumo = _HTML_TAG.sub("", abstract).strip() or None
+            except Exception:  # noqa: BLE001
+                continue
+            if new_doi or new_resumo:
+                async with pool.acquire() as conn:
+                    await conn.execute(sql_upd, new_doi, new_resumo, row["id"])
+                if new_doi:
+                    result.doi_fill += 1
+                if new_resumo:
+                    result.resumo_fill += 1
+
+        # OpenAlex — ISSNs únicos deste pesquisador
+        sql_fetch = """
+            SELECT DISTINCT issn FROM producoes
+            WHERE pesquisador_id = $1 AND issn IS NOT NULL AND issn != ''
+        """
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_fetch, pesquisador_id)
+        sql_upd = "UPDATE producoes SET jcr = COALESCE($1, jcr) WHERE issn = $2"
+        for row in rows:
+            issn = row["issn"]
+            try:
+                url = f"https://api.openalex.org/sources/issn:{issn}"
+                params: Dict[str, str] = {"select": "issn_l,display_name,summary_stats"}
+                if api_key:
+                    params["api_key"] = api_key
+                resp = await client.get(url, params=params, timeout=15)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    jcr = (data.get("summary_stats") or {}).get("2yr_mean_citedness")
+                    if jcr is not None:
+                        async with pool.acquire() as conn:
+                            await conn.execute(sql_upd, float(jcr), issn)
+                        result.jcr_fill += 1
+            except Exception:  # noqa: BLE001
+                continue
+
+    # Métricas + embeddings
+    await _fase_metricas(pool, [pesquisador_id], result)
+    try:
+        result.vetores_gerados = await run_worker(pool)
+    except Exception as exc:  # noqa: BLE001
+        result.erros.append(f"Worker embeddings: {exc}")
+
+    return result
+
+
 # ── Orquestrador principal ────────────────────────────────────────────────────
 
 async def run_pipeline(
