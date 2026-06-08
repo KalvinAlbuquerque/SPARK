@@ -55,12 +55,14 @@ export async function POST(req: NextRequest) {
 }
 
 function buildPrompt(titulo: string, resumo?: string): string {
-  const snippet = resumo ? resumo.slice(0, 200) : '';
-  return [
-    `Scientific journal cover art for academic paper: "${titulo}".`,
-    snippet ? `Context: ${snippet}.` : '',
-    'Photorealistic scientific visualization, vibrant colors, deep blues, electric purples,',
-    'abstract data patterns, cinematic lighting, 4K quality, editorial design.',
-    'No text, no letters, no words in the image.',
-  ].filter(Boolean).join(' ');
+  const context = resumo ? resumo.slice(0, 300) : '';
+  return `Create a photorealistic scientific illustration for a research paper.
+
+Title: "${titulo}"${context ? `\nAbstract excerpt: "${context}"` : ''}
+
+Instructions:
+- The image must visually represent the SPECIFIC topic of this research (not generic science)
+- Show concrete objects, phenomena or scenarios directly related to the subject
+- Style: dramatic lighting, high detail, dark background, magazine cover quality
+- Absolutely NO text, letters, words or numbers anywhere in the image`;
 }
